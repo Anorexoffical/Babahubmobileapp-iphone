@@ -93,6 +93,7 @@ router.get("/searchByDate", async (req, res) => {
       return res.status(400).json({ message: "From and To dates are required" });
     }
 
+
     // Build filter
     const filter = {
       createdAt: {
@@ -111,6 +112,28 @@ router.get("/searchByDate", async (req, res) => {
   } catch (error) {
     console.error("Error in /searchByDate:", error);
     res.status(500).json({ message: "Internal server error" });
+  }
+
+
+
+});
+
+// Get orders for a specific user
+router.get("/myorder", async (req, res) => {
+  try {
+    const { userName } = req.query;
+    console.log("the login user", userName);
+
+    const filter = {};
+    if (userName) {
+      filter.userName = userName; 
+    }
+
+    const orders = await Order.find(filter).sort({ createdAt: -1 });
+    res.status(200).json(orders);
+  } catch (err) {
+    console.error("Error fetching orders:", err);
+    res.status(500).json({ error: "Error fetching orders" });
   }
 });
 

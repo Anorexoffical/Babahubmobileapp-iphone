@@ -1,9 +1,16 @@
+// app/_layout.js
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { useEffect } from 'react';
 import { View, ActivityIndicator } from 'react-native';
+import * as SplashScreen from 'expo-splash-screen';
 
-// Component to handle route protection and redirection
+// Keep splash visible until manually hidden
+SplashScreen.preventAutoHideAsync();
+
+// ----------------------
+// Route Protection
+// ----------------------
 function RouteProtection({ children }) {
   const { userToken, isLoading } = useAuth();
   const segments = useSegments();
@@ -11,6 +18,9 @@ function RouteProtection({ children }) {
 
   useEffect(() => {
     if (isLoading) return;
+
+    // Hide splash once auth check is done
+    SplashScreen.hideAsync();
 
     // Define protected routes
     const protectedRoutes = [
@@ -32,25 +42,26 @@ function RouteProtection({ children }) {
     const isProtectedRoute = protectedRoutes.includes(currentRoute);
     const isPublicRoute = publicRoutes.includes(currentRoute);
 
-    // Redirect to login if trying to access protected route without authentication
+    // 🔒 Redirect to login if accessing protected route without auth
     if (isProtectedRoute && !userToken) {
       router.replace('/login');
     }
-    
-    // Redirect to home if trying to access public auth route while authenticated
+
+    // ✅ Redirect authenticated user away from login/signup
     if (userToken && (currentRoute === 'login' || currentRoute === 'CreateAccount')) {
       router.replace('/(tabs)/HomeScreen');
     }
 
-    // Handle 404 for unknown routes
+    // ❌ Handle unknown routes → go to 404
     if (!isProtectedRoute && !isPublicRoute && currentRoute !== '404') {
       router.replace('/404');
     }
   }, [userToken, segments, isLoading]);
 
+  // Loader while auth is being checked
   if (isLoading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFF' }}>
         <ActivityIndicator size="large" color="#3366FF" />
       </View>
     );
@@ -59,6 +70,9 @@ function RouteProtection({ children }) {
   return children;
 }
 
+// ----------------------
+// Root Layout
+// ----------------------
 export default function RootLayout() {
   return (
     <AuthProvider>
@@ -69,7 +83,7 @@ export default function RootLayout() {
           <Stack.Screen name="login" />
           <Stack.Screen name="ForgetPassword" />
           <Stack.Screen name="CreateAccount" />
-          
+
           {/* Protected routes */}
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="CartScreen" />
@@ -80,11 +94,9 @@ export default function RootLayout() {
           <Stack.Screen name="ProductDetailPage" />
           <Stack.Screen name="ProfileDetailsScreen" />
           <Stack.Screen name="PasswordReview" options={{ gestureEnabled: false }} />
-          
-          {/* 404 page - must be the last route */}
+
+          {/* 404 page - must be last */}
           <Stack.Screen name="404" />
-          
-          {/* Catch-all route for 404 */}
           <Stack.Screen name="[...missing]" />
         </Stack>
       </RouteProtection>

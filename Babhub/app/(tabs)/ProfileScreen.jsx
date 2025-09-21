@@ -75,7 +75,7 @@ const ProfileScreen = () => {
         style={styles.logoutButton}
         onPress={async () => {
           await signOut(); 
-          navigation.replace("LoginScreen");
+          navigation.replace("login");
         }}
       >
         <Text style={styles.logoutText}>Logout</Text>
