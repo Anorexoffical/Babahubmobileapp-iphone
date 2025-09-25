@@ -20,21 +20,28 @@ const { width, height } = Dimensions.get('window');
 const ResetPassword = () => {
   const router = useRouter();
   const [email, setEmail] = useState('');
+  const [userName, setUserName] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   useEffect(() => {
     const checkSession = async () => {
       try {
         const storedEmail = await SecureStore.getItemAsync('reset_email');
+        const storedUserName = await SecureStore.getItemAsync('reset_username');
+        
         if (!storedEmail) {
           Alert.alert('Session Expired', 'Please start the password recovery process again.');
           router.replace('/ForgetPassword');
           return;
         }
+        
         setEmail(storedEmail);
+        setUserName(storedUserName || 'User'); // Fallback to 'User' if name not available
       } catch (error) {
         console.error('Session check error:', error);
         router.replace('/ForgetPassword');
@@ -101,6 +108,7 @@ const ResetPassword = () => {
       if (response.ok && data.success) {
         // Clear session data
         await SecureStore.deleteItemAsync('reset_email');
+        await SecureStore.deleteItemAsync('reset_username');
         await SecureStore.deleteItemAsync('reset_token');
         await SecureStore.deleteItemAsync('reset_timestamp');
         
@@ -139,6 +147,14 @@ const ResetPassword = () => {
     router.replace('/ForgetPassword');
   };
 
+  const toggleNewPasswordVisibility = () => {
+    setShowNewPassword(!showNewPassword);
+  };
+
+  const toggleConfirmPasswordVisibility = () => {
+    setShowConfirmPassword(!showConfirmPassword);
+  };
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.header}>Reset Password</Text>
@@ -148,41 +164,70 @@ const ResetPassword = () => {
 
       <View style={styles.userInfoContainer}>
         <Text style={styles.userInfoText}>Resetting password for:</Text>
-        <Text style={styles.emailText}>{email}</Text>
+        <Text style={styles.nameText}>{userName}</Text>
+        <Text style={styles.emailHint}>({email})</Text>
       </View>
 
       <Text style={styles.label}>New Password *</Text>
-      <TextInput
-        style={[
-          styles.input,
-          errors.newPassword && styles.inputError,
-        ]}
-        placeholder="Enter new password (min. 6 characters)"
-        secureTextEntry
-        value={newPassword}
-        onChangeText={(text) => {
-          setNewPassword(text);
-          if (errors.newPassword) setErrors({...errors, newPassword: ''});
-        }}
-        editable={!isLoading}
-      />
+      <View style={styles.passwordContainer}>
+        <TextInput
+          style={[
+            styles.input,
+            errors.newPassword && styles.inputError,
+            styles.passwordInput,
+          ]}
+          placeholder="Enter new password (min. 6 characters)"
+          secureTextEntry={!showNewPassword}
+          value={newPassword}
+          onChangeText={(text) => {
+            setNewPassword(text);
+            if (errors.newPassword) setErrors({...errors, newPassword: ''});
+          }}
+          editable={!isLoading}
+        />
+        <TouchableOpacity 
+          style={styles.eyeIcon} 
+          onPress={toggleNewPasswordVisibility}
+          disabled={isLoading}
+        >
+          <MaterialIcons 
+            name={showNewPassword ? "visibility" : "visibility-off"} 
+            size={24} 
+            color="#666" 
+          />
+        </TouchableOpacity>
+      </View>
       {errors.newPassword && <Text style={styles.errorText}>{errors.newPassword}</Text>}
 
       <Text style={styles.label}>Confirm New Password *</Text>
-      <TextInput
-        style={[
-          styles.input,
-          errors.confirmPassword && styles.inputError,
-        ]}
-        placeholder="Confirm new password"
-        secureTextEntry
-        value={confirmPassword}
-        onChangeText={(text) => {
-          setConfirmPassword(text);
-          if (errors.confirmPassword) setErrors({...errors, confirmPassword: ''});
-        }}
-        editable={!isLoading}
-      />
+      <View style={styles.passwordContainer}>
+        <TextInput
+          style={[
+            styles.input,
+            errors.confirmPassword && styles.inputError,
+            styles.passwordInput,
+          ]}
+          placeholder="Confirm new password"
+          secureTextEntry={!showConfirmPassword}
+          value={confirmPassword}
+          onChangeText={(text) => {
+            setConfirmPassword(text);
+            if (errors.confirmPassword) setErrors({...errors, confirmPassword: ''});
+          }}
+          editable={!isLoading}
+        />
+        <TouchableOpacity 
+          style={styles.eyeIcon} 
+          onPress={toggleConfirmPasswordVisibility}
+          disabled={isLoading}
+        >
+          <MaterialIcons 
+            name={showConfirmPassword ? "visibility" : "visibility-off"} 
+            size={24} 
+            color="#666" 
+          />
+        </TouchableOpacity>
+      </View>
       {errors.confirmPassword && <Text style={styles.errorText}>{errors.confirmPassword}</Text>}
 
       <Mybutton 
@@ -235,10 +280,16 @@ const styles = StyleSheet.create({
     color: '#3366FF',
     marginBottom: 4,
   },
-  emailText: {
-    fontSize: 14,
+  nameText: {
+    fontSize: 18,
+    color: '#333',
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  emailHint: {
+    fontSize: 12,
     color: '#666',
-    fontWeight: '500',
+    fontStyle: 'italic',
   },
   label: {
     fontWeight: '600',
@@ -255,6 +306,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 10,
     backgroundColor: '#fff',
+  },
+  passwordContainer: {
+    position: 'relative',
+    marginBottom: 10,
+  },
+  passwordInput: {
+    paddingRight: 50, // Make space for the eye icon
+  },
+  eyeIcon: {
+    position: 'absolute',
+    right: 14,
+    top: 13,
+    zIndex: 1,
   },
   inputError: {
     borderColor: '#FF3B30',

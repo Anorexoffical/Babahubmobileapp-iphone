@@ -116,7 +116,7 @@ router.post("/forgot-password", async (req, res) => {
   }
 });
 
-// FIXED reset-password route - Proper password encryption
+// FIXED reset-password route - Let Mongoose handle the hashing
 router.post("/reset-password", async (req, res) => {
   const { email, newPassword } = req.body;
 
@@ -148,17 +148,8 @@ router.post("/reset-password", async (req, res) => {
       });
     }
 
-    // 🔥 CRITICAL FIX: Use bcrypt to hash the password manually
-    // This ensures the password is properly encrypted
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
-    
-    // Update password with the hashed version
-    user.password = hashedPassword;
-    
-    // Use markModified to ensure Mongoose detects the change
-    user.markModified('password');
-    
+    // ✅ CRITICAL FIX: Let Mongoose middleware handle the hashing
+    user.password = newPassword;
     await user.save();
 
     console.log("Password reset successful for:", email);
