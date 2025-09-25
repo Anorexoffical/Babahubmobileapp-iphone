@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const Checkout = () => {
   const router = useRouter();
@@ -90,12 +90,22 @@ const Checkout = () => {
       });
 
       const data = await response.json();
-      if (data.paymentUrl) {
-        window.location.href = data.paymentUrl;
-      } else {
-        alert("Payment initiation failed!");
-      }
+if (data.paymentUrl) {
+  console.log("Payment URL:", data.paymentUrl);
 
+  // Save URL before navigation
+  await AsyncStorage.setItem("latestPaymentUrl", data.paymentUrl);
+
+  router.push("PaymentScreen");
+} else {
+  Alert.alert("Error", "Payment initiation failed!");
+}
+
+    // if (data.paymentUrl) {
+    //     window.location.href = data.paymentUrl;
+    //   } else {
+    //     alert("Payment initiation failed!");
+    //   }
       console.log('Order data:', orderData);
 
       // Clear cart after successful order

@@ -74,5 +74,96 @@ router.get("/customers", async (req, res) => {
 
 
 
+// forgot password route check the credentials
+
+router.post("/forgot-password", async (req, res) => {
+  const { email, dob } = req.body;
+  console.log("Forgot password request:", req.body);
+
+  try {
+    // Check if fields are empty
+    if (!email || !dob) {
+      return res.status(400).json({ 
+        message: "Please provide both email and date of birth" 
+      });
+    }
+
+    // Find user by email
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json({ 
+        message: "No account found with this email address" 
+      });
+    }
+
+    // Check if DOB matches (you might want to format this properly)
+    // Assuming dob is stored as "DD/MM/YYYY" in database
+    if (user.dob !== dob) {
+      return res.status(400).json({ 
+        message: "Date of birth does not match our records" 
+      });
+    }
+
+    // If credentials are correct, allow password reset
+    res.json({
+      message: "Credentials verified successfully",
+      success: true,
+      user: {
+        id: user._id,
+        email: user.email
+      }
+    });
+
+  } catch (err) {
+    res.status(500).json({ 
+      message: "Server error", 
+      error: err.message 
+    });
+  }
+});
+
+// Add password reset route
+// Updated reset-password route to use same encryption as registration
+router.post("/reset-password", async (req, res) => {
+  const { email, newPassword } = req.body;
+
+  try {
+    if (!email || !newPassword) {
+      return res.status(400).json({ 
+        message: "Email and new password are required" 
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ 
+        message: "Password must be at least 6 characters long" 
+      });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json({ 
+        message: "User not found" 
+      });
+    }
+
+    // Update password - the User model's pre-save middleware will automatically hash it
+    // This uses the same encryption as during account creation
+    user.password = newPassword;
+    await user.save();
+
+    res.json({
+      message: "Password reset successfully",
+      success: true
+    });
+
+  } catch (err) {
+    console.error("Reset password error:", err);
+    res.status(500).json({ 
+      message: "Server error during password reset", 
+      error: err.message 
+    });
+  }
+});
 
 module.exports = router;

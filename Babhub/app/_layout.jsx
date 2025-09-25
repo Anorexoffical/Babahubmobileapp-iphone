@@ -93,7 +93,8 @@ export default function RootLayout() {
           <Stack.Screen name="PrivacyPolicyScreen" />
           <Stack.Screen name="ProductDetailPage" />
           <Stack.Screen name="ProfileDetailsScreen" />
-          <Stack.Screen name="PasswordReview" options={{ gestureEnabled: false }} />
+          <Stack.Screen name="PaymentScreen" />
+          <Stack.Screen name="ResetPassword" options={{ gestureEnabled: false }} />
 
           {/* 404 page - must be last */}
           <Stack.Screen name="404" />
