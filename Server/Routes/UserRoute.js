@@ -122,33 +122,49 @@ router.post("/forgot-password", async (req, res) => {
   }
 });
 
-// Add password reset route
 // Updated reset-password route to use same encryption as registration
+// Add this at the top of your routes file (after imports)
+router.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Content-Length, X-Requested-With');
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  
+  next();
+});
+
+// Then your existing route
 router.post("/reset-password", async (req, res) => {
   const { email, newPassword } = req.body;
 
   try {
     if (!email || !newPassword) {
       return res.status(400).json({ 
-        message: "Email and new password are required" 
+        message: "Email and new password are required",
+        success: false  // Add this
       });
     }
 
     if (newPassword.length < 6) {
       return res.status(400).json({ 
-        message: "Password must be at least 6 characters long" 
+        message: "Password must be at least 6 characters long",
+        success: false  // Add this
       });
     }
 
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(400).json({ 
-        message: "User not found" 
+        message: "User not found",
+        success: false  // Add this
       });
     }
 
-    // Update password - the User model's pre-save middleware will automatically hash it
-    // This uses the same encryption as during account creation
+    // Update password
     user.password = newPassword;
     await user.save();
 
@@ -161,9 +177,9 @@ router.post("/reset-password", async (req, res) => {
     console.error("Reset password error:", err);
     res.status(500).json({ 
       message: "Server error during password reset", 
-      error: err.message 
+      error: err.message,
+      success: false  // Add this
     });
   }
 });
-
 module.exports = router;

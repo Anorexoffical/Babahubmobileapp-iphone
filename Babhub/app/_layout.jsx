@@ -32,11 +32,18 @@ function RouteProtection({ children }) {
       'PrivacyPolicyScreen', 
       'ProductDetailPage', 
       'ProfileDetailsScreen', 
-      'PasswordReview'
+      // Remove ResetPassword from here
     ];
 
-    // Define public routes
-    const publicRoutes = ['index', 'login', 'ForgetPassword', 'CreateAccount', '404'];
+    // Define public routes - ADD ResetPassword HERE
+    const publicRoutes = [
+      'index', 
+      'login', 
+      'ForgetPassword', 
+      'CreateAccount', 
+      'ResetPassword', // ADD THIS LINE
+      '404'
+    ];
 
     const currentRoute = segments[0] || 'index';
     const isProtectedRoute = protectedRoutes.includes(currentRoute);
@@ -83,6 +90,7 @@ export default function RootLayout() {
           <Stack.Screen name="login" />
           <Stack.Screen name="ForgetPassword" />
           <Stack.Screen name="CreateAccount" />
+          <Stack.Screen name="ResetPassword" /> {/* This line is correct */}
 
           {/* Protected routes */}
           <Stack.Screen name="(tabs)" />
@@ -93,8 +101,7 @@ export default function RootLayout() {
           <Stack.Screen name="PrivacyPolicyScreen" />
           <Stack.Screen name="ProductDetailPage" />
           <Stack.Screen name="ProfileDetailsScreen" />
-          <Stack.Screen name="PaymentScreen" />
-          <Stack.Screen name="ResetPassword" options={{ gestureEnabled: false }} />
+          <Stack.Screen name="PaymentScreen" options={{ gestureEnabled: false }} />
 
           {/* 404 page - must be last */}
           <Stack.Screen name="404" />

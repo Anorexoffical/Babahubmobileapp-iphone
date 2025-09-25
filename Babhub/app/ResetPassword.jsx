@@ -9,18 +9,25 @@ import {
   ScrollView,
   Dimensions,
 } from 'react-native';
-import React, { useState } from 'react';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'expo-router';
 import Mybutton from '../components/Mybutton';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import * as SecureStore from 'expo-secure-store';
 
 const { width, height } = Dimensions.get('window');
 
+// Security constants
+const RESET_TOKEN_KEY = 'reset_token';
+const RESET_EMAIL_KEY = 'reset_email';
+const RESET_TIMESTAMP_KEY = 'reset_timestamp';
+const TOKEN_EXPIRY_TIME = 15 * 60 * 1000;
+
 const ResetPassword = () => {
   const router = useRouter();
-  const params = useLocalSearchParams();
-  const email = params.email || '';
-
+  const [email, setEmail] = useState('');
+  const [userName, setUserName] = useState('');
+  const [isSessionValid, setIsSessionValid] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [newPasswordFocus, setNewPasswordFocus] = useState(false);
@@ -29,6 +36,52 @@ const ResetPassword = () => {
   const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
+
+  useEffect(() => {
+    const validateResetSession = async () => {
+      try {
+        const resetToken = await SecureStore.getItemAsync(RESET_TOKEN_KEY);
+        const storedEmail = await SecureStore.getItemAsync(RESET_EMAIL_KEY);
+        const tokenTimestamp = await SecureStore.getItemAsync(RESET_TIMESTAMP_KEY);
+
+        if (!resetToken || !storedEmail || !tokenTimestamp) {
+          Alert.alert('Session Expired', 'Please start the password recovery process again.');
+          router.replace('/ForgetPassword');
+          return;
+        }
+
+        const currentTime = Date.now();
+        const tokenTime = parseInt(tokenTimestamp);
+        
+        if (currentTime - tokenTime > TOKEN_EXPIRY_TIME) {
+          await SecureStore.deleteItemAsync(RESET_TOKEN_KEY);
+          await SecureStore.deleteItemAsync(RESET_EMAIL_KEY);
+          await SecureStore.deleteItemAsync(RESET_TIMESTAMP_KEY);
+          
+          Alert.alert('Session Expired', 'Your reset session has expired. Please start over.');
+          router.replace('/ForgetPassword');
+          return;
+        }
+
+        setEmail(storedEmail);
+        setIsSessionValid(true);
+        
+        const atIndex = storedEmail.indexOf('@');
+        const username = atIndex > 0 ? storedEmail.substring(0, atIndex) : 'User';
+        const displayName = username.length > 2 ? 
+          username.charAt(0) + '*'.repeat(username.length - 2) + username.charAt(username.length - 1) : 
+          '*'.repeat(username.length);
+        setUserName(displayName);
+
+      } catch (error) {
+        console.error('Session validation error:', error);
+        Alert.alert('Error', 'Session validation failed. Please try again.');
+        router.replace('/ForgetPassword');
+      }
+    };
+
+    validateResetSession();
+  }, []);
 
   const validateForm = () => {
     const newErrors = {};
@@ -54,21 +107,52 @@ const ResetPassword = () => {
       return;
     }
 
+    if (!isSessionValid) {
+      Alert.alert('Session Expired', 'Please start the password recovery process again.');
+      router.replace('/ForgetPassword');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
+      const resetToken = await SecureStore.getItemAsync(RESET_TOKEN_KEY);
+      if (!resetToken) {
+        Alert.alert('Session Expired', 'Please start the password recovery process again.');
+        router.replace('/ForgetPassword');
+        return;
+      }
+
+      console.log('Sending reset request for email:', email);
+      
+      // Remove the Authorization header since your backend doesn't expect it
       const response = await fetch("https://account.babahub.co/api/users/reset-password", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          // Remove this line: "Authorization": `Bearer ${resetToken}`
+        },
         body: JSON.stringify({ 
           email: email,
           newPassword: newPassword 
         }),
       });
 
-      const data = await response.json();
+      console.log('Response status:', response.status);
 
-      if (response.ok && data.success) {
+      // Check if response is OK before trying to parse JSON
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('Response data:', data);
+
+      if (data.success) {
+        await SecureStore.deleteItemAsync(RESET_TOKEN_KEY);
+        await SecureStore.deleteItemAsync(RESET_EMAIL_KEY);
+        await SecureStore.deleteItemAsync(RESET_TIMESTAMP_KEY);
+
         Alert.alert(
           "Success", 
           "Your password has been reset successfully!",
@@ -76,7 +160,7 @@ const ResetPassword = () => {
             {
               text: "OK",
               onPress: () => {
-                router.replace('/Login');
+                router.replace('/login');
               }
             }
           ]
@@ -85,27 +169,56 @@ const ResetPassword = () => {
         Alert.alert("Error", data.message || "Failed to reset password");
       }
     } catch (error) {
-      Alert.alert('Error', 'Failed to connect to server. Please try again.');
+      console.error('Full error details:', error);
+      
+      if (error.message.includes('Failed to fetch') || error.message.includes('Network request failed')) {
+        Alert.alert(
+          'Connection Error', 
+          'Cannot connect to the server. Please:\n\n• Check your internet connection\n• Verify the server is running\n• Try again in a few moments'
+        );
+      } else if (error.message.includes('HTTP error')) {
+        Alert.alert('Server Error', `Server returned an error: ${error.message}`);
+      } else {
+        Alert.alert('Error', `An unexpected error occurred: ${error.message}`);
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleBackToRecovery = () => {
-    router.back();
+    router.replace('/ForgetPassword');
   };
 
+  const maskEmail = (email) => {
+    if (!email) return '';
+    const [localPart, domain] = email.split('@');
+    if (localPart.length <= 2) {
+      return '*'.repeat(localPart.length) + '@' + domain;
+    }
+    return localPart.charAt(0) + '*'.repeat(localPart.length - 2) + localPart.charAt(localPart.length - 1) + '@' + domain;
+  };
+
+  if (!isSessionValid) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text style={styles.loadingText}>Validating session security...</Text>
+      </View>
+    );
+  }
+
   return (
-    <ScrollView 
-      contentContainerStyle={styles.container}
-      keyboardShouldPersistTaps="handled"
-    >
+    <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.header}>Reset Password</Text>
       <Text style={styles.subHeader}>
         Create a new password for your account
       </Text>
 
-      <Text style={styles.emailText}>Resetting password for: {email}</Text>
+      <View style={styles.userInfoContainer}>
+        <Text style={styles.userInfoText}>Account: {userName}</Text>
+        <Text style={styles.emailText}>{maskEmail(email)}</Text>
+        <Text style={styles.securityNote}>Secure session • Expires in 15 minutes</Text>
+      </View>
 
       <Text style={styles.label}>New Password *</Text>
       <View
@@ -116,7 +229,7 @@ const ResetPassword = () => {
         ]}
       >
         <TextInput
-          placeholder="Enter new password"
+          placeholder="Enter new password (min. 6 characters)"
           style={styles.passwordInput}
           secureTextEntry={!newPasswordVisible}
           value={newPassword}
@@ -187,7 +300,7 @@ const ResetPassword = () => {
       <Mybutton 
         btntitle={isLoading ? "Resetting..." : "Reset Password"} 
         onPress={handleResetPassword}
-        disabled={isLoading}
+        disabled={isLoading || !isSessionValid}
       />
 
       <TouchableOpacity onPress={handleBackToRecovery} disabled={isLoading}>
@@ -207,6 +320,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     minHeight: height,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#666',
+  },
   header: {
     fontSize: width > 400 ? 32 : 28,
     fontWeight: '700',
@@ -222,15 +345,33 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingHorizontal: width * 0.05,
   },
+  userInfoContainer: {
+    backgroundColor: '#F0F5FF',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 30,
+    alignItems: 'center',
+    borderLeftWidth: 4,
+    borderLeftColor: '#3366FF',
+  },
+  userInfoText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#3366FF',
+    marginBottom: 4,
+  },
   emailText: {
     fontSize: 14,
-    color: '#3366FF',
+    color: '#666',
+    marginBottom: 8,
+    fontFamily: 'monospace',
+    letterSpacing: 1,
+  },
+  securityNote: {
+    fontSize: 12,
+    color: '#888',
+    fontStyle: 'italic',
     textAlign: 'center',
-    marginBottom: 30,
-    fontWeight: '500',
-    backgroundColor: '#F0F5FF',
-    padding: 12,
-    borderRadius: 8,
   },
   label: {
     fontWeight: '600',

@@ -1,4 +1,4 @@
-// app/ForgetPassword.jsx (updated with backend integration)
+// app/ForgetPassword.jsx (updated with secure session management)
 import {
   View,
   Text,
@@ -13,15 +13,20 @@ import {
 import React, { useState } from 'react';
 import { useRouter } from 'expo-router';
 import Mybutton from '../components/Mybutton';
-import { useAuth } from './contexts/AuthContext';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
+import * as SecureStore from 'expo-secure-store';
 
 const { width, height } = Dimensions.get('window');
 
+// Security constants
+const RESET_TOKEN_KEY = 'reset_token';
+const RESET_EMAIL_KEY = 'reset_email';
+const RESET_TIMESTAMP_KEY = 'reset_timestamp';
+const TOKEN_EXPIRY_TIME = 15 * 60 * 1000; // 15 minutes
+
 const ForgetPassword = () => {
   const router = useRouter();
-  const { setPasswordRecoveryData } = useAuth();
   const [email, setEmail] = useState('');
   const [dob, setDob] = useState('');
   const [emailFocus, setEmailFocus] = useState(false);
@@ -54,6 +59,13 @@ const ForgetPassword = () => {
     if (errors.dob) {
       setErrors((prev) => ({ ...prev, dob: "" }));
     }
+  };
+
+  // Generate secure random token
+  const generateSecureToken = () => {
+    const array = new Uint8Array(32);
+    crypto.getRandomValues(array);
+    return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
   };
 
   const handleRecoverPassword = async () => {
@@ -90,11 +102,19 @@ const ForgetPassword = () => {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        // Credentials are correct, navigate to reset password page
-        router.push({
-          pathname: '/ResetPassword',
-          params: { email }
-        });
+        // Generate secure token and store session data
+        const resetToken = generateSecureToken();
+        
+        // Store all session data securely
+        await SecureStore.setItemAsync(RESET_TOKEN_KEY, resetToken);
+        await SecureStore.setItemAsync(RESET_EMAIL_KEY, email);
+        await SecureStore.setItemAsync(RESET_TIMESTAMP_KEY, Date.now().toString());
+        
+        // Clear any previous errors
+        setErrors({});
+        
+        // Navigate to reset password page WITHOUT parameters
+        router.push('/ResetPassword');
       } else {
         // Show specific error message from backend
         Alert.alert("Error", data.message || "Failed to verify credentials");
