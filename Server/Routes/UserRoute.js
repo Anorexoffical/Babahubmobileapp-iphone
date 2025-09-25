@@ -9,7 +9,6 @@ router.post("/register", async (req, res) => {
   console.log("Incoming body:", req.body);
 
   try {
-
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: "User already exists" });
@@ -71,11 +70,7 @@ router.get("/customers", async (req, res) => {
   }
 });
 
-
-
-
 // forgot password route check the credentials
-
 router.post("/forgot-password", async (req, res) => {
   const { email, dob } = req.body;
   console.log("Forgot password request:", req.body);
@@ -96,8 +91,7 @@ router.post("/forgot-password", async (req, res) => {
       });
     }
 
-    // Check if DOB matches (you might want to format this properly)
-    // Assuming dob is stored as "DD/MM/YYYY" in database
+    // Check if DOB matches
     if (user.dob !== dob) {
       return res.status(400).json({ 
         message: "Date of birth does not match our records" 
@@ -122,37 +116,27 @@ router.post("/forgot-password", async (req, res) => {
   }
 });
 
-// Updated reset-password route to use same encryption as registration
-// Add this at the top of your routes file (after imports)
-router.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Content-Length, X-Requested-With');
-  
-  // Handle preflight requests
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
-  }
-  
-  next();
-});
-
-// Then your existing route
+// FIXED reset-password route - Proper password encryption
 router.post("/reset-password", async (req, res) => {
   const { email, newPassword } = req.body;
+
+  console.log("Reset password request received:", { 
+    email: email, 
+    hasPassword: !!newPassword 
+  });
 
   try {
     if (!email || !newPassword) {
       return res.status(400).json({ 
         message: "Email and new password are required",
-        success: false  // Add this
+        success: false
       });
     }
 
     if (newPassword.length < 6) {
       return res.status(400).json({ 
         message: "Password must be at least 6 characters long",
-        success: false  // Add this
+        success: false
       });
     }
 
@@ -160,13 +144,24 @@ router.post("/reset-password", async (req, res) => {
     if (!user) {
       return res.status(400).json({ 
         message: "User not found",
-        success: false  // Add this
+        success: false
       });
     }
 
-    // Update password
-    user.password = newPassword;
+    // 🔥 CRITICAL FIX: Use bcrypt to hash the password manually
+    // This ensures the password is properly encrypted
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+    
+    // Update password with the hashed version
+    user.password = hashedPassword;
+    
+    // Use markModified to ensure Mongoose detects the change
+    user.markModified('password');
+    
     await user.save();
+
+    console.log("Password reset successful for:", email);
 
     res.json({
       message: "Password reset successfully",
@@ -178,8 +173,9 @@ router.post("/reset-password", async (req, res) => {
     res.status(500).json({ 
       message: "Server error during password reset", 
       error: err.message,
-      success: false  // Add this
+      success: false
     });
   }
 });
+
 module.exports = router;

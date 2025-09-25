@@ -102,21 +102,15 @@ const ForgetPassword = () => {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        // Generate secure token and store session data
-        const resetToken = generateSecureToken();
-        
-        // Store all session data securely
-        await SecureStore.setItemAsync(RESET_TOKEN_KEY, resetToken);
-        await SecureStore.setItemAsync(RESET_EMAIL_KEY, email);
-        await SecureStore.setItemAsync(RESET_TIMESTAMP_KEY, Date.now().toString());
+        // ✅ FIX: Store only the email for simplicity
+        await SecureStore.setItemAsync('reset_email', email);
         
         // Clear any previous errors
         setErrors({});
         
-        // Navigate to reset password page WITHOUT parameters
+        // Navigate to reset password page
         router.push('/ResetPassword');
       } else {
-        // Show specific error message from backend
         Alert.alert("Error", data.message || "Failed to verify credentials");
       }
     } catch (error) {

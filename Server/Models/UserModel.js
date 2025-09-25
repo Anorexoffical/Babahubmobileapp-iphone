@@ -16,7 +16,7 @@ const UserSchema = new mongoose.Schema(
       trim: true,
     },
     dob: {
-      type: String, // you can change to Date type if you want
+      type: String,
       required: true,
     },
     password: {
@@ -33,8 +33,9 @@ const UserSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Hash password before saving
+// Hash password before saving - IMPROVED VERSION
 UserSchema.pre("save", async function (next) {
+  // Only hash the password if it has been modified (or is new)
   if (!this.isModified("password")) return next();
 
   try {
