@@ -162,11 +162,11 @@ const ResetPassword = () => {
         Create a new password for your account
       </Text>
 
-      <View style={styles.userInfoContainer}>
-        <Text style={styles.userInfoText}>Resetting password for:</Text>
-        <Text style={styles.nameText}>{userName}</Text>
-        <Text style={styles.emailHint}>({email})</Text>
-      </View>
+      {/* <View style={styles.userInfoContainer}>
+        {/* <Text style={styles.userInfoText}>Resetting password for:</Text> */}
+        {/* <Text style={styles.nameText}>{userName}</Text> */}
+        {/* <Text style={styles.emailHint}>({email})</Text> */}
+      {/* </View> */} 
 
       <Text style={styles.label}>New Password *</Text>
       <View style={styles.passwordContainer}>

@@ -1,4 +1,4 @@
-// app/ForgetPassword.jsx (updated with secure session management)
+// app/ResetPassword.jsx (FIXED VERSION)
 import {
   View,
   Text,
@@ -7,196 +7,244 @@ import {
   TouchableOpacity,
   Alert,
   ScrollView,
-  Platform,
   Dimensions,
 } from 'react-native';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'expo-router';
 import Mybutton from '../components/Mybutton';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import * as SecureStore from 'expo-secure-store';
 
 const { width, height } = Dimensions.get('window');
 
-// Security constants
-const RESET_TOKEN_KEY = 'reset_token';
-const RESET_EMAIL_KEY = 'reset_email';
-const RESET_TIMESTAMP_KEY = 'reset_timestamp';
-const TOKEN_EXPIRY_TIME = 15 * 60 * 1000; // 15 minutes
-
-const ForgetPassword = () => {
+const ResetPassword = () => {
   const router = useRouter();
   const [email, setEmail] = useState('');
-  const [dob, setDob] = useState('');
-  const [emailFocus, setEmailFocus] = useState(false);
-  const [dobFocus, setDobFocus] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  
-  // Date picker states
-  const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(new Date());
   const [errors, setErrors] = useState({});
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [newPasswordFocus, setNewPasswordFocus] = useState(false);
+  const [confirmPasswordFocus, setConfirmPasswordFocus] = useState(false);
 
-  // Format date function
-  const formatDate = (date) => {
-    const day = date.getDate().toString().padStart(2, "0");
-    const month = (date.getMonth() + 1).toString().padStart(2, "0");
-    const year = date.getFullYear();
-    return `${day}/${month}/${year}`;
-  };
-
-  // Date picker functions
-  const showDatepicker = () => {
-    setDatePickerVisibility(true);
-    setDobFocus(true);
-  };
-
-  const handleConfirmDate = (date) => {
-    setSelectedDate(date);
-    setDob(formatDate(date));
-    setDatePickerVisibility(false);
-    if (errors.dob) {
-      setErrors((prev) => ({ ...prev, dob: "" }));
-    }
-  };
-
-  // Generate secure random token
-  const generateSecureToken = () => {
-    const array = new Uint8Array(32);
-    crypto.getRandomValues(array);
-    return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
-  };
-
-  const handleRecoverPassword = async () => {
-    // Validation
-    const newErrors = {};
-    
-    if (!email.trim()) {
-      newErrors.email = "Email is required";
-    } else {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        newErrors.email = "Please enter a valid email address";
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        const storedEmail = await SecureStore.getItemAsync('reset_email');
+        const storedTimestamp = await SecureStore.getItemAsync('reset_timestamp');
+        
+        if (!storedEmail || !storedTimestamp) {
+          Alert.alert('Session Expired', 'Please start the password recovery process again.');
+          router.replace('/ForgetPassword');
+          return;
+        }
+        
+        // Check if session expired (5 minutes)
+        const currentTime = Date.now();
+        const sessionTime = parseInt(storedTimestamp);
+        
+        if (currentTime - sessionTime > 2 * 60 * 1000) {
+          await SecureStore.deleteItemAsync('reset_email');
+          await SecureStore.deleteItemAsync('reset_timestamp');
+          Alert.alert('Session Expired', 'Your reset session has expired. Please start over.');
+          router.replace('/ForgetPassword');
+          return;
+        }
+        
+        setEmail(storedEmail);
+      } catch (error) {
+        console.error('Session check error:', error);
+        router.replace('/ForgetPassword');
       }
+    };
+
+    checkSession();
+  }, []);
+
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (!newPassword) {
+      newErrors.newPassword = "New password is required";
+    } else if (newPassword.length < 6) {
+      newErrors.newPassword = "Password must be at least 6 characters";
     }
-    
-    if (!dob) newErrors.dob = "Date of birth is required";
+
+    if (!confirmPassword) {
+      newErrors.confirmPassword = "Please confirm your password";
+    } else if (newPassword !== confirmPassword) {
+      newErrors.confirmPassword = "Passwords do not match";
+    }
 
     setErrors(newErrors);
-    
-    if (Object.keys(newErrors).length > 0) {
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleResetPassword = async () => {
+    if (!validateForm()) {
       return;
     }
 
     setIsLoading(true);
-    
+
     try {
-      // Verify credentials with backend
-      const response = await fetch("https://account.babahub.co/api/users/forgot-password", {
+      console.log('Attempting password reset for:', email);
+      
+      const response = await fetch("https://account.babahub.co/api/users/reset-password", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, dob }),
+        headers: { 
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ 
+          email: email,
+          newPassword: newPassword 
+        }),
       });
 
-      const data = await response.json();
+      console.log('Response status:', response.status);
+
+      const responseText = await response.text();
+      console.log('Raw response:', responseText);
+
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('JSON parse error:', parseError);
+        throw new Error('Invalid server response format');
+      }
 
       if (response.ok && data.success) {
-        // ✅ FIX: Store only the email for simplicity
-        await SecureStore.setItemAsync('reset_email', email);
+        // Clear all session data
+        await SecureStore.deleteItemAsync('reset_email');
+        await SecureStore.deleteItemAsync('reset_timestamp');
         
-        // Clear any previous errors
-        setErrors({});
-        
-        // Navigate to reset password page
-        router.push('/ResetPassword');
+        Alert.alert(
+          "Success", 
+          "Your password has been reset successfully!",
+          [
+            {
+              text: "OK",
+              onPress: () => {
+                router.replace('/login');
+              }
+            }
+          ]
+        );
       } else {
-        Alert.alert("Error", data.message || "Failed to verify credentials");
+        Alert.alert("Error", data.message || "Failed to reset password. Please try again.");
       }
     } catch (error) {
-      Alert.alert('Error', 'Failed to connect to server. Please check your internet connection.');
+      console.error('Reset password error:', error);
+      
+      if (error.message.includes('Network request failed')) {
+        Alert.alert(
+          'Connection Error', 
+          'Cannot connect to the server. Please check your internet connection and try again.'
+        );
+      } else {
+        Alert.alert('Error', error.message || 'An unexpected error occurred');
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleBackToLogin = () => {
-    router.back();
+  const handleBackToRecovery = () => {
+    router.replace('/ForgetPassword');
   };
 
   return (
-    <ScrollView 
-      contentContainerStyle={styles.container}
-      keyboardShouldPersistTaps="handled"
-    >
-      <Text style={styles.header}>Recover Password</Text>
+    <ScrollView contentContainerStyle={styles.container}>
+      <Text style={styles.header}>Reset Password</Text>
       <Text style={styles.subHeader}>
-        Enter your email and date of birth to recover your password
+        Create a new password for your account
       </Text>
 
-      <Text style={styles.label}>Email *</Text>
-      <TextInput
-        placeholder="hello@example.com"
-        style={[
-          styles.input, 
-          emailFocus && styles.inputActive,
-          errors.email && styles.inputError
-        ]}
-        keyboardType="email-address"
-        value={email}
-        onChangeText={(text) => {
-          setEmail(text);
-          if (errors.email && text.trim()) {
-            setErrors((prev) => ({ ...prev, email: "" }));
-          }
-        }}
-        onFocus={() => setEmailFocus(true)}
-        onBlur={() => setEmailFocus(false)}
-        underlineColorAndroid="transparent"
-        selectionColor="#3366FF"
-        autoCapitalize="none"
-        editable={!isLoading}
-      />
-      {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
+      <View style={styles.userInfoContainer}>
+        <Text style={styles.userInfoText}>Account verified successfully</Text>
+        <Text style={styles.emailHint}>You can now set your new password</Text>
+      </View>
 
-      <Text style={styles.label}>Date of Birth *</Text>
-      <TouchableOpacity onPress={showDatepicker} disabled={isLoading}>
-        <View
+      <Text style={styles.label}>New Password *</Text>
+      <View style={styles.passwordContainer}>
+        <TextInput
           style={[
             styles.input,
-            dobFocus && styles.inputActive,
-            errors.dob && styles.inputError,
-            styles.dobInput,
-            isLoading && styles.disabledInput
+            newPasswordFocus && styles.inputActive,
+            errors.newPassword && styles.inputError,
+            styles.passwordInput,
           ]}
+          placeholder="Enter new password (min. 6 characters)"
+          secureTextEntry={!showNewPassword}
+          value={newPassword}
+          onChangeText={(text) => {
+            setNewPassword(text);
+            if (errors.newPassword) setErrors({...errors, newPassword: ''});
+          }}
+          onFocus={() => setNewPasswordFocus(true)}
+          onBlur={() => setNewPasswordFocus(false)}
+          editable={!isLoading}
+        />
+        <TouchableOpacity 
+          style={styles.eyeIcon} 
+          onPress={() => setShowNewPassword(!showNewPassword)}
+          disabled={isLoading}
         >
-          <Text style={[dob ? styles.dobText : styles.placeholderText]}>
-            {dob || "DD/MM/YYYY"}
-          </Text>
-          <MaterialIcons name="calendar-today" size={20} color="#888" />
-        </View>
-      </TouchableOpacity>
-      {errors.dob ? <Text style={styles.errorText}>{errors.dob}</Text> : null}
+          <MaterialIcons 
+            name={showNewPassword ? "visibility" : "visibility-off"} 
+            size={24} 
+            color="#666" 
+          />
+        </TouchableOpacity>
+      </View>
+      {errors.newPassword && <Text style={styles.errorText}>{errors.newPassword}</Text>}
 
-      {/* Date Picker Modal */}
-      <DateTimePickerModal
-        isVisible={isDatePickerVisible}
-        mode="date"
-        maximumDate={new Date()}
-        date={selectedDate}
-        onConfirm={handleConfirmDate}
-        onCancel={() => setDatePickerVisibility(false)}
-      />
+      <Text style={styles.label}>Confirm New Password *</Text>
+      <View style={styles.passwordContainer}>
+        <TextInput
+          style={[
+            styles.input,
+            confirmPasswordFocus && styles.inputActive,
+            errors.confirmPassword && styles.inputError,
+            styles.passwordInput,
+          ]}
+          placeholder="Confirm new password"
+          secureTextEntry={!showConfirmPassword}
+          value={confirmPassword}
+          onChangeText={(text) => {
+            setConfirmPassword(text);
+            if (errors.confirmPassword) setErrors({...errors, confirmPassword: ''});
+          }}
+          onFocus={() => setConfirmPasswordFocus(true)}
+          onBlur={() => setConfirmPasswordFocus(false)}
+          editable={!isLoading}
+        />
+        <TouchableOpacity 
+          style={styles.eyeIcon} 
+          onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+          disabled={isLoading}
+        >
+          <MaterialIcons 
+            name={showConfirmPassword ? "visibility" : "visibility-off"} 
+            size={24} 
+            color="#666" 
+          />
+        </TouchableOpacity>
+      </View>
+      {errors.confirmPassword && <Text style={styles.errorText}>{errors.confirmPassword}</Text>}
 
       <Mybutton 
-        btntitle={isLoading ? "Verifying..." : "Recover Password"} 
-        onPress={handleRecoverPassword}
+        btntitle={isLoading ? "Resetting..." : "Reset Password"} 
+        onPress={handleResetPassword}
         disabled={isLoading}
       />
 
-      <TouchableOpacity onPress={handleBackToLogin} disabled={isLoading}>
-        <Text style={[styles.backToLogin, isLoading && styles.disabledText]}>
-          Back to Login
+      <TouchableOpacity onPress={handleBackToRecovery} disabled={isLoading}>
+        <Text style={[styles.backButton, isLoading && styles.disabledText]}>
+          Back to Recovery
         </Text>
       </TouchableOpacity>
     </ScrollView>
@@ -206,81 +254,93 @@ const ForgetPassword = () => {
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    paddingHorizontal: width > 500 ? width * 0.15 : 24,
-    paddingVertical: height < 700 ? 20 : 40,
+    paddingHorizontal: 24,
+    paddingVertical: 40,
     backgroundColor: '#fff',
     minHeight: height,
   },
   header: {
-    fontSize: width > 400 ? 32 : 28,
+    fontSize: 28,
     fontWeight: '700',
     marginBottom: 10,
     color: '#222',
     textAlign: 'center',
-    marginTop: height * 0.02,
+    marginTop: 20,
   },
   subHeader: {
-    fontSize: width > 400 ? 18 : 16,
+    fontSize: 16,
     color: '#666',
     marginBottom: 30,
     textAlign: 'center',
-    paddingHorizontal: width * 0.05,
+  },
+  userInfoContainer: {
+    backgroundColor: '#F0F5FF',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 30,
+    alignItems: 'center',
+  },
+  userInfoText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#3366FF',
+    marginBottom: 4,
+  },
+  emailHint: {
+    fontSize: 12,
+    color: '#666',
+    fontStyle: 'italic',
   },
   label: {
     fontWeight: '600',
     marginBottom: 8,
-    fontSize: width > 400 ? 16 : 14,
+    fontSize: 16,
     color: '#333',
   },
   input: {
-    height: height < 700 ? 45 : 50,
     borderWidth: 2,
     borderColor: '#ccc',
     borderRadius: 12,
-    paddingHorizontal: 18,
+    paddingHorizontal: 14,
+    height: 50,
+    fontSize: 16,
     marginBottom: 10,
     backgroundColor: '#fff',
-    fontSize: width > 400 ? 16 : 15,
-    justifyContent: 'center',
   },
   inputActive: {
     borderColor: '#3366FF',
   },
+  passwordContainer: {
+    position: 'relative',
+    marginBottom: 10,
+  },
+  passwordInput: {
+    paddingRight: 50,
+  },
+  eyeIcon: {
+    position: 'absolute',
+    right: 14,
+    top: 13,
+    zIndex: 1,
+  },
   inputError: {
     borderColor: '#FF3B30',
-  },
-  disabledInput: {
-    opacity: 0.5,
-  },
-  dobInput: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  dobText: {
-    fontSize: width > 400 ? 16 : 15,
-    color: '#000',
-  },
-  placeholderText: {
-    fontSize: width > 400 ? 16 : 15,
-    color: '#888',
   },
   errorText: {
     color: '#FF3B30',
     fontSize: 12,
     marginBottom: 15,
-    marginTop: -5,
   },
-  backToLogin: {
+  backButton: {
     color: '#3366FF',
     textAlign: 'center',
-    marginTop: 30,
+    marginTop: 20,
     fontWeight: '600',
-    fontSize: width > 400 ? 16 : 14,
+    fontSize: 16,
   },
   disabledText: {
     opacity: 0.5,
   },
 });
 
-export default ForgetPassword;
+export default ResetPassword;

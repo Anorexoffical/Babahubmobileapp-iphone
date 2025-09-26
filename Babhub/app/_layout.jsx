@@ -31,17 +31,18 @@ function RouteProtection({ children }) {
       'MyOrder', 
       'PrivacyPolicyScreen', 
       'ProductDetailPage', 
-      'ProfileDetailsScreen', 
-      // Remove ResetPassword from here
+      'ProfileDetailsScreen',
+      'OrderSuccessScreen',
+      'PaymentScreen'
     ];
 
-    // Define public routes - ADD ResetPassword HERE
+    // Define public routes
     const publicRoutes = [
       'index', 
       'login', 
       'ForgetPassword', 
       'CreateAccount', 
-      'ResetPassword', // ADD THIS LINE
+      'ResetPassword',
       '404'
     ];
 
@@ -49,14 +50,28 @@ function RouteProtection({ children }) {
     const isProtectedRoute = protectedRoutes.includes(currentRoute);
     const isPublicRoute = publicRoutes.includes(currentRoute);
 
+    // 🔒 Allow payment callbacks even without auth
+    const isPaymentCallback = segments.some(segment => 
+      segment.includes('payment') || 
+      segment.includes('success') || 
+      segment.includes('cancel')
+    );
+
+    // Allow payment callbacks to proceed without redirection
+    if (isPaymentCallback) {
+      return;
+    }
+
     // 🔒 Redirect to login if accessing protected route without auth
     if (isProtectedRoute && !userToken) {
       router.replace('/login');
+      return;
     }
 
     // ✅ Redirect authenticated user away from login/signup
     if (userToken && (currentRoute === 'login' || currentRoute === 'CreateAccount')) {
       router.replace('/(tabs)/HomeScreen');
+      return;
     }
 
     // ❌ Handle unknown routes → go to 404
@@ -90,7 +105,7 @@ export default function RootLayout() {
           <Stack.Screen name="login" />
           <Stack.Screen name="ForgetPassword" />
           <Stack.Screen name="CreateAccount" />
-          <Stack.Screen name="ResetPassword" /> {/* This line is correct */}
+          <Stack.Screen name="ResetPassword" /> 
 
           {/* Protected routes */}
           <Stack.Screen name="(tabs)" />
@@ -101,6 +116,7 @@ export default function RootLayout() {
           <Stack.Screen name="PrivacyPolicyScreen" />
           <Stack.Screen name="ProductDetailPage" />
           <Stack.Screen name="ProfileDetailsScreen" />
+          <Stack.Screen name="OrderSuccessScreen"  />
           <Stack.Screen name="PaymentScreen" options={{ gestureEnabled: false }} />
 
           {/* 404 page - must be last */}
