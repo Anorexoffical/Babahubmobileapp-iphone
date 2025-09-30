@@ -1,5 +1,3 @@
-
-
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -16,7 +14,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from './contexts/AuthContext';
 
-
 const { width, height } = Dimensions.get('window');
 
 const MyOrder = () => {
@@ -27,84 +24,82 @@ const MyOrder = () => {
   const params = useLocalSearchParams();
 
   useEffect(() => {
-  const fetchOrders = async () => {
-    try {
-      if (!user?.name) {
+    const fetchOrders = async () => {
+      try {
+        if (!user?.email) {
+          setLoading(false);
+          return;
+        }
+
+        const response = await fetch(
+          `https://account.babahub.co/api/order/myorder?userEmail=${user.email}`
+        );
+
+        const data = await response.json();
+
+        if (response.ok) {
+          setOrders(data);
+        } else {
+          console.error("Failed to fetch orders:", data);
+        }
+      } catch (error) {
+        console.error("Error fetching orders:", error);
+      } finally {
         setLoading(false);
-        return;
       }
+    };
 
-      const response = await fetch(
-        `https://account.babahub.co/api/order/myorder?userName=${user.name}`
-      );
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setOrders(data);
-      } else {
-        console.error("Failed to fetch orders:", data);
-      }
-    } catch (error) {
-      console.error("Error fetching orders:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  fetchOrders();
-}, [user]);
-
+    fetchOrders();
+  }, [user]);
 
   const handleBack = () => {
-    // Check if we can go back, otherwise navigate to a default screen
     if (router.canGoBack()) {
       router.back();
     } else {
-      router.replace('/ProfileScreen'); // or whatever your default screen is
+      router.replace('/ProfileScreen');
     }
   };
 
   const renderOrder = ({ item }) => (
-  <View style={styles.card}>
-    <View style={styles.cardHeader}>
-      <View>
-        <Text style={styles.orderId}>#{item.orderID}</Text>
-        <Text style={styles.orderDate}>{formatDate(item.createdAt)}</Text>
+    <View style={styles.card}>
+      <View style={styles.cardHeader}>
+        <View>
+          <Text style={styles.orderId}>#{item.orderID}</Text>
+          <Text style={styles.orderDate}>{formatDate(item.createdAt)}</Text>
+        </View>
+        <View style={[styles.statusBadge, getStatusStyle(item.deliveryStatus)]}>
+          <View style={[styles.statusDot, getStatusDotStyle(item.deliveryStatus)]} />
+          <Text style={[styles.statusText, getStatusTextStyle(item.deliveryStatus)]}>
+            {item.deliveryStatus}
+          </Text>
+        </View>
       </View>
-      <View style={[styles.statusBadge, getStatusStyle(item.deliveryStatus)]}>
-        <View style={[styles.statusDot, getStatusDotStyle(item.deliveryStatus)]} />
-        <Text style={[styles.statusText, getStatusTextStyle(item.deliveryStatus)]}>
-          {item.deliveryStatus}
+
+      <View style={styles.divider} />
+
+      {/* Items */}
+      <View style={styles.itemsContainer}>
+        {item.items.map((product, index) => (
+          <View key={index} style={styles.itemRow}>
+            <View style={styles.bulletPoint} />
+            <Text style={styles.orderItems}>
+              {product.title} ({product.quantity} × PKR {product.price})
+            </Text>
+          </View>
+        ))}
+      </View>
+
+      <View style={styles.divider} />
+
+      {/* Total */}
+      <View style={styles.cardFooter}>
+        <Text style={styles.totalLabel}>Total Amount:</Text>
+        <Text style={styles.orderTotal}>
+          PKR {parseFloat(item.totalAmountAfterTax).toLocaleString()}
         </Text>
       </View>
     </View>
-
-    <View style={styles.divider} />
-
-    {/* Items */}
-    <View style={styles.itemsContainer}>
-      {item.items.map((product, index) => (
-        <View key={index} style={styles.itemRow}>
-          <View style={styles.bulletPoint} />
-          <Text style={styles.orderItems}>
-            {product.title} ({product.quantity} × PKR {product.price})
-          </Text>
-        </View>
-      ))}
-    </View>
-
-    <View style={styles.divider} />
-
-    {/* Total */}
-    <View style={styles.cardFooter}>
-      <Text style={styles.totalLabel}>Total Amount:</Text>
-      <Text style={styles.orderTotal}>
-        PKR {parseFloat(item.totalAmountAfterTax).toLocaleString()}
-      </Text>
-    </View>
-  </View>
-);
+  );
 
   const formatDate = (dateString) => {
     const options = { year: 'numeric', month: 'short', day: 'numeric' };
@@ -119,7 +114,6 @@ const MyOrder = () => {
         return { backgroundColor: '#e6f0ff' };
       case 'Processing':
         return { backgroundColor: '#fff4e6' };
-
       default:
         return { backgroundColor: '#f0f0f0' };
     }
@@ -133,7 +127,6 @@ const MyOrder = () => {
         return { backgroundColor: '#0984e3' };
       case 'Processing':
         return { backgroundColor: '#fdcb6e' };
-   
       default:
         return { backgroundColor: '#636e72' };
     }
