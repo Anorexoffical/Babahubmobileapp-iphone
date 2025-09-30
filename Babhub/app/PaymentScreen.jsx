@@ -1,398 +1,398 @@
-// app/screens/PaymentScreen.js
-import React, { useState, useRef, useEffect } from "react";
-import { 
-  View, 
-  ActivityIndicator, 
-  Alert, 
-  BackHandler,
-  Platform,
+import React, { useEffect, useState } from 'react';
+import {
+  View,
   Text,
+  FlatList,
+  StyleSheet,
+  ActivityIndicator,
   TouchableOpacity,
-  StyleSheet
-} from "react-native";
-import { WebView } from 'react-native-webview';
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useRouter } from 'expo-router';
+  StatusBar,
+  Dimensions,
+  ScrollView
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useAuth } from './contexts/AuthContext';
 
-const PaymentScreen = () => {
+const { width, height } = Dimensions.get('window');
+
+const MyOrder = () => {
+  const { user } = useAuth();
+  const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [paymentUrl, setPaymentUrl] = useState(null);
-  const [hasError, setHasError] = useState(false);
-  const webViewRef = useRef(null);
   const router = useRouter();
+  const params = useLocalSearchParams();
 
-  // Handle Android back button
   useEffect(() => {
-    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (paymentUrl) {
-        Alert.alert(
-          "Cancel Payment",
-          "Are you sure you want to cancel this payment?",
-          [
-            { text: "Continue Payment", style: "cancel" },
-            { 
-              text: "Cancel Payment", 
-              style: "destructive",
-              onPress: () => router.back()
-            }
-          ]
-        );
-        return true;
-      }
-      return false;
-    });
-
-    return () => backHandler.remove();
-  }, [paymentUrl, router]);
-
-  // Load payment URL
-  useEffect(() => {
-    const loadPaymentUrl = async () => {
+    const fetchOrders = async () => {
       try {
-        const storedUrl = await AsyncStorage.getItem("latestPaymentUrl");
-        console.log("Loaded PayFast URL:", storedUrl);
-
-        if (!storedUrl) {
-          Alert.alert("Error", "No payment URL found!");
-          router.back();
+        if (!user?.email) {
+          setLoading(false);
           return;
         }
 
-        setPaymentUrl(storedUrl);
+        const response = await fetch(
+          `https://account.babahub.co/api/order/myorder?userEmail=${user.email}`
+        );
+
+        const data = await response.json();
+
+        if (response.ok) {
+          setOrders(data);
+        } else {
+          console.error("Failed to fetch orders:", data);
+        }
       } catch (error) {
-        console.error("Error loading payment URL:", error);
-        Alert.alert("Error", "Failed to load payment page");
-        router.back();
+        console.error("Error fetching orders:", error);
+      } finally {
+        setLoading(false);
       }
     };
 
-    loadPaymentUrl();
-  }, [router]);
+    fetchOrders();
+  }, [user]);
 
-  // Reset error state when paymentUrl changes
-  useEffect(() => {
-    setHasError(false);
-  }, [paymentUrl]);
-
-  // Updated navigation state handler
-  const onNavigationStateChange = (navState) => {
-    const { url, title } = navState;
-    
-    console.log("Current URL:", url);
-    console.log("Page Title:", title);
-
-    // Improved URL pattern matching
-    const isSuccessUrl = 
-      url.includes('/success') || 
-      url.includes('payment/success') ||
-      url.includes('payfast/success') ||
-      (title && title.toLowerCase().includes('success')) ||
-      (title && title.toLowerCase().includes('thank you'));
-
-    const isCancelUrl = 
-      url.includes('/cancel') || 
-      url.includes('payment/cancel') ||
-      url.includes('payfast/cancel') ||
-      (title && title.toLowerCase().includes('cancel'));
-
-    // Check for success URL
-    if (isSuccessUrl) {
-      setLoading(false);
-      AsyncStorage.removeItem("latestPaymentUrl");
-      router.replace({
-        pathname: '/OrderSuccessScreen',
-        params: { paymentStatus: 'success' }
-      });
-      return;
-    }
-    
-    // Check for cancel URL
-    if (isCancelUrl) {
-      setLoading(false);
-      AsyncStorage.removeItem("latestPaymentUrl");
-      Alert.alert(
-        "Payment Cancelled", 
-        "Your payment was cancelled.",
-        [{ 
-          text: "OK", 
-          onPress: () => router.replace('/(tabs)/CartScreen') 
-        }]
-      );
-      return;
-    }
-
-    // Hide loader when page loads
-    if (!navState.loading) {
-      setLoading(false);
+  const handleBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/ProfileScreen');
     }
   };
 
-  // Handle message posting from WebView
-  const onMessage = (event) => {
-    try {
-      const data = JSON.parse(event.nativeEvent.data);
-      console.log('Message from WebView:', data);
-      
-      if (data.type === 'payment_success') {
-        AsyncStorage.removeItem("latestPaymentUrl");
-        router.replace('/OrderSuccessScreen');
-      } else if (data.type === 'payment_cancel') {
-        AsyncStorage.removeItem("latestPaymentUrl");
-        router.back();
-      }
-    } catch (error) {
-      console.log('Non-JSON message:', event.nativeEvent.data);
-    }
-  };
-
-  // Handle WebView errors
-  const onError = (syntheticEvent) => {
-    const { nativeEvent } = syntheticEvent;
-    console.error('WebView error:', nativeEvent);
-    setLoading(false);
-    setHasError(true);
-    
-    Alert.alert(
-      "Payment Error",
-      "Failed to load payment page. Please check your internet connection.",
-      [
-        { text: "Try Again", onPress: () => {
-          setHasError(false);
-          webViewRef.current?.reload();
-        }},
-        { text: "Cancel", onPress: () => router.back() }
-      ]
-    );
-  };
-
-  // Handle HTTP errors
-  const onHttpError = (syntheticEvent) => {
-    const { nativeEvent } = syntheticEvent;
-    console.error('HTTP error:', nativeEvent);
-    setHasError(true);
-    Alert.alert("Error", "Payment page not available");
-  };
-
-  // Error UI
-  if (hasError) {
-    return (
-      <View style={styles.errorContainer}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Text style={styles.backButtonText}>‹ Back</Text>
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Payment Error</Text>
-          <View style={styles.headerSpacer} />
+  const renderOrder = ({ item }) => (
+    <View style={styles.card}>
+      <View style={styles.cardHeader}>
+        <View>
+          <Text style={styles.orderId}>#{item.orderID}</Text>
+          <Text style={styles.orderDate}>{formatDate(item.createdAt)}</Text>
         </View>
-        
-        <View style={styles.errorContent}>
-          <Text style={styles.errorText}>Payment failed to load</Text>
-          <TouchableOpacity 
-            style={styles.retryButton}
-            onPress={() => {
-              setHasError(false);
-              webViewRef.current?.reload();
-            }}
-          >
-            <Text style={styles.retryText}>Retry Payment</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.backButtonError}
-            onPress={() => router.back()}
-          >
-            <Text style={styles.backText}>Go Back to Checkout</Text>
-          </TouchableOpacity>
+        <View style={[styles.statusBadge, getStatusStyle(item.deliveryStatus)]}>
+          <View style={[styles.statusDot, getStatusDotStyle(item.deliveryStatus)]} />
+          <Text style={[styles.statusText, getStatusTextStyle(item.deliveryStatus)]}>
+            {item.deliveryStatus}
+          </Text>
         </View>
       </View>
-    );
-  }
 
-  // Loader component
-  if (loading && !paymentUrl) {
+      <View style={styles.divider} />
+
+      {/* Items */}
+      <View style={styles.itemsContainer}>
+        {item.items.map((product, index) => (
+          <View key={index} style={styles.itemRow}>
+            <View style={styles.bulletPoint} />
+            <Text style={styles.orderItems}>
+              {product.title} ({product.quantity} × PKR {product.price})
+            </Text>
+          </View>
+        ))}
+      </View>
+
+      <View style={styles.divider} />
+
+      {/* Total */}
+      <View style={styles.cardFooter}>
+        <Text style={styles.totalLabel}>Total Amount:</Text>
+        <Text style={styles.orderTotal}>
+          PKR {parseFloat(item.totalAmountAfterTax).toLocaleString()}
+        </Text>
+      </View>
+    </View>
+  );
+
+  const formatDate = (dateString) => {
+    const options = { year: 'numeric', month: 'short', day: 'numeric' };
+    return new Date(dateString).toLocaleDateString(undefined, options);
+  };
+
+  const getStatusStyle = (status) => {
+    switch (status) {
+      case 'Completed':
+        return { backgroundColor: '#e6f7ee' };
+      case 'Shipped':
+        return { backgroundColor: '#e6f0ff' };
+      case 'Processing':
+        return { backgroundColor: '#fff4e6' };
+      default:
+        return { backgroundColor: '#f0f0f0' };
+    }
+  };
+
+  const getStatusDotStyle = (status) => {
+    switch (status) {
+      case 'Completed':
+        return { backgroundColor: '#00b894' };
+      case 'Shipped':
+        return { backgroundColor: '#0984e3' };
+      case 'Processing':
+        return { backgroundColor: '#fdcb6e' };
+      default:
+        return { backgroundColor: '#636e72' };
+    }
+  };
+
+  const getStatusTextStyle = (status) => {
+    switch (status) {
+      case 'Completed':
+        return { color: '#00b894' };
+      case 'Shipped':
+        return { color: '#0984e3' };
+      case 'Processing':
+        return { color: '#e17055' };
+      case 'Cancelled':
+        return { color: '#d63031' };
+      default:
+        return { color: '#636e72' };
+    }
+  };
+
+  if (loading) {
     return (
-      <View style={styles.loaderContainer}>
-        <ActivityIndicator size="large" color="#3366FF" />
+      <View style={styles.container}>
+        <StatusBar backgroundColor="#000" barStyle="light-content" />
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={handleBack}
+            style={styles.backButton}
+          >
+            <Ionicons name="arrow-back" size={24} color="white" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>My Orders</Text>
+          <View style={styles.headerSpacer} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#000" />
+          <Text style={styles.loadingText}>Loading your orders...</Text>
+        </View>
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      {/* Custom Header */}
+      <StatusBar backgroundColor="#000" barStyle="light-content" />
+      
+      {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Text style={styles.backButtonText}>‹ Back</Text>
+        <TouchableOpacity
+          onPress={handleBack}
+          style={styles.backButton}
+        >
+          <Ionicons name="arrow-back" size={24} color="white" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Secure Payment</Text>
+        <Text style={styles.headerTitle}>My Orders</Text>
         <View style={styles.headerSpacer} />
       </View>
 
-      {loading && (
-        <View style={styles.loadingBar}>
-          <ActivityIndicator size="small" color="#3366FF" />
-        </View>
-      )}
+      {/* Order Count */}
+      <View style={styles.orderCountContainer}>
+        <Text style={styles.orderCountText}>
+          {orders.length} Order{orders.length !== 1 ? 's' : ''} Found
+        </Text>
+      </View>
 
-      {/* --- UPDATED WEBVIEW --- */}
-      <WebView
-        ref={webViewRef}
-        source={{ uri: paymentUrl }}
-        style={styles.webview}
-        onLoadStart={() => setLoading(true)}
-        onLoadEnd={() => setLoading(false)}
-        onNavigationStateChange={onNavigationStateChange}
-        onError={onError}
-        onHttpError={onHttpError}
-        onMessage={onMessage}
-        allowsBackForwardNavigationGestures={true}
-        startInLoadingState={true}
-        renderLoading={() => (
-          <View style={styles.webviewLoader}>
-            <ActivityIndicator size="large" color="#3366FF" />
-            <Text style={styles.loadingText}>Loading payment gateway...</Text>
-          </View>
-        )}
-        javaScriptEnabled={true}
-        domStorageEnabled={true}
-        sharedCookiesEnabled={true}
-        thirdPartyCookiesEnabled={true}
-        injectedJavaScript={`
-          setTimeout(function() {
-            if (window.location.href.includes('/success') || 
-                window.location.href.includes('payment/success') ||
-                window.location.href.includes('payfast/success') ||
-                document.title.toLowerCase().includes('success') ||
-                document.title.toLowerCase().includes('thank you')) {
-              window.ReactNativeWebView.postMessage(JSON.stringify({type: 'payment_success'}));
-            }
-            if (window.location.href.includes('/cancel') || 
-                window.location.href.includes('payment/cancel') ||
-                window.location.href.includes('payfast/cancel') ||
-                document.title.toLowerCase().includes('cancel')) {
-              window.ReactNativeWebView.postMessage(JSON.stringify({type: 'payment_cancel'}));
-            }
-          }, 1000);
-          const originalPushState = history.pushState;
-          history.pushState = function() {
-            originalPushState.apply(this, arguments);
-            setTimeout(() => {
-              if (window.location.href.includes('/success') || 
-                  window.location.href.includes('payment/success')) {
-                window.ReactNativeWebView.postMessage(JSON.stringify({type: 'payment_success'}));
-              }
-            }, 500);
-          };
-        `}
-        userAgent={
-          Platform.OS === 'ios' 
-            ? 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1'
-            : 'Mozilla/5.0 (Linux; Android 10; SM-G973F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36'
-        }
-      />
+      {/* Orders List */}
+      {orders.length > 0 ? (
+        <FlatList
+          data={orders}
+          keyExtractor={(item) => item.id}
+          renderItem={renderOrder}
+          contentContainerStyle={styles.list}
+          showsVerticalScrollIndicator={false}
+        />
+      ) : (
+        <ScrollView contentContainerStyle={styles.emptyContainer}>
+          <Ionicons name="receipt-outline" size={width * 0.2} color="#ccc" />
+          <Text style={styles.emptyTitle}>No Orders Yet</Text>
+          <Text style={styles.emptyText}>You haven't placed any orders yet.</Text>
+          <TouchableOpacity 
+            style={styles.shopButton}
+            onPress={() => router.replace('/')}
+          >
+            <Text style={styles.shopButtonText}>Start Shopping</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      )}
     </View>
   );
 };
 
+export default MyOrder;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'white'
-  },
-  loaderContainer: {
-    flex: 1,
-    justifyContent: "center", 
-    alignItems: "center"
+    backgroundColor: '#fff',
   },
   header: {
-    height: 60,
-    backgroundColor: 'white',
+    backgroundColor: '#000',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-    zIndex: 1000,
-    paddingTop: Platform.OS === 'ios' ? 10 : 0
+    paddingTop: height * 0.06,
+    paddingHorizontal: width * 0.05,
+    paddingBottom: height * 0.02,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 4,
   },
   backButton: {
-    padding: 5
-  },
-  backButtonText: {
-    color: '#3366FF',
-    fontSize: 16,
-    fontWeight: '600'
+    padding: 4,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333'
+    fontSize: width * 0.05,
+    fontWeight: '700',
+    color: '#fff',
+    letterSpacing: 0.5,
   },
   headerSpacer: {
-    flex: 1
+    width: 24,
   },
-  loadingBar: {
-    height: 3,
-    backgroundColor: '#3366FF',
-    position: 'absolute',
-    top: 60,
-    right: 0,
-    left: 0
+  orderCountContainer: {
+    paddingHorizontal: width * 0.05,
+    paddingVertical: height * 0.02,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
   },
-  webviewLoader: {
-    flex: 1,
-    justifyContent: "center", 
-    alignItems: "center"
-  },
-  webview: {
-    flex: 1,
-    zIndex: 1000
-  },
-  loadingText: {
-    fontSize: 14,
+  orderCountText: {
+    fontSize: width * 0.04,
+    fontWeight: '600',
     color: '#666',
-    marginTop: 10
   },
-  // --- Error UI styles ---
-  errorContainer: {
+  list: {
+    paddingHorizontal: width * 0.04,
+    paddingVertical: height * 0.02,
+  },
+  card: {
+    backgroundColor: '#fff',
+    padding: width * 0.04,
+    borderRadius: 16,
+    marginBottom: height * 0.02,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 8,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: height * 0.01,
+  },
+  orderId: {
+    fontSize: width * 0.045,
+    fontWeight: '700',
+    color: '#000',
+    marginBottom: 4,
+  },
+  orderDate: {
+    fontSize: width * 0.035,
+    color: '#666',
+  },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: width * 0.03,
+    paddingVertical: height * 0.008,
+    borderRadius: 16,
+    minWidth: width * 0.22,
+    justifyContent: 'center',
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 6,
+  },
+  statusText: {
+    fontSize: width * 0.032,
+    fontWeight: '700',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#f0f0f0',
+    marginVertical: height * 0.015,
+  },
+  itemsContainer: {
+    marginBottom: height * 0.01,
+  },
+  itemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: height * 0.008,
+  },
+  bulletPoint: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#000',
+    marginRight: width * 0.02,
+  },
+  orderItems: {
+    fontSize: width * 0.038,
+    color: '#444',
     flex: 1,
-    backgroundColor: 'white'
   },
-  errorContent: {
+  cardFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  totalLabel: {
+    fontSize: width * 0.038,
+    color: '#666',
+    fontWeight: '500',
+  },
+  orderTotal: {
+    fontSize: width * 0.045,
+    fontWeight: '700',
+    color: '#000',
+  },
+  loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20
   },
-  errorText: {
-    fontSize: 18,
-    color: 'red',
-    marginBottom: 20,
-    textAlign: 'center'
+  loadingText: {
+    marginTop: height * 0.02,
+    fontSize: width * 0.04,
+    color: '#666',
   },
-  retryButton: {
-    backgroundColor: '#3366FF',
-    padding: 15,
-    borderRadius: 8,
-    width: '100%',
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 10
+    paddingHorizontal: width * 0.1,
+    paddingTop: height * 0.1,
   },
-  retryText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 16
+  emptyTitle: {
+    fontSize: width * 0.06,
+    fontWeight: '700',
+    color: '#000',
+    marginTop: height * 0.03,
+    marginBottom: height * 0.01,
   },
-  backButtonError: {
-    padding: 15,
-    width: '100%',
-    alignItems: 'center'
+  emptyText: {
+    fontSize: width * 0.04,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: height * 0.04,
   },
-  backText: {
-    color: '#3366FF',
-    fontWeight: 'bold',
-    fontSize: 16
-  }
+  shopButton: {
+    backgroundColor: '#000',
+    paddingHorizontal: width * 0.06,
+    paddingVertical: height * 0.02,
+    borderRadius: 8,
+  },
+  shopButtonText: {
+    color: '#fff',
+    fontSize: width * 0.04,
+    fontWeight: '600',
+  },
 });
-
-export default PaymentScreen;
