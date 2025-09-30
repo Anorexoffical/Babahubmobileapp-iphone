@@ -1,115 +1,142 @@
-// app/_layout.js
-import { Stack, useRouter, useSegments } from 'expo-router';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { useEffect } from 'react';
-import { View, ActivityIndicator } from 'react-native';
-import * as SplashScreen from 'expo-splash-screen';
 
-// Keep splash visible until manually hidden
-SplashScreen.preventAutoHideAsync();
+const express = require('express');
+const router = express.Router();
+const crypto = require("crypto");
+const Order = require("../Models/OrderModel.js");
 
-// ----------------------
-// Route Protection
-// ----------------------
-function RouteProtection({ children }) {
-  const { userToken, isLoading } = useAuth();
-  const segments = useSegments();
-  const router = useRouter();
 
-  useEffect(() => {
-    if (isLoading) return;
+// PayFast Payment Integration
+const generateSignature = (data, passPhrase = "") => {
+  const getString = Object.keys(data)
+    .filter(key => data[key])
+    .map(key => `${key}=${encodeURIComponent(data[key].trim()).replace(/%20/g, "+")}`)
+    .join("&") + (passPhrase ? `&passphrase=${encodeURIComponent(passPhrase.trim()).replace(/%20/g, "+")}` : "");
+  return crypto.createHash("md5").update(getString).digest("hex");
+};
 
-    // Hide splash once auth check is done
-    SplashScreen.hideAsync();
+router.post("/payfast/initiate-payment", async (req, res) => {
+  try {
+    const { name, email, phone, address, items, subtotal, tax, total, } = req.body;
+    const orderID = `${Date.now()}-${crypto.randomBytes(2).toString("hex")}`;
 
-    // Define protected routes
-    const protectedRoutes = [
-      '(tabs)', 
-      'CartScreen', 
-      'Checkout', 
-      'CustomerSupport', 
-      'MyOrder', 
-      'PrivacyPolicyScreen', 
-      'ProductDetailPage', 
-      'ProfileDetailsScreen',
-      'OrderSuccessScreen',
-      'PaymentScreen' // ADDED PaymentScreen to protected routes
-    ];
+    //for sandbox test
+    const merchant_id = "10036171";
+    const merchant_key = "731ry9o3bmz2d";
+    const return_url = "https://account.babahub.co/payment/payfast/success";
+    const cancel_url = "https://account.babahub.co/payment/payfast/cancel";
+    const notify_url = "https://account.babahub.co/payment/payfast/notifyurl";
+    // const notify_url = "https://3a31-103-137-24-132.ngrok-free.app/payfast/notifyurl";
 
-    // Define public routes
-    const publicRoutes = [
-      'index', 
-      'login', 
-      'ForgetPassword', 
-      'CreateAccount', 
-      'ResetPassword',
-      '404'
-    ];
+    console.log(items);
+    
+    const paymentData = {
+      merchant_id, merchant_key, return_url, cancel_url, notify_url,
+      name_first: name, email_address: email,
+      m_payment_id: orderID, amount: total, item_name: `OID-${orderID}`,
+      
+      custom_str1: JSON.stringify(items.map(({ id, image, ...rest }) => rest)),
+      custom_str2: JSON.stringify({ address }),
+      custom_str3: phone, 
+    };
+    console.log(paymentData);
+    paymentData.signature = generateSignature(paymentData);
+    //for sandbox testing  	https://sandbox.payfast.co.za/eng/process 
+    res.json({ paymentUrl: `https://sandbox.payfast.co.za/eng/process?${Object.keys(paymentData).map(key => `${key}=${encodeURIComponent(paymentData[key])}`).join("&")}` });
+    // res.json({ paymentUrl: `https://www.payfast.co.za/eng/process?${Object.keys(paymentData).map(key => `${key}=${encodeURIComponent(paymentData[key])}`).join("&")}` });
 
-    const currentRoute = segments[0] || 'index';
-    const isProtectedRoute = protectedRoutes.includes(currentRoute);
-    const isPublicRoute = publicRoutes.includes(currentRoute);
+  } catch (err) {
+    res.status(500).json({ error: "Error initiating payment" });
+  }
+});
 
-    // 🔒 Redirect to login if accessing protected route without auth
-    if (isProtectedRoute && !userToken) {
-      router.replace('/login');
+//fetch order data
+router.get("/get", async (req, res) => {
+  try {
+    const orders = await Order.find().sort({ createdAt: -1 });
+    res.status(200).json(orders);
+  } catch (err) {
+    res.status(500).json({ error: "Error fetching orders" });
+  }
+});
+
+// Update the delivery status
+router.put("/update-status/:id", async (req, res) => {
+  try {
+    const { status } = req.body;
+    const validStatuses = ["Processing", "Shipped", "Completed"];
+    
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ error: "Invalid status" });
     }
 
-    // ✅ Redirect authenticated user away from login/signup
-    if (userToken && (currentRoute === 'login' || currentRoute === 'CreateAccount')) {
-      router.replace('/(tabs)/HomeScreen');
-    }
-
-    // ❌ Handle unknown routes → go to 404
-    if (!isProtectedRoute && !isPublicRoute && currentRoute !== '404') {
-      router.replace('/404');
-    }
-  }, [userToken, segments, isLoading]);
-
-  // Loader while auth is being checked
-  if (isLoading) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFF' }}>
-        <ActivityIndicator size="large" color="#3366FF" />
-      </View>
+    const updatedOrder = await Order.findOneAndUpdate(
+      { orderID: req.params.id },
+      { deliveryStatus: status },
+      { new: true }
     );
+
+    if (!updatedOrder) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    res.status(200).json(updatedOrder);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to update delivery status" });
+  }
+});
+
+// for sale Report
+router.get("/searchByDate", async (req, res) => {
+  try {
+    const { fromDate, toDate, status } = req.query;
+
+    if (!fromDate || !toDate) {
+      return res.status(400).json({ message: "From and To dates are required" });
+    }
+
+
+    // Build filter
+    const filter = {
+      createdAt: {
+        $gte: new Date(fromDate),
+        $lte: new Date(toDate),
+      },
+    };
+
+    if (status && status !== "all") {
+      filter.deliveryStatus = status;
+    }
+
+    const orders = await Order.find(filter);
+
+    res.json(orders);
+  } catch (error) {
+    console.error("Error in /searchByDate:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 
-  return children;
-}
 
-// ----------------------
-// Root Layout
-// ----------------------
-export default function RootLayout() {
-  return (
-    <AuthProvider>
-      <RouteProtection>
-        <Stack screenOptions={{ headerShown: false }}>
-          {/* Public routes */}
-          <Stack.Screen name="index" />
-          <Stack.Screen name="login" />
-          <Stack.Screen name="ForgetPassword" />
-          <Stack.Screen name="CreateAccount" />
-          <Stack.Screen name="ResetPassword" /> 
 
-          {/* Protected routes */}
-          <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="CartScreen" />
-          <Stack.Screen name="Checkout" />
-          <Stack.Screen name="CustomerSupport" />
-          <Stack.Screen name="MyOrder" />
-          <Stack.Screen name="PrivacyPolicyScreen" />
-          <Stack.Screen name="ProductDetailPage" />
-          <Stack.Screen name="ProfileDetailsScreen" />
-          <Stack.Screen name="OrderSuccessScreen" />
-          <Stack.Screen name="PaymentScreen" options={{ gestureEnabled: false }} />
+});
 
-          {/* 404 page - must be last */}
-          <Stack.Screen name="404" />
-          <Stack.Screen name="[...missing]" />
-        </Stack>
-      </RouteProtection>
-    </AuthProvider>
-  );
-}
+// Get orders for a specific user
+router.get("/myorder", async (req, res) => {
+  try {
+    const { userName } = req.query;
+    console.log("the login user", userName);
+
+    const filter = {};
+    if (userName) {
+      filter.userName = userName; 
+    }
+
+    const orders = await Order.find(filter).sort({ createdAt: -1 });
+    res.status(200).json(orders);
+  } catch (err) {
+    console.error("Error fetching orders:", err);
+    res.status(500).json({ error: "Error fetching orders" });
+  }
+});
+
+
+module.exports = router;
