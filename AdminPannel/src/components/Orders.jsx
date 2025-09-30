@@ -103,8 +103,39 @@ const Orders = () => {
     switch(status) {
       case 'Completed': return 'success';
       case 'Shipped': return 'primary';
-      case 'Processing': return 'secondary';
+      case 'Processing': return 'warning';
+      case 'Pending Payment': return 'danger';
       default: return 'light';
+    }
+  };
+
+  const getStatusStyle = (status) => {
+    switch(status) {
+      case 'Completed':
+        return { 
+          backgroundColor: '#e6f7ee',
+          color: '#00b894'
+        };
+      case 'Shipped':
+        return { 
+          backgroundColor: '#e6f0ff',
+          color: '#0984e3'
+        };
+      case 'Processing':
+        return { 
+          backgroundColor: '#fff4e6',
+          color: '#e17055'
+        };
+      case 'Pending Payment':
+        return { 
+          backgroundColor: '#ffe6e6',
+          color: '#d63031'
+        };
+      default:
+        return { 
+          backgroundColor: '#f0f0f0',
+          color: '#636e72'
+        };
     }
   };
 
@@ -144,9 +175,10 @@ const Orders = () => {
                     setStatusFilter(e.target.value);
                     setCurrentPage(1);
                   }}
-                  style={{ width: '150px' }}
+                  style={{ width: '180px' }}
                 >
                   <option value="all">All Status</option>
+                  <option value="Pending Payment">Pending Payment</option>
                   <option value="Processing">Processing</option>
                   <option value="Shipped">Shipped</option>
                   <option value="Completed">Completed</option>
@@ -194,7 +226,10 @@ const Orders = () => {
                         <td>{new Date(order.createdAt).toLocaleDateString()}</td>
                         <td>${order.totalAmountAfterTax}</td>
                         <td>
-                          <Badge bg={getStatusVariant(order.deliveryStatus)}>
+                          <Badge 
+                            style={getStatusStyle(order.deliveryStatus)}
+                            className="status-badge-custom"
+                          >
                             {order.deliveryStatus}
                           </Badge>
                         </td>
@@ -223,6 +258,15 @@ const Orders = () => {
                               onClick={() => handleUpdateStatus(order.orderID, 'Completed')}
                             >
                               Complete
+                            </Button>
+                          )}
+                          {order.deliveryStatus === 'Pending Payment' && (
+                            <Button 
+                              variant="outline-warning" 
+                              size="sm" 
+                              onClick={() => handleUpdateStatus(order.orderID, 'Processing')}
+                            >
+                              Process
                             </Button>
                           )}
                         </td>
@@ -300,7 +344,10 @@ const Orders = () => {
                       <Card.Body>
                         <p><strong>Date:</strong> {new Date(selectedOrder.createdAt).toLocaleDateString()}</p>
                         <p><strong>Status:</strong> 
-                          <Badge bg={getStatusVariant(selectedOrder.deliveryStatus)} className="ms-2">
+                          <Badge 
+                            style={getStatusStyle(selectedOrder.deliveryStatus)}
+                            className="status-badge-custom ms-2"
+                          >
                             {selectedOrder.deliveryStatus}
                           </Badge>
                         </p>
@@ -365,6 +412,14 @@ const Orders = () => {
                     handleCloseDetails();
                   }}>
                     <FiCheckCircle className="me-1" /> Mark as Completed
+                  </Button>
+                )}
+                {selectedOrder.deliveryStatus === 'Pending Payment' && (
+                  <Button variant="warning" onClick={() => {
+                    handleUpdateStatus(selectedOrder.orderID, 'Processing');
+                    handleCloseDetails();
+                  }}>
+                    <FiCheckCircle className="me-1" /> Mark as Processing
                   </Button>
                 )}
               </Modal.Footer>

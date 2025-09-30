@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from "react";
-import { FiSearch, FiUser, FiMail, FiChevronLeft, FiChevronRight } from "react-icons/fi";
+import { FiSearch, FiUser, FiMail, FiCalendar, FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import Topbar from "./Topbar";
 import axios from "axios";
 import "../Style/CustomerRecords.css";
@@ -27,13 +26,14 @@ const CustomerRecords = () => {
     fetchCustomers();
   }, []);
 
-  // Filter + pagination
+  // Filter customers based on search term
   const filteredCustomers = customers.filter(
     (customer) =>
-      customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.email.toLowerCase().includes(searchTerm.toLowerCase())
+      customer.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      customer.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Pagination
   const indexOfLastCustomer = currentPage * customersPerPage;
   const indexOfFirstCustomer = indexOfLastCustomer - customersPerPage;
   const currentCustomers = filteredCustomers.slice(indexOfFirstCustomer, indexOfLastCustomer);
@@ -62,8 +62,20 @@ const CustomerRecords = () => {
                       setSearchTerm(e.target.value);
                       setCurrentPage(1);
                     }}
-                    placeholder="Search customers..."
+                    placeholder="Search by name or email..."
                   />
+                </div>
+              </div>
+            </div>
+
+            {/* Search Results Info */}
+            <div className="row mt-2">
+              <div className="col-12">
+                <div className="search-results-info">
+                  <span className="text-muted">
+                    {filteredCustomers.length} customer{filteredCustomers.length !== 1 ? 's' : ''} found
+                    {searchTerm && ` for "${searchTerm}"`}
+                  </span>
                 </div>
               </div>
             </div>
@@ -88,7 +100,12 @@ const CustomerRecords = () => {
                   <tbody>
                     {loading ? (
                       <tr>
-                        <td colSpan="4">Loading...</td>
+                        <td colSpan="5" className="text-center py-4">
+                          <div className="spinner-border text-primary" role="status">
+                            <span className="visually-hidden">Loading...</span>
+                          </div>
+                          <p className="mt-2">Loading customers...</p>
+                        </td>
                       </tr>
                     ) : currentCustomers.length > 0 ? (
                       currentCustomers.map((customer) => (
@@ -96,16 +113,10 @@ const CustomerRecords = () => {
                           <td>
                             <div className="customer-info">
                               <div className="avatar">
-                                <FiUser size={24} />
+                                <FiUser size={20} />
                               </div>
-                              <strong>{customer.name}</strong>
-                            </div>
-                          </td>
-                          <td>
-                            <div className="contact-info">
-                              <div className="contact-item">
-                                <FiMail className="icon" />
-                                <span>{customer.email}</span>
+                              <div>
+                                <strong>{customer.name || 'N/A'}</strong>
                               </div>
                             </div>
                           </td>
@@ -113,23 +124,43 @@ const CustomerRecords = () => {
                             <div className="contact-info">
                               <div className="contact-item">
                                 <FiMail className="icon" />
-                                <span>{customer.dob}</span>
+                                <span>{customer.email || 'N/A'}</span>
                               </div>
                             </div>
                           </td>
                           <td>
-                            <span className="status-badge active">active</span>
+                            <div className="contact-info">
+                              <div className="contact-item">
+                                <FiCalendar className="icon" />
+                                <span>{customer.dob ? new Date(customer.dob).toLocaleDateString() : 'N/A'}</span>
+                              </div>
+                            </div>
                           </td>
-                          <td>{new Date(customer.createdAt).toLocaleDateString()}</td>
+                          <td>
+                            <span className="status-badge active">Active</span>
+                          </td>
+                          <td>
+                            <div className="contact-info">
+                              <div className="contact-item">
+                                <FiCalendar className="icon" />
+                                <span>{customer.createdAt ? new Date(customer.createdAt).toLocaleDateString() : 'N/A'}</span>
+                              </div>
+                            </div>
+                          </td>
                         </tr>
                       ))
                     ) : (
                       <tr className="no-results">
-                        <td colSpan="4">
+                        <td colSpan="5">
                           <div className="empty-state">
-                            <FiSearch size={48} />
+                            <FiSearch size={48} className="text-muted mb-3" />
                             <h5>No customers found</h5>
-                            <p>Try adjusting your search</p>
+                            <p className="text-muted">
+                              {searchTerm 
+                                ? `No customers found for "${searchTerm}". Try a different search term.`
+                                : 'No customers available.'
+                              }
+                            </p>
                           </div>
                         </td>
                       </tr>
@@ -142,7 +173,12 @@ const CustomerRecords = () => {
 
           {/* Pagination */}
           {filteredCustomers.length > 0 && (
-            <div className="d-flex justify-content-center mt-4">
+            <div className="d-flex justify-content-between align-items-center mt-4">
+              <div className="pagination-info">
+                <span className="text-muted">
+                  Showing {indexOfFirstCustomer + 1} to {Math.min(indexOfLastCustomer, filteredCustomers.length)} of {filteredCustomers.length} customers
+                </span>
+              </div>
               <nav>
                 <ul className="pagination">
                   <li className={`page-item ${currentPage === 1 ? "disabled" : ""}`}>

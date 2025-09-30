@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   FiSearch,
-  FiPlus, // Added FiPlus import
+  FiPlus,
   FiChevronLeft,
   FiChevronRight,
   FiMoreHorizontal,
@@ -27,6 +27,8 @@ const ProductTable = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [stockFilter, setStockFilter] = useState('all');
   const [editingProduct, setEditingProduct] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     fetchProducts();
@@ -40,10 +42,15 @@ const ProductTable = () => {
 
   const fetchProducts = async () => {
     try {
-
+      setLoading(true);
+      setError('');
+      const res = await axios.get('https://account.babahub.co/api/products');
       setProducts(res.data);
     } catch (err) {
       console.error('Failed to fetch products:', err);
+      setError('Failed to load products. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -59,6 +66,7 @@ const ProductTable = () => {
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
       console.error('Error adding product:', err);
+      setError('Failed to add product. Please try again.');
     }
     setIsSubmitting(false);
   };
@@ -74,13 +82,15 @@ const ProductTable = () => {
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
       console.error('Error updating product:', err);
+      setError('Failed to update product. Please try again.');
     }
     setIsSubmitting(false);
   };
 
   const calculateTotalStock = (variants) => {
+    if (!variants || !Array.isArray(variants)) return 0;
     return variants.reduce((total, v) =>
-      total + v.sizes.reduce((sum, s) => sum + s.stock, 0), 0);
+      total + (v.sizes ? v.sizes.reduce((sum, s) => sum + (s.stock || 0), 0) : 0), 0);
   };
 
   const getProductStatus = (variants) => {
@@ -98,10 +108,12 @@ const ProductTable = () => {
   };
 
   const filteredProducts = products.filter(product => {
+    if (!product) return false;
+    
     const matchesSearch = 
-      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.category.toLowerCase().includes(searchTerm.toLowerCase());
+      (product.name && product.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (product.brand && product.brand.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (product.category && product.category.toLowerCase().includes(searchTerm.toLowerCase()));
     
     const status = getProductStatus(product.variants);
     let matchesStock = true;
@@ -148,6 +160,12 @@ const ProductTable = () => {
         {successMessage && (
           <Alert variant="success" onClose={() => setSuccessMessage('')} dismissible className="fade-in">
             {successMessage}
+          </Alert>
+        )}
+
+        {error && (
+          <Alert variant="danger" onClose={() => setError('')} dismissible className="fade-in">
+            {error}
           </Alert>
         )}
 
@@ -213,14 +231,14 @@ const ProductTable = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {selectedProduct.variants.map((variant, vIdx) =>
-                        variant.sizes.map((size, sIdx) => (
+                      {selectedProduct.variants && selectedProduct.variants.map((variant, vIdx) =>
+                        variant.sizes && variant.sizes.map((size, sIdx) => (
                           <tr key={`${vIdx}-${sIdx}`}>
                             <td>
                               <div className="d-flex align-items-center gap-2">
                                 <span
                                   className="color-dot"
-                                  style={{ backgroundColor: variant.colorCode }}
+                                  style={{ backgroundColor: variant.colorCode || '#ccc' }}
                                 ></span>
                                 {variant.color}
                               </div>
@@ -231,7 +249,7 @@ const ProductTable = () => {
                                 {size.stock}
                               </Badge>
                             </td>
-                            <td className="fw-bold">${size.price.toFixed(2)}</td>
+                            <td className="fw-bold">${size.price ? size.price.toFixed(2) : '0.00'}</td>
                           </tr>
                         ))
                       )}
@@ -343,88 +361,97 @@ const ProductTable = () => {
         <div className="container-fluid mt-4">
           <div className="card">
             <div className="card-body p-0">
-              <div className="table-responsive">
-                <Table hover className="products-table mb-0">
-                  <thead>
-                    <tr>
-                      <th>Product</th>
-                      <th>Status</th>
-                      <th className="d-none d-md-table-cell">Stock</th>
-                      <th className="d-none d-lg-table-cell">Brand</th>
-                      <th className="d-none d-lg-table-cell">Category</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {currentProducts.length > 0 ? (
-                      currentProducts.map(product => (
-                        <tr key={product._id} className="align-middle">
-                          <td>
-                            <div className="d-flex flex-column">
-                              <strong className="product-name">{product.name}</strong>
-                              <small className="text-muted">
-                                {product.description ? product.description.substring(0, 50) : ''}
-                              </small>
-                            </div>
-                          </td>
-                          <td>
-                            <Badge bg={getStatusVariant(product.variants)} className="fs-6">
-                              {getProductStatus(product.variants)}
-                            </Badge>
-                          </td>
-                          <td className="d-none d-md-table-cell">
-                            <div className="d-flex align-items-center gap-2">
-                              <span>{calculateTotalStock(product.variants)}</span>
-                              {product.variants.length > 1 && (
-                                <span className="text-muted small">({product.variants.length} variants)</span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="d-none d-lg-table-cell">{product.brand}</td>
-                          <td className="d-none d-lg-table-cell">{product.category}</td>
-                          <td>
-                            <div className="d-flex gap-2">
-                              <Button 
-                                variant="outline-primary" 
-                                size="sm" 
-                                onClick={() => openDetailsModal(product)}
-                                className="d-flex align-items-center gap-1"
-                              >
-                                <FiMoreHorizontal /> Details
-                              </Button>
-                              <Button 
-                                variant="outline-success" 
-                                size="sm" 
-                                onClick={() => openEditModal(product)}
-                                className="d-flex align-items-center gap-1"
-                              >
-                                <FiEdit /> Update
+              {loading ? (
+                <div className="text-center py-5">
+                  <div className="spinner-border text-primary" role="status">
+                    <span className="visually-hidden">Loading...</span>
+                  </div>
+                  <p className="mt-3">Loading products...</p>
+                </div>
+              ) : (
+                <div className="table-responsive">
+                  <Table hover className="products-table mb-0">
+                    <thead>
+                      <tr>
+                        <th>Product</th>
+                        <th>Status</th>
+                        <th className="d-none d-md-table-cell">Stock</th>
+                        <th className="d-none d-lg-table-cell">Brand</th>
+                        <th className="d-none d-lg-table-cell">Category</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {currentProducts.length > 0 ? (
+                        currentProducts.map(product => (
+                          <tr key={product._id} className="align-middle">
+                            <td>
+                              <div className="d-flex flex-column">
+                                <strong className="product-name">{product.name}</strong>
+                                <small className="text-muted">
+                                  {product.description ? product.description.substring(0, 50) + '...' : 'No description'}
+                                </small>
+                              </div>
+                            </td>
+                            <td>
+                              <Badge bg={getStatusVariant(product.variants)} className="fs-6">
+                                {getProductStatus(product.variants)}
+                              </Badge>
+                            </td>
+                            <td className="d-none d-md-table-cell">
+                              <div className="d-flex align-items-center gap-2">
+                                <span>{calculateTotalStock(product.variants)}</span>
+                                {product.variants && product.variants.length > 1 && (
+                                  <span className="text-muted small">({product.variants.length} variants)</span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="d-none d-lg-table-cell">{product.brand}</td>
+                            <td className="d-none d-lg-table-cell">{product.category}</td>
+                            <td>
+                              <div className="d-flex gap-2">
+                                <Button 
+                                  variant="outline-primary" 
+                                  size="sm" 
+                                  onClick={() => openDetailsModal(product)}
+                                  className="d-flex align-items-center gap-1"
+                                >
+                                  <FiMoreHorizontal /> Details
+                                </Button>
+                                <Button 
+                                  variant="outline-success" 
+                                  size="sm" 
+                                  onClick={() => openEditModal(product)}
+                                  className="d-flex align-items-center gap-1"
+                                >
+                                  <FiEdit /> Update
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan="6" className="text-center py-4">
+                            <div className="py-3">
+                              <FiSearch size={48} className="text-muted mb-3" />
+                              <h5>No products found</h5>
+                              <p className="text-muted">Try adjusting your search or add a new product</p>
+                              <Button variant="primary" onClick={() => setShowAddModal(true)}>
+                                <FiPlus className="me-1" /> Add Product
                               </Button>
                             </div>
                           </td>
                         </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan="6" className="text-center py-4">
-                          <div className="py-3">
-                            <FiSearch size={48} className="text-muted mb-3" />
-                            <h5>No products found</h5>
-                            <p className="text-muted">Try adjusting your search or add a new product</p>
-                            <Button variant="primary" onClick={() => setShowAddModal(true)}>
-                              <FiPlus className="me-1" /> Add Product
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </Table>
-              </div>
+                      )}
+                    </tbody>
+                  </Table>
+                </div>
+              )}
             </div>
           </div>
 
-          {filteredProducts.length > 0 && (
+          {filteredProducts.length > 0 && !loading && (
             <div className="d-flex justify-content-center mt-4">
               <nav>
                 <ul className="pagination">

@@ -96,14 +96,75 @@
   font-weight: 600;
 }
 
-.status-badge {
+/* Custom status badges matching React Native app */
+.status-badge-custom {
   text-transform: capitalize;
-  font-weight: 500;
-  border-radius: 14px !important;
-  padding: 0.35em 1em;
-  font-size: 0.97em;
+  font-weight: 600;
+  border-radius: 16px !important;
+  padding: 0.4em 1em;
+  font-size: 0.85em;
   letter-spacing: 0.02em;
+  display: inline-flex;
+  align-items: center;
+  border: none;
+  min-width: 100px;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Status dot for badges */
+.status-badge-custom::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
   display: inline-block;
+}
+
+/* Completed Status - Green */
+.status-badge-custom[style*="background-color: #e6f7ee"] {
+  background-color: #e6f7ee !important;
+  color: #00b894 !important;
+}
+.status-badge-custom[style*="background-color: #e6f7ee"]::before {
+  background-color: #00b894;
+}
+
+/* Shipped Status - Blue */
+.status-badge-custom[style*="background-color: #e6f0ff"] {
+  background-color: #e6f0ff !important;
+  color: #0984e3 !important;
+}
+.status-badge-custom[style*="background-color: #e6f0ff"]::before {
+  background-color: #0984e3;
+}
+
+/* Processing Status - Orange/Yellow */
+.status-badge-custom[style*="background-color: #fff4e6"] {
+  background-color: #fff4e6 !important;
+  color: #e17055 !important;
+}
+.status-badge-custom[style*="background-color: #fff4e6"]::before {
+  background-color: #e17055;
+}
+
+/* Pending Payment Status - Red */
+.status-badge-custom[style*="background-color: #ffe6e6"] {
+  background-color: #ffe6e6 !important;
+  color: #d63031 !important;
+}
+.status-badge-custom[style*="background-color: #ffe6e6"]::before {
+  background-color: #d63031;
+}
+
+/* Default Status */
+.status-badge-custom[style*="background-color: #f0f0f0"] {
+  background-color: #f0f0f0 !important;
+  color: #636e72 !important;
+}
+.status-badge-custom[style*="background-color: #f0f0f0"]::before {
+  background-color: #636e72;
 }
 
 .modal-content {
@@ -185,6 +246,11 @@
   color: #fff;
 }
 
+.order-action-btn.pending {
+  background: linear-gradient(90deg, #dc2626 0%, #ef4444 100%);
+  color: #fff;
+}
+
 .order-action-btn:hover, .order-action-btn:focus {
   transform: translateY(-2px) scale(1.03);
   box-shadow: 0 4px 16px rgba(0,13,255,0.13);
@@ -242,6 +308,12 @@
   .modal-dialog {
     margin: 10px;
   }
+  
+  .status-badge-custom {
+    min-width: 80px;
+    font-size: 0.75em;
+    padding: 0.3em 0.8em;
+  }
 }
 
 /* Animation for modal */
@@ -250,7 +322,7 @@
   transition: opacity 0.3s ease;
 }
 
-/* Custom badge colors */
+/* Custom badge colors for Bootstrap variants */
 .bg-success {
   background-color: #10b981 !important;
 }
@@ -263,6 +335,16 @@
   background-color: #f59e0b !important;
 }
 
+.bg-danger {
+  background-color: #dc2626 !important;
+}
+
 .bg-secondary {
   background-color: #6b7280 !important;
+}
+
+/* Filter dropdown styling */
+.form-select:focus {
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 0.2rem rgba(79, 70, 229, 0.25);
 }
