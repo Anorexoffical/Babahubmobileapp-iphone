@@ -1,4 +1,4 @@
-/* ProductTable.css - Updated */
+/* ProductTable.css */
 .product-dashboard {
   min-height: 100vh;
   width: 90vw;
@@ -90,57 +90,75 @@
   box-shadow: 0 4px 8px rgba(107, 115, 255, 0.3);
 }
 
-/* Enhanced Status Count Cards - Transparent Design */
-.status-count-card {
+/* Enhanced Stats Cards - Consistent with Dashboard */
+.stat-card {
+  background: rgba(255,255,255,0.13);
   border-radius: 1.25rem;
   padding: 2rem 1.5rem;
-  position: relative;
-  overflow: hidden;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.07);
-  transition: all 0.3s ease;
-  min-height: 120px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.07);
   display: flex;
-  flex-direction: column;
-  justify-content: center;
-  border: 1.5px solid rgba(255, 255, 255, 0.18);
+  align-items: center;
+  gap: 1.25rem;
+  min-height: 120px;
+  transition: transform 0.15s, box-shadow 0.15s;
+  border: 1.5px solid rgba(255,255,255,0.18);
   backdrop-filter: blur(6px);
-  background: rgba(255, 255, 255, 0.13);
-}
-
-.status-count-card:hover {
-  transform: translateY(-4px) scale(1.03);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
-}
-
-.status-count-card::before {
-  content: '';
-  position: absolute;
-  top: -50%;
-  right: -50%;
   width: 100%;
-  height: 100%;
-  background: rgba(255, 255, 255, 0.1);
-  transform: rotate(30deg);
-  transition: all 0.3s ease;
 }
 
-.status-count-card:hover::before {
-  transform: rotate(45deg) scale(1.2);
+.stat-card:hover {
+  transform: translateY(-4px) scale(1.03);
+  box-shadow: 0 8px 32px rgba(0,13,255,0.18);
 }
 
-.status-count-value {
+.stat-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  font-size: 1.5rem;
+  margin-right: 0.5rem;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  flex-shrink: 0;
+}
+
+.stat-icon-total {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+}
+.stat-icon-in-stock {
+  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+  color: #fff;
+}
+.stat-icon-low-stock {
+  background: linear-gradient(135deg, #ffd89b 0%, #19547b 100%);
+  color: #fff;
+}
+.stat-icon-out-of-stock {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color: #fff;
+}
+
+.stat-value {
   font-size: 2rem;
   font-weight: 700;
+  color: #fff;
   margin-bottom: 0.25rem;
-  color: #333;
+  line-height: 1;
 }
 
-.status-count-label {
-  font-size: 0.85rem;
-  opacity: 0.9;
+.stat-label {
+  font-size: 1rem;
+  color: #e0e7ff;
+  letter-spacing: 0.5px;
   font-weight: 500;
-  margin-bottom: 0.5rem;
-  color: #666;
+}
+
+.stat-content {
+  display: flex;
+  flex-direction: column;
 }
 
 /* Enhanced Status Badges */
@@ -173,26 +191,6 @@
 .status-badge-custom:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-
-.stat-card {
-  background-color: rgba(255, 255, 255, 0.9);
-  border-radius: 8px;
-  padding: 1rem;
-  height: 100%;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-.stat-value {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #1e40af;
-  margin-bottom: 0.25rem;
-}
-
-.stat-label {
-  font-size: 0.85rem;
-  color: #64748b;
 }
 
 .products-table th {
@@ -234,6 +232,13 @@
   align-items: center;
   gap: 0.25rem;
   color: #6b73ff;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.page-link:hover {
+  background-color: rgba(107, 115, 255, 0.1);
+  border-color: #6b73ff;
 }
 
 .container-fluid {
@@ -323,15 +328,6 @@
   color: white;
 }
 
-/* Remove old stock filter tabs */
-.stock-filter-tabs {
-  display: none;
-}
-
-.filter-tab {
-  display: none;
-}
-
 /* Enhanced Search Container */
 .search-container {
   position: relative;
@@ -406,15 +402,6 @@
   align-items: center;
 }
 
-/* REMOVED: hidden-actions class since we want Update button always visible */
-/* .action-buttons-container.hidden-actions {
-  justify-content: flex-start;
-}
-
-.action-buttons-container.hidden-actions .btn:not(.details-btn) {
-  display: none !important;
-} */
-
 /* Fade in animation for alerts */
 .fade-in {
   animation: fadeIn 0.3s ease-in-out;
@@ -487,25 +474,13 @@
 .page-link {
   border-radius: 6px;
   margin: 0 2px;
-  border: 1px solid rgba(0, 0, 0, 0.1);
   transition: all 0.2s;
-  background: rgba(255, 255, 255, 0.9);
-}
-
-.page-link:hover {
-  background-color: rgba(107, 115, 255, 0.1);
-  border-color: #6b73ff;
-}
-
-.page-item.active .page-link {
-  background-color: #6b73ff;
-  border-color: #6b73ff;
 }
 
 /* Better responsive behavior */
 @media (max-width: 768px) {
   .search-input-custom {
-    font-size: 16px; /* Prevents zoom on iOS */
+    font-size: 16px;
   }
   
   .search-results-info {
@@ -537,18 +512,25 @@
     justify-content: center;
   }
 
-  /* Responsive status count cards */
-  .status-count-card {
-    padding: 1rem;
+  /* Responsive stat cards */
+  .stat-card {
+    padding: 1.5rem 1rem;
     min-height: 100px;
+    gap: 1rem;
   }
   
-  .status-count-value {
-    font-size: 1.5rem;
+  .stat-icon {
+    width: 45px;
+    height: 45px;
+    font-size: 1.25rem;
   }
   
-  .status-count-label {
-    font-size: 0.8rem;
+  .stat-value {
+    font-size: 1.75rem;
+  }
+  
+  .stat-label {
+    font-size: 0.9rem;
   }
 }
 
@@ -589,30 +571,29 @@
   }
   
   .stat-card {
-    padding: 0.75rem;
+    padding: 1.2rem 0.75rem;
+    min-height: 90px;
+    gap: 0.75rem;
+  }
+  
+  .stat-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 1rem;
   }
   
   .stat-value {
-    font-size: 1.25rem;
+    font-size: 1.5rem;
+  }
+  
+  .stat-label {
+    font-size: 0.8rem;
   }
   
   .status-badge-custom {
     min-width: 80px;
     font-size: 0.65rem;
     padding: 0.2rem 0.4rem;
-  }
-
-  .status-count-card {
-    min-height: 90px;
-    padding: 0.75rem;
-  }
-  
-  .status-count-value {
-    font-size: 1.25rem;
-  }
-  
-  .status-count-label {
-    font-size: 0.75rem;
   }
 }
 
@@ -653,6 +634,11 @@
   animation: fadeInUp 0.6s ease-out;
 }
 
-.status-count-card {
+.stat-card {
   animation: fadeInUp 0.8s ease-out;
 }
+
+.stat-card:nth-child(1) { animation-delay: 0.1s; }
+.stat-card:nth-child(2) { animation-delay: 0.2s; }
+.stat-card:nth-child(3) { animation-delay: 0.3s; }
+.stat-card:nth-child(4) { animation-delay: 0.4s; }

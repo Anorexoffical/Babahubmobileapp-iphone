@@ -6,7 +6,11 @@ import {
   FiChevronRight,
   FiMoreHorizontal,
   FiEdit,
-  FiFilter
+  FiFilter,
+  FiPackage,
+  FiCheckCircle,
+  FiAlertTriangle,
+  FiXCircle
 } from 'react-icons/fi';
 import { Modal, Button, Table, Badge, Alert, Form, Dropdown } from 'react-bootstrap';
 import AddProduct from './AddProduct.jsx';
@@ -101,7 +105,6 @@ const ProductTable = () => {
     return 'In Stock';
   };
 
-  // Enhanced status styling with proper backgrounds
   const getStatusStyle = (variants) => {
     const status = getProductStatus(variants);
     
@@ -147,8 +150,6 @@ const ProductTable = () => {
         return { backgroundColor: '#636e72' };
     }
   };
-
-  // REMOVED: shouldShowActionButtons function since we always want Update button
 
   const filteredProducts = products.filter(product => {
     if (!product) return false;
@@ -202,16 +203,6 @@ const ProductTable = () => {
       case 'out': return 'Out of Stock';
       default: return 'All Products';
     }
-  };
-
-  // Status count cards styling (transparent design)
-  const getStatusCardStyle = (type) => {
-    return { 
-      background: 'rgba(255, 255, 255, 0.13)',
-      color: '#333',
-      border: '1.5px solid rgba(255, 255, 255, 0.18)',
-      backdropFilter: 'blur(6px)'
-    };
   };
 
   return (
@@ -417,36 +408,56 @@ const ProductTable = () => {
               </div>
             </div>
             
-            {/* Enhanced Status Count Cards - Transparent Design */}
+            {/* Enhanced Stats Cards - Consistent with Dashboard Design */}
             <div className="row g-3 mt-2">
               <div className="col-6 col-md-3">
-                <div className="status-count-card" style={getStatusCardStyle('total')}>
-                  <div className="status-count-value">{products.length}</div>
-                  <div className="status-count-label">Total Products</div>
+                <div className="stat-card">
+                  <div className="stat-icon stat-icon-total">
+                    <FiPackage />
+                  </div>
+                  <div className="stat-content">
+                    <div className="stat-value">{products.length}</div>
+                    <div className="stat-label">Total Products</div>
+                  </div>
                 </div>
               </div>
               <div className="col-6 col-md-3">
-                <div className="status-count-card" style={getStatusCardStyle('in-stock')}>
-                  <div className="status-count-value">
-                    {products.filter(p => getProductStatus(p.variants) === 'In Stock').length}
+                <div className="stat-card">
+                  <div className="stat-icon stat-icon-in-stock">
+                    <FiCheckCircle />
                   </div>
-                  <div className="status-count-label">In Stock</div>
+                  <div className="stat-content">
+                    <div className="stat-value">
+                      {products.filter(p => getProductStatus(p.variants) === 'In Stock').length}
+                    </div>
+                    <div className="stat-label">In Stock</div>
+                  </div>
                 </div>
               </div>
               <div className="col-6 col-md-3">
-                <div className="status-count-card" style={getStatusCardStyle('low-stock')}>
-                  <div className="status-count-value">
-                    {products.filter(p => getProductStatus(p.variants) === 'Low Stock').length}
+                <div className="stat-card">
+                  <div className="stat-icon stat-icon-low-stock">
+                    <FiAlertTriangle />
                   </div>
-                  <div className="status-count-label">Low Stock</div>
+                  <div className="stat-content">
+                    <div className="stat-value">
+                      {products.filter(p => getProductStatus(p.variants) === 'Low Stock').length}
+                    </div>
+                    <div className="stat-label">Low Stock</div>
+                  </div>
                 </div>
               </div>
               <div className="col-6 col-md-3">
-                <div className="status-count-card" style={getStatusCardStyle('out-of-stock')}>
-                  <div className="status-count-value">
-                    {products.filter(p => getProductStatus(p.variants) === 'Out of Stock').length}
+                <div className="stat-card">
+                  <div className="stat-icon stat-icon-out-of-stock">
+                    <FiXCircle />
                   </div>
-                  <div className="status-count-label">Out of Stock</div>
+                  <div className="stat-content">
+                    <div className="stat-value">
+                      {products.filter(p => getProductStatus(p.variants) === 'Out of Stock').length}
+                    </div>
+                    <div className="stat-label">Out of Stock</div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -520,7 +531,6 @@ const ProductTable = () => {
                                 >
                                   <FiMoreHorizontal /> Details
                                 </Button>
-                                {/* Update button is now always visible - removed conditional rendering */}
                                 <Button 
                                   variant="outline-success" 
                                   size="sm" 
