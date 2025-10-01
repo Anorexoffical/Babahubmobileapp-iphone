@@ -101,34 +101,34 @@ const ProductTable = () => {
     return 'In Stock';
   };
 
-  // Enhanced status styling with soft colors
+  // Enhanced status styling with proper backgrounds
   const getStatusStyle = (variants) => {
     const status = getProductStatus(variants);
     
     switch (status) {
       case 'In Stock':
         return { 
-          backgroundColor: '#f0f9f0',
-          color: '#2e8b57',
-          borderColor: '#2e8b57'
+          backgroundColor: '#e6f7ee',
+          color: '#00b894',
+          borderColor: '#00b894'
         };
       case 'Low Stock':
         return { 
-          backgroundColor: '#fff9f0',
-          color: '#ff8c00',
-          borderColor: '#ff8c00'
+          backgroundColor: '#fff4e6',
+          color: '#e17055',
+          borderColor: '#fdcb6e'
         };
       case 'Out of Stock':
         return { 
-          backgroundColor: '#fff0f0',
-          color: '#dc3545',
-          borderColor: '#dc3545'
+          backgroundColor: '#ffe6e6',
+          color: '#d63031',
+          borderColor: '#d63031'
         };
       default:
         return { 
-          backgroundColor: '#f8f9fa',
-          color: '#6c757d',
-          borderColor: '#6c757d'
+          backgroundColor: '#f0f0f0',
+          color: '#636e72',
+          borderColor: '#636e72'
         };
     }
   };
@@ -138,15 +138,17 @@ const ProductTable = () => {
     
     switch (status) {
       case 'In Stock':
-        return { backgroundColor: '#2e8b57' };
+        return { backgroundColor: '#00b894' };
       case 'Low Stock':
-        return { backgroundColor: '#ff8c00' };
+        return { backgroundColor: '#fdcb6e' };
       case 'Out of Stock':
-        return { backgroundColor: '#dc3545' };
+        return { backgroundColor: '#d63031' };
       default:
-        return { backgroundColor: '#6c757d' };
+        return { backgroundColor: '#636e72' };
     }
   };
+
+  // REMOVED: shouldShowActionButtons function since we always want Update button
 
   const filteredProducts = products.filter(product => {
     if (!product) return false;
@@ -202,40 +204,14 @@ const ProductTable = () => {
     }
   };
 
-  // Premium status count cards styling with soft colors
+  // Status count cards styling (transparent design)
   const getStatusCardStyle = (type) => {
-    switch(type) {
-      case 'total':
-        return { 
-          background: 'linear-gradient(135deg, rgba(107, 115, 255, 0.1) 0%, rgba(0, 13, 255, 0.1) 100%)',
-          color: '#6b73ff',
-          border: '1px solid rgba(107, 115, 255, 0.2)'
-        };
-      case 'in-stock':
-        return { 
-          background: 'linear-gradient(135deg, rgba(46, 139, 87, 0.1) 0%, rgba(144, 238, 144, 0.1) 100%)',
-          color: '#2e8b57',
-          border: '1px solid rgba(46, 139, 87, 0.2)'
-        };
-      case 'low-stock':
-        return { 
-          background: 'linear-gradient(135deg, rgba(255, 140, 0, 0.1) 0%, rgba(255, 215, 0, 0.1) 100%)',
-          color: '#ff8c00',
-          border: '1px solid rgba(255, 140, 0, 0.2)'
-        };
-      case 'out-of-stock':
-        return { 
-          background: 'linear-gradient(135deg, rgba(220, 53, 69, 0.1) 0%, rgba(255, 182, 193, 0.1) 100%)',
-          color: '#dc3545',
-          border: '1px solid rgba(220, 53, 69, 0.2)'
-        };
-      default:
-        return { 
-          background: 'linear-gradient(135deg, rgba(107, 115, 255, 0.1) 0%, rgba(0, 13, 255, 0.1) 100%)',
-          color: '#6b73ff',
-          border: '1px solid rgba(107, 115, 255, 0.2)'
-        };
-    }
+    return { 
+      background: 'rgba(255, 255, 255, 0.13)',
+      color: '#333',
+      border: '1.5px solid rgba(255, 255, 255, 0.18)',
+      backdropFilter: 'blur(6px)'
+    };
   };
 
   return (
@@ -441,7 +417,7 @@ const ProductTable = () => {
               </div>
             </div>
             
-            {/* Enhanced Status Count Cards */}
+            {/* Enhanced Status Count Cards - Transparent Design */}
             <div className="row g-3 mt-2">
               <div className="col-6 col-md-3">
                 <div className="status-count-card" style={getStatusCardStyle('total')}>
@@ -478,7 +454,7 @@ const ProductTable = () => {
         </div>
 
         <div className="container-fluid mt-4">
-          <div className="card premium-card">
+          <div className="card">
             <div className="card-body p-0">
               {loading ? (
                 <div className="text-center py-5">
@@ -540,10 +516,11 @@ const ProductTable = () => {
                                   variant="outline-primary" 
                                   size="sm" 
                                   onClick={() => openDetailsModal(product)}
-                                  className="d-flex align-items-center gap-1"
+                                  className="d-flex align-items-center gap-1 details-btn"
                                 >
                                   <FiMoreHorizontal /> Details
                                 </Button>
+                                {/* Update button is now always visible - removed conditional rendering */}
                                 <Button 
                                   variant="outline-success" 
                                   size="sm" 
