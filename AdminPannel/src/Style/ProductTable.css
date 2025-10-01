@@ -477,6 +477,31 @@
   transition: all 0.2s;
 }
 
+/* No Products Found Styling */
+.no-products-found {
+  text-align: center;
+  padding: 3rem 1rem;
+}
+
+.no-products-icon {
+  font-size: 2.5rem;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 1rem;
+}
+
+.no-products-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: white;
+  margin-bottom: 0.5rem;
+}
+
+.no-products-text {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 1.5rem;
+}
+
 /* Better responsive behavior */
 @media (max-width: 768px) {
   .search-input-custom {
@@ -530,6 +555,19 @@
   }
   
   .stat-label {
+    font-size: 0.9rem;
+  }
+
+  /* No products responsive */
+  .no-products-icon {
+    font-size: 2rem;
+  }
+  
+  .no-products-title {
+    font-size: 1.25rem;
+  }
+  
+  .no-products-text {
     font-size: 0.9rem;
   }
 }
@@ -594,6 +632,19 @@
     min-width: 80px;
     font-size: 0.65rem;
     padding: 0.2rem 0.4rem;
+  }
+
+  /* No products responsive */
+  .no-products-icon {
+    font-size: 1.75rem;
+  }
+  
+  .no-products-title {
+    font-size: 1.1rem;
+  }
+  
+  .no-products-text {
+    font-size: 0.85rem;
   }
 }
 

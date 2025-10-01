@@ -546,10 +546,15 @@ const ProductTable = () => {
                       ) : (
                         <tr>
                           <td colSpan="6" className="text-center py-4">
-                            <div className="py-3">
-                              <FiSearch size={48} className="text-muted mb-3" />
-                              <h5>No products found</h5>
-                              <p className="text-muted">Try adjusting your search or add a new product</p>
+                            <div className="no-products-found">
+                              <FiSearch className="no-products-icon" />
+                              <h5 className="no-products-title">No products found</h5>
+                              <p className="no-products-text">
+                                {searchTerm 
+                                  ? `No products found for "${searchTerm}"`
+                                  : 'Try adjusting your search or add a new product'
+                                }
+                              </p>
                               <Button variant="primary" onClick={() => setShowAddModal(true)}>
                                 <FiPlus className="me-1" /> Add Product
                               </Button>
