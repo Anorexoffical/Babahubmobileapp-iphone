@@ -5,7 +5,7 @@
   width: 100%;
   margin: 0;
   font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  margin-top: 100px;
+  /* Removed margin-top: 100px; */
 }
 
 /* CONSISTENT DASHBOARD HEADER */
@@ -19,7 +19,7 @@
   width: 100%;
   position: relative;
   overflow: hidden;
-  margin-top: 2rem;
+  /* Removed margin-top: 2rem; */
 }
 
 .dashboard-header::before {
@@ -149,17 +149,50 @@
   box-shadow: none;
 }
 
+/* Updated Search Button */
 .btn-search {
   background: rgba(255, 255, 255, 0.2);
   border: 1px solid rgba(255, 255, 255, 0.3);
   color: white;
   border-radius: 10px;
-  padding: 0.5rem 1rem;
+  padding: 0.8rem 2rem; /* Increased width and decreased height */
   backdrop-filter: blur(10px);
+  font-weight: 600;
+  min-width: 120px; /* Increased minimum width */
+  height: 48px; /* Fixed height for consistency */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
 }
 
 .btn-search:hover {
   background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
+}
+
+/* Status Badges */
+.badge {
+  font-weight: 500;
+  padding: 0.5em 0.8em;
+  border-radius: 8px;
+  font-size: 0.75rem;
+}
+
+.badge-shipped {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%) !important;
+  color: white !important;
+}
+
+.badge-pending {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%) !important;
+  color: white !important;
+}
+
+.badge-complete {
+  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%) !important;
+  color: white !important;
 }
 
 /* Table Styles */
@@ -217,13 +250,6 @@
   border-top: 2px solid #e2e8f0;
 }
 
-.badge {
-  font-weight: 500;
-  padding: 0.5em 0.8em;
-  border-radius: 8px;
-  font-size: 0.75rem;
-}
-
 /* Responsive adjustments */
 @media (max-width: 1200px) {
   .dashboard-header h1 {
@@ -253,6 +279,12 @@
   
   .dashboard-header {
     padding: 1.5rem 0;
+  }
+  
+  .btn-search {
+    padding: 0.7rem 1.5rem;
+    min-width: 100px;
+    height: 44px;
   }
 }
 
@@ -291,6 +323,11 @@
     margin-top: 1rem;
     align-self: flex-start;
   }
+  
+  .btn-search {
+    width: 100%;
+    margin-top: 1rem;
+  }
 }
 
 @media (max-width: 576px) {
@@ -322,6 +359,12 @@
   .container-fluid {
     padding-left: 10px;
     padding-right: 10px;
+  }
+  
+  .btn-search {
+    padding: 0.6rem 1.2rem;
+    height: 42px;
+    font-size: 0.875rem;
   }
 }
 
