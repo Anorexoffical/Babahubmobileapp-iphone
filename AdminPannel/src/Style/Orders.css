@@ -366,6 +366,11 @@
   color: #1e40af;
 }
 
+/* Fix for bg-primary conflict */
+.bg-primary {
+  background-color: transparent !important;
+}
+
 /* Responsive adjustments */
 @media (max-width: 1200px) {
   .orders-dashboard {

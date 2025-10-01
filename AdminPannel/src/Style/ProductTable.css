@@ -304,7 +304,7 @@
   align-items: center !important;
 }
 
-/* Status Badge Styles */
+/* Status Badge Styles - REMOVED bg- prefix to prevent Bootstrap interference */
 .custom-status-badge {
   font-weight: 500;
   border: 1px solid #dee2e6 !important;
@@ -317,44 +317,44 @@
   display: inline-block;
 }
 
-/* Specific status background colors */
-.bg-pending-payment {
+/* Specific status background colors - REMOVED bg- prefix */
+.pending-payment {
   background-color: #ffebee !important;
   color: #000 !important;
   border-color: #f5c6cb !important;
 }
 
-.bg-processing {
+.processing {
   background-color: #fff3e0 !important;
   color: #000 !important;
   border-color: #ffeaa7 !important;
 }
 
-.bg-completed {
+.completed {
   background-color: #e8f5e8 !important;
   color: #000 !important;
   border-color: #c8e6c9 !important;
 }
 
-.bg-shipped {
+.shipped {
   background-color: #e3f2fd !important;
   color: #000 !important;
   border-color: #bbdefb !important;
 }
 
-.bg-out-of-stock {
+.out-of-stock {
   background-color: #ffebee !important;
   color: #000 !important;
   border-color: #f5c6cb !important;
 }
 
-.bg-low-stock {
+.low-stock {
   background-color: #fff3e0 !important;
   color: #000 !important;
   border-color: #ffeaa7 !important;
 }
 
-.bg-in-stock {
+.in-stock {
   background-color: #e8f5e8 !important;
   color: #000 !important;
   border-color: #c8e6c9 !important;

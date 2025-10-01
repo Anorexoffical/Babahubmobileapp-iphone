@@ -1,191 +1,535 @@
-import React, { useState, useEffect } from "react";
-import { FiSearch, FiUser, FiMail, FiCalendar, FiChevronLeft, FiChevronRight } from "react-icons/fi";
-import Topbar from "./Topbar";
-import axios from "axios";
-import "../Style/CustomerRecords.css";
+import React, { useEffect, useState } from 'react';
+import {
+  FiSearch,
+  FiPlus,
+  FiChevronLeft,
+  FiChevronRight,
+  FiMoreHorizontal,
+  FiEdit,
+  FiFilter
+} from 'react-icons/fi';
+import { Modal, Button, Table, Badge, Alert, Form, Dropdown } from 'react-bootstrap';
+import AddProduct from './AddProduct.jsx';
+import EditProduct from './EditProduct.jsx';
+import '../Style/ProductTable.css';
+import Topbar from './Topbar.jsx';
+import axios from 'axios';
 
-const CustomerRecords = () => {
-  const [customers, setCustomers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
+const ProductTable = () => {
+  const [products, setProducts] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const customersPerPage = 8;
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [stockFilter, setStockFilter] = useState('all');
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    const fetchCustomers = async () => {
-      try {
-        const response = await axios.get("https://account.babahub.co/api/users/customers");
-        setCustomers(response.data);
-      } catch (error) {
-        console.error("Error fetching customers:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+    fetchProducts();
 
-    fetchCustomers();
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 10);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Filter customers based on search term
-  const filteredCustomers = customers.filter(
-    (customer) =>
-      customer.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.email?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const res = await axios.get('https://account.babahub.co/api/products');
+      setProducts(res.data);
+    } catch (err) {
+      console.error('Failed to fetch products:', err);
+      setError('Failed to load products. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  // Pagination
-  const indexOfLastCustomer = currentPage * customersPerPage;
-  const indexOfFirstCustomer = indexOfLastCustomer - customersPerPage;
-  const currentCustomers = filteredCustomers.slice(indexOfFirstCustomer, indexOfLastCustomer);
-  const totalPages = Math.ceil(filteredCustomers.length / customersPerPage);
+  const productsPerPage = 8;
+
+  const handleAddProduct = async (product) => {
+    setIsSubmitting(true);
+    try {
+      const res = await axios.post('https://account.babahub.co/api/products', product);
+      setProducts([...products, res.data]);
+      setShowAddModal(false);
+      setSuccessMessage(`Product "${res.data.name}" added successfully!`);
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err) {
+      console.error('Error adding product:', err);
+      setError('Failed to add product. Please try again.');
+    }
+    setIsSubmitting(false);
+  };
+
+  const handleUpdateProduct = async (product) => {
+    setIsSubmitting(true);
+    try {
+      const res = await axios.put(`https://account.babahub.co/api/products/${editingProduct._id}`, product);
+      setProducts(products.map(p => p._id === editingProduct._id ? res.data : p));
+      setShowEditModal(false);
+      setEditingProduct(null);
+      setSuccessMessage(`Product "${res.data.name}" updated successfully!`);
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err) {
+      console.error('Error updating product:', err);
+      setError('Failed to update product. Please try again.');
+    }
+    setIsSubmitting(false);
+  };
+
+  const calculateTotalStock = (variants) => {
+    if (!variants || !Array.isArray(variants)) return 0;
+    return variants.reduce((total, v) =>
+      total + (v.sizes ? v.sizes.reduce((sum, s) => sum + (s.stock || 0), 0) : 0), 0);
+  };
+
+  const getProductStatus = (variants) => {
+    const total = calculateTotalStock(variants);
+    if (total === 0) return 'Out of Stock';
+    if (total < 10) return 'Low Stock';
+    return 'In Stock';
+  };
+
+  // Updated status background colors with black text
+  const getStatusVariant = (variants) => {
+    const status = getProductStatus(variants);
+    
+    // For order statuses (based on your image data)
+    if (status === 'Pending Payment') return 'pending-payment';
+    if (status === 'Processing') return 'processing';
+    if (status === 'Completed') return 'completed';
+    if (status === 'Shipped') return 'shipped';
+    
+    // For stock statuses (existing functionality)
+    const total = calculateTotalStock(variants);
+    if (total === 0) return 'out-of-stock';
+    if (total < 10) return 'low-stock';
+    return 'in-stock';
+  };
+
+  // Check if action buttons should be shown based on status
+  const shouldShowActionButtons = (variants) => {
+    const status = getProductStatus(variants);
+    return status !== 'Pending Payment';
+  };
+
+  const filteredProducts = products.filter(product => {
+    if (!product) return false;
+    
+    const matchesSearch = 
+      (product.name && product.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (product.brand && product.brand.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (product.category && product.category.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    const status = getProductStatus(product.variants);
+    let matchesStock = true;
+    if (stockFilter === 'low') {
+      matchesStock = status === 'Low Stock';
+    } else if (stockFilter === 'out') {
+      matchesStock = status === 'Out of Stock';
+    }
+    
+    return matchesSearch && matchesStock;
+  });
+
+  const indexOfLast = currentPage * productsPerPage;
+  const indexOfFirst = indexOfLast - productsPerPage;
+  const currentProducts = filteredProducts.slice(indexOfFirst, indexOfLast);
+  const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
+
+  const openDetailsModal = (product) => {
+    setSelectedProduct(product);
+    setShowDetailsModal(true);
+  };
+
+  const openEditModal = (product) => {
+    setEditingProduct(product);
+    setShowEditModal(true);
+  };
+
+  const handleAddModalClose = () => {
+    setShowAddModal(false);
+  };
+
+  const handleEditModalClose = () => {
+    setShowEditModal(false);
+    setEditingProduct(null);
+  };
+
+  const getFilterLabel = () => {
+    switch (stockFilter) {
+      case 'all': return 'All Products';
+      case 'low': return 'Low Stock';
+      case 'out': return 'Out of Stock';
+      default: return 'All Products';
+    }
+  };
 
   return (
     <>
       <Topbar />
-      <div className="customer-dashboard">
-        <div className="dashboard-header mb-4">
+
+      <div className="product-dashboard">
+        {successMessage && (
+          <Alert variant="success" onClose={() => setSuccessMessage('')} dismissible className="fade-in">
+            {successMessage}
+          </Alert>
+        )}
+
+        {error && (
+          <Alert variant="danger" onClose={() => setError('')} dismissible className="fade-in">
+            {error}
+          </Alert>
+        )}
+
+        {/* Add Product Modal */}
+        <AddProduct
+          show={showAddModal}
+          onHide={handleAddModalClose}
+          onAddProduct={handleAddProduct}
+          isSubmitting={isSubmitting}
+          setIsSubmitting={setIsSubmitting}
+        />
+
+        {/* Edit Product Modal */}
+        <EditProduct
+          show={showEditModal}
+          onHide={handleEditModalClose}
+          onUpdateProduct={handleUpdateProduct}
+          isSubmitting={isSubmitting}
+          setIsSubmitting={setIsSubmitting}
+          editingProduct={editingProduct}
+        />
+
+        <Modal show={showDetailsModal} onHide={() => setShowDetailsModal(false)} size="lg" centered>
+          <Modal.Header closeButton className="bg-light">
+            <Modal.Title className="fw-bold">Product Details</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            {selectedProduct && (
+              <>
+                <div className="d-flex flex-column flex-md-row justify-content-between align-items-start mb-4 gap-2">
+                  <div>
+                    <h4 className="fw-bold mb-1">{selectedProduct.name}</h4>
+                    <div className="d-flex gap-3 text-muted">
+                      <span>{selectedProduct.brand}</span>
+                      <span>•</span>
+                      <span>{selectedProduct.category}</span>
+                    </div>
+                  </div>
+                  <Badge 
+                    className={`custom-status-badge ${getStatusVariant(selectedProduct.variants)}`}
+                  >
+                    {getProductStatus(selectedProduct.variants)}
+                  </Badge>
+                </div>
+                
+                {selectedProduct.image && (
+                  <div className="mb-3">
+                    <img 
+                      src={selectedProduct.image} 
+                      alt={selectedProduct.name} 
+                      style={{ maxWidth: '200px', borderRadius: '8px' }} 
+                    />
+                  </div>
+                )}
+
+                <h5 className="fw-bold mb-3">Available Variants</h5>
+                <div className="table-responsive">
+                  <Table bordered hover className="mb-0">
+                    <thead className="table-light">
+                      <tr>
+                        <th>Color</th>
+                        <th>Size</th>
+                        <th>Stock</th>
+                        <th>Price</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedProduct.variants && selectedProduct.variants.map((variant, vIdx) =>
+                        variant.sizes && variant.sizes.map((size, sIdx) => (
+                          <tr key={`${vIdx}-${sIdx}`}>
+                            <td>
+                              <div className="d-flex align-items-center gap-2">
+                                <span
+                                  className="color-dot"
+                                  style={{ backgroundColor: variant.colorCode || '#ccc' }}
+                                ></span>
+                                {variant.color}
+                              </div>
+                            </td>
+                            <td>{size.size}</td>
+                            <td>
+                              <Badge bg={size.stock === 0 ? 'danger' : size.stock < 5 ? 'warning' : 'success'}>
+                                {size.stock}
+                              </Badge>
+                            </td>
+                            <td className="fw-bold">${size.price ? size.price.toFixed(2) : '0.00'}</td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </Table>
+                </div>
+              </>
+            )}
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="outline-secondary" onClick={() => setShowDetailsModal(false)}>
+              Close
+            </Button>
+          </Modal.Footer>
+        </Modal>
+
+        <div className={`dashboard-header ${isScrolled ? 'scrolled' : ''}`}>
           <div className="container-fluid">
             <div className="row align-items-center mb-3 mb-md-0">
               <div className="col-md-6 mb-3 mb-md-0">
-                <h1 className="fw-bold mb-1">Customer Management</h1>
-                <p className="text-muted mb-0">Manage your customer records</p>
+                <h1 className="fw-bold mb-1">Product Inventory</h1>
+                <p className="text-muted mb-0">Manage your product catalog and inventory</p>
               </div>
+
               <div className="col-md-6 d-flex flex-column flex-md-row gap-3 align-items-start align-items-md-center justify-content-md-end">
-                <div className="search-container flex-grow-1">
+                <div className="search-container flex-grow-1" style={{ maxWidth: "400px" }}>
                   <FiSearch className="search-icon" />
-                  <input
-                    className="search-input"
+                  <Form.Control 
+                    type="search" 
+                    placeholder="Search products by name, brand, or category..." 
                     value={searchTerm}
                     onChange={(e) => {
                       setSearchTerm(e.target.value);
                       setCurrentPage(1);
                     }}
-                    placeholder="Search by name or email..."
+                    className="search-input-custom"
                   />
+                </div>
+                
+                {/* Stock Filter Dropdown */}
+                <Dropdown className="stock-filter-dropdown">
+                  <Dropdown.Toggle variant="outline-light" id="stock-filter-dropdown" className="d-flex align-items-center gap-2">
+                    <FiFilter size={16} />
+                    {getFilterLabel()}
+                  </Dropdown.Toggle>
+
+                  <Dropdown.Menu>
+                    <Dropdown.Item 
+                      onClick={() => setStockFilter('all')}
+                      className={stockFilter === 'all' ? 'active' : ''}
+                    >
+                      All Products
+                    </Dropdown.Item>
+                    <Dropdown.Item 
+                      onClick={() => setStockFilter('low')}
+                      className={stockFilter === 'low' ? 'active' : ''}
+                    >
+                      Low Stock
+                    </Dropdown.Item>
+                    <Dropdown.Item 
+                      onClick={() => setStockFilter('out')}
+                      className={stockFilter === 'out' ? 'active' : ''}
+                    >
+                      Out of Stock
+                    </Dropdown.Item>
+                  </Dropdown.Menu>
+                </Dropdown>
+                
+                <Button 
+                  variant="primary" 
+                  onClick={() => setShowAddModal(true)} 
+                  className="add-product-btn"
+                >
+                  <FiPlus className="me-1" /> Add Product
+                </Button>
+              </div>
+            </div>
+            
+            {/* Search Results Info */}
+            <div className="row mt-2">
+              <div className="col-12">
+                <div className="search-results-info">
+                  <span className="text-white">
+                    {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''} found
+                    {searchTerm && ` for "${searchTerm}"`}
+                    {stockFilter !== 'all' && ` (${getFilterLabel()})`}
+                  </span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="row g-3 mt-2">
+              <div className="col-6 col-md-3">
+                <div className="stat-card">
+                  <div className="stat-value">{products.length}</div>
+                  <div className="stat-label">Total Products</div>
+                </div>
+              </div>
+              <div className="col-6 col-md-3">
+                <div className="stat-card">
+                  <div className="stat-value">
+                    {products.reduce((sum, p) => sum + calculateTotalStock(p.variants), 0)}
+                  </div>
+                  <div className="stat-label">Total Stock</div>
+                </div>
+              </div>
+              <div className="col-6 col-md-3">
+                <div className="stat-card">
+                  <div className="stat-value">
+                    {products.filter(p => getProductStatus(p.variants) === 'In Stock').length}
+                  </div>
+                  <div className="stat-label">In Stock</div>
+                </div>
+              </div>
+              <div className="col-6 col-md-3">
+                <div className="stat-card">
+                  <div className="stat-value">
+                    {products.filter(p => getProductStatus(p.variants) === 'Low Stock').length}
+                  </div>
+                  <div className="stat-label">Low Stock</div>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Table */}
         <div className="container-fluid mt-4">
           <div className="card">
             <div className="card-body p-0">
-              <div className="table-responsive">
-                <table className="customer-table mb-0">
-                  <thead>
-                    <tr>
-                      <th>Customer</th>
-                      <th>Email</th>
-                      <th>DOB</th>
-                      <th>Status</th>
-                      <th>Member Since</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {loading ? (
+              {loading ? (
+                <div className="text-center py-5">
+                  <div className="spinner-border text-primary" role="status">
+                    <span className="visually-hidden">Loading...</span>
+                  </div>
+                  <p className="mt-3">Loading products...</p>
+                </div>
+              ) : (
+                <div className="table-responsive">
+                  <Table hover className="products-table mb-0">
+                    <thead>
                       <tr>
-                        <td colSpan="5" className="text-center py-4">
-                          <div className="spinner-border text-primary" role="status">
-                            <span className="visually-hidden">Loading...</span>
-                          </div>
-                          <p className="mt-2">Loading customers...</p>
-                        </td>
+                        <th>Product</th>
+                        <th>Status</th>
+                        <th className="d-none d-md-table-cell">Stock</th>
+                        <th className="d-none d-lg-table-cell">Brand</th>
+                        <th className="d-none d-lg-table-cell">Category</th>
+                        <th>Actions</th>
                       </tr>
-                    ) : currentCustomers.length > 0 ? (
-                      currentCustomers.map((customer) => (
-                        <tr key={customer._id}>
-                          <td>
-                            <div className="customer-info">
-                              <div className="avatar">
-                                <FiUser size={20} />
+                    </thead>
+                    <tbody>
+                      {currentProducts.length > 0 ? (
+                        currentProducts.map(product => (
+                          <tr key={product._id} className="align-middle">
+                            <td>
+                              <div className="d-flex flex-column">
+                                <strong className="product-name">{product.name}</strong>
+                                <small className="text-muted">
+                                  {product.description ? product.description.substring(0, 50) + '...' : 'No description'}
+                                </small>
                               </div>
-                              <div>
-                                <strong>{customer.name || 'N/A'}</strong>
+                            </td>
+                            <td>
+                              <Badge 
+                                className={`custom-status-badge ${getStatusVariant(product.variants)}`}
+                              >
+                                {getProductStatus(product.variants)}
+                              </Badge>
+                            </td>
+                            <td className="d-none d-md-table-cell">
+                              <div className="d-flex align-items-center gap-2">
+                                <span>{calculateTotalStock(product.variants)}</span>
+                                {product.variants && product.variants.length > 1 && (
+                                  <span className="text-muted small">({product.variants.length} variants)</span>
+                                )}
                               </div>
-                            </div>
-                          </td>
-                          <td>
-                            <div className="contact-info">
-                              <div className="contact-item">
-                                <FiMail className="icon" />
-                                <span>{customer.email || 'N/A'}</span>
+                            </td>
+                            <td className="d-none d-lg-table-cell">{product.brand}</td>
+                            <td className="d-none d-lg-table-cell">{product.category}</td>
+                            <td>
+                              <div className={`action-buttons-container ${!shouldShowActionButtons(product.variants) ? 'hidden-actions' : ''}`}>
+                                <Button 
+                                  variant="outline-primary" 
+                                  size="sm" 
+                                  onClick={() => openDetailsModal(product)}
+                                  className="d-flex align-items-center gap-1 details-btn"
+                                >
+                                  <FiMoreHorizontal /> Details
+                                </Button>
+                                {shouldShowActionButtons(product.variants) && (
+                                  <Button 
+                                    variant="outline-success" 
+                                    size="sm" 
+                                    onClick={() => openEditModal(product)}
+                                    className="d-flex align-items-center gap-1"
+                                  >
+                                    <FiEdit /> Update
+                                  </Button>
+                                )}
                               </div>
-                            </div>
-                          </td>
-                          <td>
-                            <div className="contact-info">
-                              <div className="contact-item">
-                                <FiCalendar className="icon" />
-                                <span>{customer.dob ? new Date(customer.dob).toLocaleDateString() : 'N/A'}</span>
-                              </div>
-                            </div>
-                          </td>
-                          <td>
-                            <span className="status-badge active">Active</span>
-                          </td>
-                          <td>
-                            <div className="contact-info">
-                              <div className="contact-item">
-                                <FiCalendar className="icon" />
-                                <span>{customer.createdAt ? new Date(customer.createdAt).toLocaleDateString() : 'N/A'}</span>
-                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan="6" className="text-center py-4">
+                            <div className="py-3">
+                              <FiSearch size={48} className="text-muted mb-3" />
+                              <h5>No products found</h5>
+                              <p className="text-muted">Try adjusting your search or add a new product</p>
+                              <Button variant="primary" onClick={() => setShowAddModal(true)}>
+                                <FiPlus className="me-1" /> Add Product
+                              </Button>
                             </div>
                           </td>
                         </tr>
-                      ))
-                    ) : (
-                      <tr className="no-results">
-                        <td colSpan="5">
-                          <div className="empty-state">
-                            <FiSearch size={48} className="text-muted mb-3" />
-                            <h5>No customers found</h5>
-                            <p className="text-muted">
-                              {searchTerm 
-                                ? `No customers found for "${searchTerm}". Try a different search term.`
-                                : 'No customers available.'
-                              }
-                            </p>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                      )}
+                    </tbody>
+                  </Table>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Pagination */}
-          {filteredCustomers.length > 0 && (
-            <div className="d-flex justify-content-between align-items-center mt-4">
-              <div className="pagination-info">
-                <span className="text-muted">
-                  Showing {indexOfFirstCustomer + 1} to {Math.min(indexOfLastCustomer, filteredCustomers.length)} of {filteredCustomers.length} customers
-                </span>
-              </div>
+          {filteredProducts.length > 0 && !loading && (
+            <div className="d-flex justify-content-center mt-4">
               <nav>
                 <ul className="pagination">
-                  <li className={`page-item ${currentPage === 1 ? "disabled" : ""}`}>
-                    <button className="page-link" onClick={() => paginate(currentPage - 1)}>
+                  <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+                    <button 
+                      className="page-link" 
+                      onClick={() => paginate(currentPage - 1)}
+                    >
                       <FiChevronLeft /> Prev
                     </button>
                   </li>
-                  {[...Array(totalPages).keys()].map((i) => (
-                    <li
-                      key={i + 1}
-                      className={`page-item ${currentPage === i + 1 ? "active" : ""}`}
-                    >
-                      <button className="page-link" onClick={() => paginate(i + 1)}>
+                  
+                  {[...Array(totalPages).keys()].map(i => (
+                    <li key={i + 1} className={`page-item ${currentPage === i + 1 ? 'active' : ''}`}>
+                      <button 
+                        className="page-link" 
+                        onClick={() => paginate(i + 1)}
+                      >
                         {i + 1}
                       </button>
                     </li>
                   ))}
-                  <li className={`page-item ${currentPage === totalPages ? "disabled" : ""}`}>
-                    <button className="page-link" onClick={() => paginate(currentPage + 1)}>
+                  
+                  <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+                    <button 
+                      className="page-link" 
+                      onClick={() => paginate(currentPage + 1)}
+                    >
                       Next <FiChevronRight />
                     </button>
                   </li>
@@ -199,4 +543,4 @@ const CustomerRecords = () => {
   );
 };
 
-export default CustomerRecords;
+export default ProductTable;

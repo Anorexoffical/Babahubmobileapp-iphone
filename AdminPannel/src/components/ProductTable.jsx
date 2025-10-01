@@ -231,7 +231,7 @@ const ProductTable = () => {
                     </div>
                   </div>
                   <Badge 
-                    className={`custom-status-badge bg-${getStatusVariant(selectedProduct.variants)}`}
+                    className={`custom-status-badge ${getStatusVariant(selectedProduct.variants)}`}
                   >
                     {getProductStatus(selectedProduct.variants)}
                   </Badge>
@@ -441,7 +441,7 @@ const ProductTable = () => {
                             </td>
                             <td>
                               <Badge 
-                                className={`custom-status-badge bg-${getStatusVariant(product.variants)}`}
+                                className={`custom-status-badge ${getStatusVariant(product.variants)}`}
                               >
                                 {getProductStatus(product.variants)}
                               </Badge>

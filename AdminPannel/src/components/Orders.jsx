@@ -187,8 +187,8 @@ const Orders = () => {
           <div className="container-fluid">
             <div className="row align-items-center mb-3 mb-md-0">
               <div className="col-md-6 mb-3 mb-md-0">
-                <h1 className="fw-bold mb-1">Order Management</h1>
-                <p className="text-muted mb-0">View and manage customer orders</p>
+                <h1 className="fw-bold mb-1 text-white">Order Management</h1>
+                <p className="mb-0 text-white-50">View and manage customer orders</p>
               </div>
               <div className="col-md-6 d-flex flex-column flex-md-row gap-3 align-items-start align-items-md-center justify-content-md-end">
                 <div className="search-container flex-grow-1" style={{ maxWidth: "400px" }}>
