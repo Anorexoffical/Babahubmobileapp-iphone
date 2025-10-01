@@ -57,13 +57,12 @@ const Orders = () => {
 
   const statusCounts = getStatusCounts();
 
-  // Filter and pagination logic
+  // Filter orders based on search term (customer name)
   const filteredOrders = orders.filter(order => {
     const matchesSearch = 
-      order._id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.orderID.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.email.toLowerCase().includes(searchTerm.toLowerCase());
+      order.email?.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesStatus = statusFilter === 'all' || order.deliveryStatus === statusFilter;
     
@@ -196,7 +195,7 @@ const Orders = () => {
                   <FiSearch className="search-icon" />
                   <Form.Control 
                     type="search" 
-                    placeholder="Search orders..." 
+                    placeholder="Search by customer name, order ID, or email..." 
                     value={searchTerm}
                     onChange={(e) => {
                       setSearchTerm(e.target.value);
@@ -219,6 +218,18 @@ const Orders = () => {
                     <option value="Shipped">Shipped</option>
                     <option value="Completed">Completed</option>
                   </Form.Select>
+                </div>
+              </div>
+            </div>
+
+            {/* Search Results Info */}
+            <div className="row mt-2">
+              <div className="col-12">
+                <div className="search-results-info">
+                  <div className="order-count-badge">
+                    {filteredOrders.length} order{filteredOrders.length !== 1 ? 's' : ''} found
+                    {searchTerm && ` for "${searchTerm}"`}
+                  </div>
                 </div>
               </div>
             </div>
@@ -295,7 +306,7 @@ const Orders = () => {
                           <div className="d-flex align-items-center">
                             <FiUser className="me-2" />
                             <div>
-                              <div>{order.name}</div>
+                              <div className="customer-name">{order.name}</div>
                               <small className="text-muted">{order.email}</small>
                             </div>
                           </div>
@@ -363,7 +374,12 @@ const Orders = () => {
                         <div className="py-3">
                           <FiSearch size={48} className="text-muted mb-3" />
                           <h5>No orders found</h5>
-                          <p className="text-muted">Try adjusting your search or filters</p>
+                          <p className="text-muted">
+                            {searchTerm 
+                              ? `No orders found for "${searchTerm}". Try a different search term.`
+                              : 'No orders available.'
+                            }
+                          </p>
                         </div>
                       </td>
                     </tr>
@@ -373,26 +389,36 @@ const Orders = () => {
             </div>
 
             {filteredOrders.length > 0 && (
-              <div className="d-flex justify-content-center mt-4">
-                <Pagination>
-                  <Pagination.Prev 
-                    onClick={() => paginate(currentPage - 1)} 
-                    disabled={currentPage === 1}
-                  />
-                  {[...Array(totalPages).keys()].map(i => (
-                    <Pagination.Item
-                      key={i + 1}
-                      active={currentPage === i + 1}
-                      onClick={() => paginate(i + 1)}
-                    >
-                      {i + 1}
-                    </Pagination.Item>
-                  ))}
-                  <Pagination.Next 
-                    onClick={() => paginate(currentPage + 1)} 
-                    disabled={currentPage === totalPages}
-                  />
-                </Pagination>
+              <div className="d-flex justify-content-between align-items-center mt-4">
+                <div className="pagination-info">
+                  <span className="text-muted">
+                    Showing {indexOfFirstOrder + 1} to {Math.min(indexOfLastOrder, filteredOrders.length)} of {filteredOrders.length} orders
+                  </span>
+                </div>
+                <nav>
+                  <ul className="pagination">
+                    <li className={`page-item ${currentPage === 1 ? "disabled" : ""}`}>
+                      <button className="page-link" onClick={() => paginate(currentPage - 1)}>
+                        <FiChevronLeft /> Prev
+                      </button>
+                    </li>
+                    {[...Array(totalPages).keys()].map(i => (
+                      <li
+                        key={i + 1}
+                        className={`page-item ${currentPage === i + 1 ? "active" : ""}`}
+                      >
+                        <button className="page-link" onClick={() => paginate(i + 1)}>
+                          {i + 1}
+                        </button>
+                      </li>
+                    ))}
+                    <li className={`page-item ${currentPage === totalPages ? "disabled" : ""}`}>
+                      <button className="page-link" onClick={() => paginate(currentPage + 1)}>
+                        Next <FiChevronRight />
+                      </button>
+                    </li>
+                  </ul>
+                </nav>
               </div>
             )}
           </>
