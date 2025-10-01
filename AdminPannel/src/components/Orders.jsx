@@ -112,65 +112,65 @@ const Orders = () => {
     }
   };
 
-  const getStatusVariant = (status) => {
-    switch(status) {
-      case 'Completed': return 'success';
-      case 'Shipped': return 'primary';
-      case 'Processing': return 'warning';
-      case 'Pending Payment': return 'danger';
-      default: return 'light';
+  const getStatusStyle = (status) => {
+    switch (status) {
+      case 'Completed':
+        return { backgroundColor: '#e6f7ee' };
+      case 'Shipped':
+        return { backgroundColor: '#e6f0ff' };
+      case 'Processing':
+        return { backgroundColor: '#fff4e6' };
+      case 'Pending Payment':
+        return { backgroundColor: '#ffe6e6' };
+      default:
+        return { backgroundColor: '#f0f0f0' };
     }
   };
 
-  const getStatusStyle = (status) => {
-    switch(status) {
+  const getStatusDotStyle = (status) => {
+    switch (status) {
       case 'Completed':
-        return { 
-          backgroundColor: '#e6f7ee',
-          color: '#00b894',
-          border: '1px solid #00b894'
-        };
+        return { backgroundColor: '#00b894' };
       case 'Shipped':
-        return { 
-          backgroundColor: '#e6f0ff',
-          color: '#0984e3',
-          border: '1px solid #0984e3'
-        };
+        return { backgroundColor: '#0984e3' };
       case 'Processing':
-        return { 
-          backgroundColor: '#fff4e6',
-          color: '#e17055',
-          border: '1px solid #e17055'
-        };
+        return { backgroundColor: '#fdcb6e' };
       case 'Pending Payment':
-        return { 
-          backgroundColor: '#ffe6e6',
-          color: '#d63031',
-          border: '1px solid #d63031'
-        };
+        return { backgroundColor: '#d63031' };
       default:
-        return { 
-          backgroundColor: '#f0f0f0',
-          color: '#636e72',
-          border: '1px solid #ddd'
-        };
+        return { backgroundColor: '#636e72' };
+    }
+  };
+
+  const getStatusTextColor = (status) => {
+    switch (status) {
+      case 'Completed':
+        return '#00b894';
+      case 'Shipped':
+        return '#0984e3';
+      case 'Processing':
+        return '#e17055';
+      case 'Pending Payment':
+        return '#d63031';
+      default:
+        return '#636e72';
     }
   };
 
   const getStatusCardStyle = (status) => {
     switch(status) {
       case 'total':
-        return { background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' };
+        return { background: 'rgba(255, 255, 255, 0.13)' };
       case 'pending':
-        return { background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' };
+        return { background: 'rgba(255, 255, 255, 0.13)' };
       case 'processing':
-        return { background: 'linear-gradient(135deg, #ffd89b 0%, #19547b 100%)' };
+        return { background: 'rgba(255, 255, 255, 0.13)' };
       case 'shipped':
-        return { background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' };
+        return { background: 'rgba(255, 255, 255, 0.13)' };
       case 'completed':
-        return { background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)' };
+        return { background: 'rgba(255, 255, 255, 0.13)' };
       default:
-        return { background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' };
+        return { background: 'rgba(255, 255, 255, 0.13)' };
     }
   };
 
@@ -304,9 +304,17 @@ const Orders = () => {
                         <td>R {order.totalAmountAfterTax}</td>
                         <td>
                           <Badge 
-                            style={getStatusStyle(order.deliveryStatus)}
+                            style={{
+                              ...getStatusStyle(order.deliveryStatus),
+                              color: getStatusTextColor(order.deliveryStatus),
+                              border: `1px solid ${getStatusDotStyle(order.deliveryStatus).backgroundColor}`
+                            }}
                             className="status-badge-custom"
                           >
+                            <span 
+                              className="status-dot"
+                              style={getStatusDotStyle(order.deliveryStatus)}
+                            ></span>
                             {order.deliveryStatus}
                           </Badge>
                         </td>
@@ -422,9 +430,17 @@ const Orders = () => {
                         <p><strong>Date:</strong> {new Date(selectedOrder.createdAt).toLocaleDateString()}</p>
                         <p><strong>Status:</strong> 
                           <Badge 
-                            style={getStatusStyle(selectedOrder.deliveryStatus)}
+                            style={{
+                              ...getStatusStyle(selectedOrder.deliveryStatus),
+                              color: getStatusTextColor(selectedOrder.deliveryStatus),
+                              border: `1px solid ${getStatusDotStyle(selectedOrder.deliveryStatus).backgroundColor}`
+                            }}
                             className="status-badge-custom ms-2"
                           >
+                            <span 
+                              className="status-dot"
+                              style={getStatusDotStyle(selectedOrder.deliveryStatus)}
+                            ></span>
                             {selectedOrder.deliveryStatus}
                           </Badge>
                         </p>

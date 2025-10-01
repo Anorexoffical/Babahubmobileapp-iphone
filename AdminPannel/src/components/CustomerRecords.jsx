@@ -52,7 +52,7 @@ const CustomerRecords = () => {
                 <h1 className="fw-bold mb-1">Customer Management</h1>
                 <p className="text-muted mb-0">Manage your customer records</p>
               </div>
-              <div className="col-md-6 d-flex flex-column flex-md-row gap-3">
+              <div className="col-md-6 d-flex flex-column flex-md-row gap-3 align-items-start align-items-md-center">
                 <div className="search-container flex-grow-1">
                   <FiSearch className="search-icon" />
                   <input
@@ -72,10 +72,10 @@ const CustomerRecords = () => {
             <div className="row mt-2">
               <div className="col-12">
                 <div className="search-results-info">
-                  <span className="text-white">
+                  <div className="customer-count-badge">
                     {filteredCustomers.length} customer{filteredCustomers.length !== 1 ? 's' : ''} found
                     {searchTerm && ` for "${searchTerm}"`}
-                  </span>
+                  </div>
                 </div>
               </div>
             </div>

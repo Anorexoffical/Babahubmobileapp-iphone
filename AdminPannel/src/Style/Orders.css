@@ -108,7 +108,7 @@
   font-weight: 600;
 }
 
-/* Enhanced status badges with better UI */
+/* Enhanced status badges with consistent styling */
 .status-badge-custom {
   text-transform: capitalize;
   font-weight: 600;
@@ -127,69 +127,17 @@
   overflow: hidden;
 }
 
-.status-badge-custom::before {
-  content: '';
-  width: 10px;
-  height: 10px;
+.status-dot {
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   margin-right: 8px;
   display: inline-block;
-  box-shadow: 0 0 5px rgba(0,0,0,0.2);
 }
 
 .status-badge-custom:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-
-/* Completed Status - Green */
-.status-badge-custom[style*="background-color: #e6f7ee"] {
-  background: linear-gradient(135deg, #e6f7ee 0%, #d4f2e3 100%) !important;
-  color: #00b894 !important;
-  border: 1px solid #00b894 !important;
-}
-.status-badge-custom[style*="background-color: #e6f7ee"]::before {
-  background: linear-gradient(135deg, #00b894, #00d2a2);
-}
-
-/* Shipped Status - Blue */
-.status-badge-custom[style*="background-color: #e6f0ff"] {
-  background: linear-gradient(135deg, #e6f0ff 0%, #d4e4ff 100%) !important;
-  color: #0984e3 !important;
-  border: 1px solid #0984e3 !important;
-}
-.status-badge-custom[style*="background-color: #e6f0ff"]::before {
-  background: linear-gradient(135deg, #0984e3, #1a93f5);
-}
-
-/* Processing Status - Orange/Yellow */
-.status-badge-custom[style*="background-color: #fff4e6"] {
-  background: linear-gradient(135deg, #fff4e6 0%, #ffe8cc 100%) !important;
-  color: #e17055 !important;
-  border: 1px solid #e17055 !important;
-}
-.status-badge-custom[style*="background-color: #fff4e6"]::before {
-  background: linear-gradient(135deg, #e17055, #f08a5d);
-}
-
-/* Pending Payment Status - Red */
-.status-badge-custom[style*="background-color: #ffe6e6"] {
-  background: linear-gradient(135deg, #ffe6e6 0%, #ffd4d4 100%) !important;
-  color: #d63031 !important;
-  border: 1px solid #d63031 !important;
-}
-.status-badge-custom[style*="background-color: #ffe6e6"]::before {
-  background: linear-gradient(135deg, #d63031, #e74c3c);
-}
-
-/* Default Status */
-.status-badge-custom[style*="background-color: #f0f0f0"] {
-  background: linear-gradient(135deg, #f0f0f0 0%, #e0e0e0 100%) !important;
-  color: #636e72 !important;
-  border: 1px solid #ddd !important;
-}
-.status-badge-custom[style*="background-color: #f0f0f0"]::before {
-  background: linear-gradient(135deg, #636e72, #7f8c8d);
 }
 
 .modal-content {
@@ -285,6 +233,72 @@
   transform: translateY(-1px);
 }
 
+/* Status Count Cards */
+.status-count-card {
+  background: rgba(255, 255, 255, 0.13);
+  border-radius: 12px;
+  padding: 1.25rem;
+  color: white;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border: 1.5px solid rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(6px);
+}
+
+.status-count-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.status-count-card::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -50%;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.1);
+  transform: rotate(30deg);
+  transition: all 0.3s ease;
+}
+
+.status-count-card:hover::before {
+  transform: rotate(45deg) scale(1.2);
+}
+
+.status-count-value {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.status-count-label {
+  font-size: 0.85rem;
+  opacity: 0.9;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.status-count-icon {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  opacity: 0.8;
+  transition: all 0.3s ease;
+}
+
+.status-count-card:hover .status-count-icon {
+  transform: scale(1.1);
+  opacity: 1;
+}
+
 /* Responsive adjustments */
 @media (max-width: 1200px) {
   .orders-dashboard {
@@ -353,94 +367,8 @@
     font-size: 0.8rem;
     padding: 0.25rem 0.5rem;
   }
-}
 
-/* Animation for modal */
-.modal.fade.show {
-  backdrop-filter: blur(2px);
-  transition: opacity 0.3s ease;
-}
-
-/* Filter dropdown styling */
-.form-select:focus {
-  border-color: #4f46e5;
-  box-shadow: 0 0 0 0.2rem rgba(79, 70, 229, 0.25);
-}
-
-/* Ensure dropdown is above other elements */
-.form-select {
-  position: relative;
-  z-index: 1000;
-}
-
-/* Add to existing Orders.css */
-
-/* Status Count Cards */
-.status-count-card {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 12px;
-  padding: 1.25rem;
-  color: white;
-  position: relative;
-  overflow: hidden;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
-  min-height: 120px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
-.status-count-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-}
-
-.status-count-card::before {
-  content: '';
-  position: absolute;
-  top: -50%;
-  right: -50%;
-  width: 100%;
-  height: 100%;
-  background: rgba(255, 255, 255, 0.1);
-  transform: rotate(30deg);
-  transition: all 0.3s ease;
-}
-
-.status-count-card:hover::before {
-  transform: rotate(45deg) scale(1.2);
-}
-
-.status-count-value {
-  font-size: 2rem;
-  font-weight: 700;
-  margin-bottom: 0.25rem;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-.status-count-label {
-  font-size: 0.85rem;
-  opacity: 0.9;
-  font-weight: 500;
-  margin-bottom: 0.5rem;
-}
-
-.status-count-icon {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  opacity: 0.8;
-  transition: all 0.3s ease;
-}
-
-.status-count-card:hover .status-count-icon {
-  transform: scale(1.1);
-  opacity: 1;
-}
-
-/* Responsive adjustments for status cards */
-@media (max-width: 768px) {
+  /* Responsive adjustments for status cards */
   .status-count-card {
     padding: 1rem;
     min-height: 100px;
@@ -466,6 +394,10 @@
 }
 
 @media (max-width: 576px) {
+  .dashboard-header {
+    padding: 1rem;
+  }
+  
   .status-count-card {
     min-height: 90px;
     padding: 0.75rem;
@@ -478,4 +410,22 @@
   .status-count-label {
     font-size: 0.75rem;
   }
+}
+
+/* Animation for modal */
+.modal.fade.show {
+  backdrop-filter: blur(2px);
+  transition: opacity 0.3s ease;
+}
+
+/* Filter dropdown styling */
+.form-select:focus {
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 0.2rem rgba(79, 70, 229, 0.25);
+}
+
+/* Ensure dropdown is above other elements */
+.form-select {
+  position: relative;
+  z-index: 1000;
 }
