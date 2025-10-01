@@ -59,11 +59,20 @@
   justify-content: center;
 }
 
+/* Search Container Wrapper */
+.search-container-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  flex-grow: 1;
+}
+
 .search-container {
   position: relative;
   display: flex;
   align-items: center;
   width: 100%;
+  flex-grow: 1;
 }
 
 .search-container .form-control {
@@ -71,6 +80,7 @@
   border-radius: 6px;
   border: 1px solid #ddd;
   transition: border-color 0.3s;
+  width: 100%;
 }
 
 .search-container .form-control:focus {
@@ -299,6 +309,62 @@
   opacity: 1;
 }
 
+/* Order Count Badge - Now positioned on left side */
+.order-count-badge {
+  background: rgba(255, 255, 255, 0.13);
+  border-radius: 12px;
+  padding: 0.5rem 1rem;
+  color: white;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-align: center;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  border: 1.5px solid rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(6px);
+  display: inline-block;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  white-space: nowrap;
+  min-width: fit-content;
+}
+
+.order-count-badge:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.order-count-badge::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -50%;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.1);
+  transform: rotate(30deg);
+  transition: all 0.3s ease;
+}
+
+.order-count-badge:hover::before {
+  transform: rotate(45deg) scale(1.2);
+}
+
+/* Search Results Info */
+.search-results-info {
+  padding: 0;
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-align: left;
+  flex-shrink: 0;
+}
+
+/* Customer name styling for better visibility */
+.customer-name {
+  font-weight: 600;
+  color: #1e40af;
+}
+
 /* Responsive adjustments */
 @media (max-width: 1200px) {
   .orders-dashboard {
@@ -333,6 +399,12 @@
   }
   
   .col-md-6 {
+    width: 100%;
+  }
+  
+  .search-container-wrapper {
+    flex-direction: column;
+    gap: 10px;
     width: 100%;
   }
   
@@ -391,6 +463,14 @@
     width: 20px;
     height: 20px;
   }
+
+  /* Responsive adjustments for order count badge */
+  .order-count-badge {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
+    text-align: center;
+    width: 100%;
+  }
 }
 
 @media (max-width: 576px) {
@@ -408,6 +488,11 @@
   }
   
   .status-count-label {
+    font-size: 0.75rem;
+  }
+
+  .order-count-badge {
+    padding: 0.35rem 0.7rem;
     font-size: 0.75rem;
   }
 }
@@ -428,75 +513,4 @@
 .form-select {
   position: relative;
   z-index: 1000;
-}
-
-
-/* Add to existing Orders.css */
-
-/* Order Count Badge */
-.order-count-badge {
-  background: rgba(255, 255, 255, 0.13);
-  border-radius: 12px;
-  padding: 0.75rem 1.5rem;
-  color: white;
-  font-weight: 600;
-  font-size: 1rem;
-  text-align: center;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-  border: 1.5px solid rgba(255, 255, 255, 0.18);
-  backdrop-filter: blur(6px);
-  display: inline-block;
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
-}
-
-.order-count-badge:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-}
-
-.order-count-badge::before {
-  content: '';
-  position: absolute;
-  top: -50%;
-  right: -50%;
-  width: 100%;
-  height: 100%;
-  background: rgba(255, 255, 255, 0.1);
-  transform: rotate(30deg);
-  transition: all 0.3s ease;
-}
-
-.order-count-badge:hover::before {
-  transform: rotate(45deg) scale(1.2);
-}
-
-/* Customer name styling for better visibility */
-.customer-name {
-  font-weight: 600;
-  color: #1e40af;
-}
-
-/* Search Results Info */
-.search-results-info {
-  padding: 0.5rem 0;
-  font-size: 0.9rem;
-  font-weight: 500;
-  text-align: center;
-}
-
-/* Responsive adjustments for order count badge */
-@media (max-width: 768px) {
-  .order-count-badge {
-    padding: 0.6rem 1.2rem;
-    font-size: 0.9rem;
-  }
-}
-
-@media (max-width: 576px) {
-  .order-count-badge {
-    padding: 0.5rem 1rem;
-    font-size: 0.85rem;
-  }
 }

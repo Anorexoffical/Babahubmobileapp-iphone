@@ -53,28 +53,26 @@ const CustomerRecords = () => {
                 <p className="text-muted mb-0">Manage your customer records</p>
               </div>
               <div className="col-md-6 d-flex flex-column flex-md-row gap-3 align-items-start align-items-md-center">
-                <div className="search-container flex-grow-1">
-                  <FiSearch className="search-icon" />
-                  <input
-                    className="search-input"
-                    value={searchTerm}
-                    onChange={(e) => {
-                      setSearchTerm(e.target.value);
-                      setCurrentPage(1);
-                    }}
-                    placeholder="Search by name or email..."
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Search Results Info */}
-            <div className="row mt-2">
-              <div className="col-12">
-                <div className="search-results-info">
-                  <div className="customer-count-badge">
-                    {filteredCustomers.length} customer{filteredCustomers.length !== 1 ? 's' : ''} found
-                    {searchTerm && ` for "${searchTerm}"`}
+                <div className="search-container-wrapper">
+                  {/* Search Results Info - Now on left side */}
+                  <div className="search-results-info">
+                    <div className="customer-count-badge">
+                      {filteredCustomers.length} customer{filteredCustomers.length !== 1 ? 's' : ''} found
+                      {searchTerm && ` for "${searchTerm}"`}
+                    </div>
+                  </div>
+                  
+                  <div className="search-container flex-grow-1">
+                    <FiSearch className="search-icon" />
+                    <input
+                      className="search-input"
+                      value={searchTerm}
+                      onChange={(e) => {
+                        setSearchTerm(e.target.value);
+                        setCurrentPage(1);
+                      }}
+                      placeholder="Search by name or email..."
+                    />
                   </div>
                 </div>
               </div>

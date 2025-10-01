@@ -191,18 +191,29 @@ const Orders = () => {
                 <p className="text-muted mb-0">View and manage customer orders</p>
               </div>
               <div className="col-md-6 d-flex flex-column flex-md-row gap-3 align-items-start align-items-md-center">
-                <div className="search-container flex-grow-1">
-                  <FiSearch className="search-icon" />
-                  <Form.Control 
-                    type="search" 
-                    placeholder="Search by customer name, order ID, or email..." 
-                    value={searchTerm}
-                    onChange={(e) => {
-                      setSearchTerm(e.target.value);
-                      setCurrentPage(1);
-                    }}
-                  />
+                <div className="search-container-wrapper">
+                  {/* Search Results Info - Now on left side */}
+                  <div className="search-results-info">
+                    <div className="order-count-badge">
+                      {filteredOrders.length} order{filteredOrders.length !== 1 ? 's' : ''} found
+                      {searchTerm && ` for "${searchTerm}"`}
+                    </div>
+                  </div>
+                  
+                  <div className="search-container flex-grow-1">
+                    <FiSearch className="search-icon" />
+                    <Form.Control 
+                      type="search" 
+                      placeholder="Search by customer name, order ID, or email..." 
+                      value={searchTerm}
+                      onChange={(e) => {
+                        setSearchTerm(e.target.value);
+                        setCurrentPage(1);
+                      }}
+                    />
+                  </div>
                 </div>
+                
                 <div className="filter-container">
                   <Form.Select 
                     value={statusFilter}
@@ -218,18 +229,6 @@ const Orders = () => {
                     <option value="Shipped">Shipped</option>
                     <option value="Completed">Completed</option>
                   </Form.Select>
-                </div>
-              </div>
-            </div>
-
-            {/* Search Results Info */}
-            <div className="row mt-2">
-              <div className="col-12">
-                <div className="search-results-info">
-                  <div className="order-count-badge">
-                    {filteredOrders.length} order{filteredOrders.length !== 1 ? 's' : ''} found
-                    {searchTerm && ` for "${searchTerm}"`}
-                  </div>
                 </div>
               </div>
             </div>
