@@ -101,27 +101,57 @@ const ProductTable = () => {
     return 'In Stock';
   };
 
-  // Updated status background colors with black text
-  const getStatusVariant = (variants) => {
+  // Enhanced status styling with proper backgrounds (matching order system)
+  const getStatusStyle = (variants) => {
     const status = getProductStatus(variants);
     
-    // For order statuses (based on your image data)
-    if (status === 'Pending Payment') return 'pending-payment';
-    if (status === 'Processing') return 'processing';
-    if (status === 'Completed') return 'completed';
-    if (status === 'Shipped') return 'shipped';
+    switch (status) {
+      case 'In Stock':
+        return { 
+          backgroundColor: '#e6f7ee',
+          color: '#00b894',
+          borderColor: '#00b894'
+        };
+      case 'Low Stock':
+        return { 
+          backgroundColor: '#fff4e6',
+          color: '#e17055',
+          borderColor: '#fdcb6e'
+        };
+      case 'Out of Stock':
+        return { 
+          backgroundColor: '#ffe6e6',
+          color: '#d63031',
+          borderColor: '#d63031'
+        };
+      default:
+        return { 
+          backgroundColor: '#f0f0f0',
+          color: '#636e72',
+          borderColor: '#636e72'
+        };
+    }
+  };
+
+  const getStatusDotStyle = (variants) => {
+    const status = getProductStatus(variants);
     
-    // For stock statuses (existing functionality)
-    const total = calculateTotalStock(variants);
-    if (total === 0) return 'out-of-stock';
-    if (total < 10) return 'low-stock';
-    return 'in-stock';
+    switch (status) {
+      case 'In Stock':
+        return { backgroundColor: '#00b894' };
+      case 'Low Stock':
+        return { backgroundColor: '#fdcb6e' };
+      case 'Out of Stock':
+        return { backgroundColor: '#d63031' };
+      default:
+        return { backgroundColor: '#636e72' };
+    }
   };
 
   // Check if action buttons should be shown based on status
   const shouldShowActionButtons = (variants) => {
     const status = getProductStatus(variants);
-    return status !== 'Pending Payment';
+    return status !== 'Out of Stock';
   };
 
   const filteredProducts = products.filter(product => {
@@ -178,6 +208,37 @@ const ProductTable = () => {
     }
   };
 
+  // Status count cards styling (matching order system)
+  const getStatusCardStyle = (type) => {
+    switch(type) {
+      case 'total':
+        return { 
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          color: 'white'
+        };
+      case 'in-stock':
+        return { 
+          background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+          color: 'white'
+        };
+      case 'low-stock':
+        return { 
+          background: 'linear-gradient(135deg, #ffd89b 0%, #19547b 100%)',
+          color: 'white'
+        };
+      case 'out-of-stock':
+        return { 
+          background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+          color: 'white'
+        };
+      default:
+        return { 
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          color: 'white'
+        };
+    }
+  };
+
   return (
     <>
       <Topbar />
@@ -231,8 +292,13 @@ const ProductTable = () => {
                     </div>
                   </div>
                   <Badge 
-                    className={`custom-status-badge ${getStatusVariant(selectedProduct.variants)}`}
+                    style={getStatusStyle(selectedProduct.variants)}
+                    className="status-badge-custom"
                   >
+                    <span 
+                      className="status-dot"
+                      style={getStatusDotStyle(selectedProduct.variants)}
+                    ></span>
                     {getProductStatus(selectedProduct.variants)}
                   </Badge>
                 </div>
@@ -273,7 +339,14 @@ const ProductTable = () => {
                             </td>
                             <td>{size.size}</td>
                             <td>
-                              <Badge bg={size.stock === 0 ? 'danger' : size.stock < 5 ? 'warning' : 'success'}>
+                              <Badge 
+                                style={getStatusStyle([{ sizes: [{ stock: size.stock }] }])}
+                                className="status-badge-custom"
+                              >
+                                <span 
+                                  className="status-dot"
+                                  style={getStatusDotStyle([{ sizes: [{ stock: size.stock }] }])}
+                                ></span>
                                 {size.stock}
                               </Badge>
                             </td>
@@ -298,8 +371,8 @@ const ProductTable = () => {
           <div className="container-fluid">
             <div className="row align-items-center mb-3 mb-md-0">
               <div className="col-md-6 mb-3 mb-md-0">
-                <h1 className="fw-bold mb-1">Product Inventory</h1>
-                <p className="text-muted mb-0">Manage your product catalog and inventory</p>
+                <h1 className="fw-bold mb-1 text-white">Product Inventory</h1>
+                <p className="text-white-50 mb-0">Manage your product catalog and inventory</p>
               </div>
 
               <div className="col-md-6 d-flex flex-column flex-md-row gap-3 align-items-start align-items-md-center justify-content-md-end">
@@ -369,35 +442,36 @@ const ProductTable = () => {
               </div>
             </div>
             
+            {/* Enhanced Status Count Cards */}
             <div className="row g-3 mt-2">
               <div className="col-6 col-md-3">
-                <div className="stat-card">
-                  <div className="stat-value">{products.length}</div>
-                  <div className="stat-label">Total Products</div>
+                <div className="status-count-card" style={getStatusCardStyle('total')}>
+                  <div className="status-count-value">{products.length}</div>
+                  <div className="status-count-label">Total Products</div>
                 </div>
               </div>
               <div className="col-6 col-md-3">
-                <div className="stat-card">
-                  <div className="stat-value">
-                    {products.reduce((sum, p) => sum + calculateTotalStock(p.variants), 0)}
-                  </div>
-                  <div className="stat-label">Total Stock</div>
-                </div>
-              </div>
-              <div className="col-6 col-md-3">
-                <div className="stat-card">
-                  <div className="stat-value">
+                <div className="status-count-card" style={getStatusCardStyle('in-stock')}>
+                  <div className="status-count-value">
                     {products.filter(p => getProductStatus(p.variants) === 'In Stock').length}
                   </div>
-                  <div className="stat-label">In Stock</div>
+                  <div className="status-count-label">In Stock</div>
                 </div>
               </div>
               <div className="col-6 col-md-3">
-                <div className="stat-card">
-                  <div className="stat-value">
+                <div className="status-count-card" style={getStatusCardStyle('low-stock')}>
+                  <div className="status-count-value">
                     {products.filter(p => getProductStatus(p.variants) === 'Low Stock').length}
                   </div>
-                  <div className="stat-label">Low Stock</div>
+                  <div className="status-count-label">Low Stock</div>
+                </div>
+              </div>
+              <div className="col-6 col-md-3">
+                <div className="status-count-card" style={getStatusCardStyle('out-of-stock')}>
+                  <div className="status-count-value">
+                    {products.filter(p => getProductStatus(p.variants) === 'Out of Stock').length}
+                  </div>
+                  <div className="status-count-label">Out of Stock</div>
                 </div>
               </div>
             </div>
@@ -441,8 +515,13 @@ const ProductTable = () => {
                             </td>
                             <td>
                               <Badge 
-                                className={`custom-status-badge ${getStatusVariant(product.variants)}`}
+                                style={getStatusStyle(product.variants)}
+                                className="status-badge-custom"
                               >
+                                <span 
+                                  className="status-dot"
+                                  style={getStatusDotStyle(product.variants)}
+                                ></span>
                                 {getProductStatus(product.variants)}
                               </Badge>
                             </td>

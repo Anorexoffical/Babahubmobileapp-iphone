@@ -111,18 +111,39 @@ const Orders = () => {
     }
   };
 
+  // Enhanced status styling with proper backgrounds
   const getStatusStyle = (status) => {
     switch (status) {
       case 'Completed':
-        return { backgroundColor: '#e6f7ee' };
+        return { 
+          backgroundColor: '#e6f7ee',
+          color: '#00b894',
+          borderColor: '#00b894'
+        };
       case 'Shipped':
-        return { backgroundColor: '#e6f0ff' };
+        return { 
+          backgroundColor: '#e6f0ff',
+          color: '#0984e3',
+          borderColor: '#0984e3'
+        };
       case 'Processing':
-        return { backgroundColor: '#fff4e6' };
+        return { 
+          backgroundColor: '#fff4e6',
+          color: '#e17055',
+          borderColor: '#fdcb6e'
+        };
       case 'Pending Payment':
-        return { backgroundColor: '#ffe6e6' };
+        return { 
+          backgroundColor: '#ffe6e6',
+          color: '#d63031',
+          borderColor: '#d63031'
+        };
       default:
-        return { backgroundColor: '#f0f0f0' };
+        return { 
+          backgroundColor: '#f0f0f0',
+          color: '#636e72',
+          borderColor: '#636e72'
+        };
     }
   };
 
@@ -141,35 +162,38 @@ const Orders = () => {
     }
   };
 
-  const getStatusTextColor = (status) => {
-    switch (status) {
-      case 'Completed':
-        return '#00b894';
-      case 'Shipped':
-        return '#0984e3';
-      case 'Processing':
-        return '#e17055';
-      case 'Pending Payment':
-        return '#d63031';
-      default:
-        return '#636e72';
-    }
-  };
-
   const getStatusCardStyle = (status) => {
     switch(status) {
       case 'total':
-        return { background: 'rgba(255, 255, 255, 0.13)' };
+        return { 
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          color: 'white'
+        };
       case 'pending':
-        return { background: 'rgba(255, 255, 255, 0.13)' };
+        return { 
+          background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+          color: 'white'
+        };
       case 'processing':
-        return { background: 'rgba(255, 255, 255, 0.13)' };
+        return { 
+          background: 'linear-gradient(135deg, #ffd89b 0%, #19547b 100%)',
+          color: 'white'
+        };
       case 'shipped':
-        return { background: 'rgba(255, 255, 255, 0.13)' };
+        return { 
+          background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+          color: 'white'
+        };
       case 'completed':
-        return { background: 'rgba(255, 255, 255, 0.13)' };
+        return { 
+          background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+          color: 'white'
+        };
       default:
-        return { background: 'rgba(255, 255, 255, 0.13)' };
+        return { 
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          color: 'white'
+        };
     }
   };
 
@@ -223,7 +247,7 @@ const Orders = () => {
               </div>
             </div>
 
-            {/* Status Count Cards */}
+            {/* Enhanced Status Count Cards */}
             <div className="row g-3 mt-4">
               <div className="col-6 col-md-3">
                 <div className="status-count-card" style={getStatusCardStyle('total')}>
@@ -304,11 +328,7 @@ const Orders = () => {
                         <td>R {order.totalAmountAfterTax}</td>
                         <td>
                           <Badge 
-                            style={{
-                              ...getStatusStyle(order.deliveryStatus),
-                              color: getStatusTextColor(order.deliveryStatus),
-                              border: `1px solid ${getStatusDotStyle(order.deliveryStatus).backgroundColor}`
-                            }}
+                            style={getStatusStyle(order.deliveryStatus)}
                             className="status-badge-custom"
                           >
                             <span 
@@ -445,11 +465,7 @@ const Orders = () => {
                         <p><strong>Date:</strong> {new Date(selectedOrder.createdAt).toLocaleDateString()}</p>
                         <p><strong>Status:</strong> 
                           <Badge 
-                            style={{
-                              ...getStatusStyle(selectedOrder.deliveryStatus),
-                              color: getStatusTextColor(selectedOrder.deliveryStatus),
-                              border: `1px solid ${getStatusDotStyle(selectedOrder.deliveryStatus).backgroundColor}`
-                            }}
+                            style={getStatusStyle(selectedOrder.deliveryStatus)}
                             className="status-badge-custom ms-2"
                           >
                             <span 

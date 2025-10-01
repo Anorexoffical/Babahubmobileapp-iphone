@@ -1,3 +1,4 @@
+/* ProductTable.css */
 .product-dashboard {
   min-height: 100vh;
   width: 90vw;
@@ -84,6 +85,89 @@
   color: #2563eb;
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Enhanced Status Count Cards */
+.status-count-card {
+  border-radius: 12px;
+  padding: 1.25rem;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border: none;
+  backdrop-filter: blur(6px);
+}
+
+.status-count-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+}
+
+.status-count-card::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -50%;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.1);
+  transform: rotate(30deg);
+  transition: all 0.3s ease;
+}
+
+.status-count-card:hover::before {
+  transform: rotate(45deg) scale(1.2);
+}
+
+.status-count-value {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.status-count-label {
+  font-size: 0.85rem;
+  opacity: 0.9;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+/* Enhanced Status Badges */
+.status-badge-custom {
+  text-transform: capitalize;
+  font-weight: 600;
+  border-radius: 16px !important;
+  padding: 0.5em 1.2em;
+  font-size: 0.85em;
+  letter-spacing: 0.02em;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid !important;
+  min-width: 120px;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 8px;
+  display: inline-block;
+}
+
+.status-badge-custom:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 
 .stat-card {
@@ -304,62 +388,6 @@
   align-items: center !important;
 }
 
-/* Status Badge Styles - REMOVED bg- prefix to prevent Bootstrap interference */
-.custom-status-badge {
-  font-weight: 500;
-  border: 1px solid #dee2e6 !important;
-  color: #000 !important;
-  padding: 0.35rem 0.75rem;
-  font-size: 0.75rem;
-  border-radius: 50px;
-  min-width: 120px;
-  text-align: center;
-  display: inline-block;
-}
-
-/* Specific status background colors - REMOVED bg- prefix */
-.pending-payment {
-  background-color: #ffebee !important;
-  color: #000 !important;
-  border-color: #f5c6cb !important;
-}
-
-.processing {
-  background-color: #fff3e0 !important;
-  color: #000 !important;
-  border-color: #ffeaa7 !important;
-}
-
-.completed {
-  background-color: #e8f5e8 !important;
-  color: #000 !important;
-  border-color: #c8e6c9 !important;
-}
-
-.shipped {
-  background-color: #e3f2fd !important;
-  color: #000 !important;
-  border-color: #bbdefb !important;
-}
-
-.out-of-stock {
-  background-color: #ffebee !important;
-  color: #000 !important;
-  border-color: #f5c6cb !important;
-}
-
-.low-stock {
-  background-color: #fff3e0 !important;
-  color: #000 !important;
-  border-color: #ffeaa7 !important;
-}
-
-.in-stock {
-  background-color: #e8f5e8 !important;
-  color: #000 !important;
-  border-color: #c8e6c9 !important;
-}
-
 /* Action button visibility control */
 .action-buttons-container {
   display: flex;
@@ -478,7 +506,7 @@
     font-size: 0.9rem;
   }
   
-  .custom-status-badge {
+  .status-badge-custom {
     min-width: 100px;
     font-size: 0.7rem;
     padding: 0.25rem 0.5rem;
@@ -492,6 +520,20 @@
   .action-buttons-container .btn {
     width: 100%;
     justify-content: center;
+  }
+
+  /* Responsive status count cards */
+  .status-count-card {
+    padding: 1rem;
+    min-height: 100px;
+  }
+  
+  .status-count-value {
+    font-size: 1.5rem;
+  }
+  
+  .status-count-label {
+    font-size: 0.8rem;
   }
 }
 
@@ -539,10 +581,23 @@
     font-size: 1.25rem;
   }
   
-  .custom-status-badge {
+  .status-badge-custom {
     min-width: 80px;
     font-size: 0.65rem;
     padding: 0.2rem 0.4rem;
+  }
+
+  .status-count-card {
+    min-height: 90px;
+    padding: 0.75rem;
+  }
+  
+  .status-count-value {
+    font-size: 1.25rem;
+  }
+  
+  .status-count-label {
+    font-size: 0.75rem;
   }
 }
 
@@ -560,7 +615,7 @@
     display: none !important;
   }
   
-  .custom-status-badge {
+  .status-badge-custom {
     border: 1px solid #000 !important;
     -webkit-print-color-adjust: exact;
     color-adjust: exact;

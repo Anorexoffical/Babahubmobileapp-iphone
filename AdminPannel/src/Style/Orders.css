@@ -112,11 +112,22 @@
 
 .orders-table {
   font-size: 14px;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
 
 .orders-table th {
   background-color: #f8f9fa;
   font-weight: 600;
+  border-bottom: 2px solid #dee2e6;
+  padding: 12px 8px;
+}
+
+.orders-table td {
+  padding: 12px 8px;
+  vertical-align: middle;
 }
 
 /* Enhanced status badges with consistent styling */
@@ -129,7 +140,7 @@
   letter-spacing: 0.02em;
   display: inline-flex;
   align-items: center;
-  border: none;
+  border: 1px solid !important;
   min-width: 120px;
   justify-content: center;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
@@ -160,10 +171,12 @@
 .modal-header {
   border-bottom: 1px solid #eee;
   padding: 16px 20px;
+  background-color: #f8f9fa;
 }
 
 .modal-title {
   font-weight: 600;
+  color: #333;
 }
 
 .modal-body {
@@ -173,13 +186,20 @@
 .modal-footer {
   border-top: 1px solid #eee;
   padding: 16px 20px;
+  background-color: #f8f9fa;
 }
 
 .card {
   border: 1px solid #eee;
   border-radius: 8px;
   margin-bottom: 20px;
-  box-shadow: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
 }
 
 .card-header {
@@ -187,6 +207,7 @@
   border-bottom: 1px solid #eee;
   font-weight: 500;
   padding: 12px 16px;
+  color: #333;
 }
 
 .card-body {
@@ -198,6 +219,7 @@
   border-radius: 6px;
   font-weight: 500;
   transition: all 0.3s ease;
+  border: 1px solid;
 }
 
 .btn-outline-primary {
@@ -209,6 +231,7 @@
   background-color: #4f46e5;
   border-color: #4f46e5;
   transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(79, 70, 229, 0.3);
 }
 
 .btn-outline-success {
@@ -220,6 +243,7 @@
   background-color: #10b981;
   border-color: #10b981;
   transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
 }
 
 .btn-outline-info {
@@ -231,6 +255,7 @@
   background-color: #0ea5e9;
   border-color: #0ea5e9;
   transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(14, 165, 233, 0.3);
 }
 
 .btn-outline-warning {
@@ -242,14 +267,13 @@
   background-color: #f59e0b;
   border-color: #f59e0b;
   transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(245, 158, 11, 0.3);
 }
 
-/* Status Count Cards */
+/* Enhanced Status Count Cards */
 .status-count-card {
-  background: rgba(255, 255, 255, 0.13);
   border-radius: 12px;
   padding: 1.25rem;
-  color: white;
   position: relative;
   overflow: hidden;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
@@ -258,13 +282,13 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  border: 1.5px solid rgba(255, 255, 255, 0.18);
+  border: none;
   backdrop-filter: blur(6px);
 }
 
 .status-count-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
 }
 
 .status-count-card::before {
@@ -310,17 +334,15 @@
   opacity: 1;
 }
 
-/* Order Count Badge - Now positioned on left side */
+/* Order Count Badge */
 .order-count-badge {
-  background: rgba(255, 255, 255, 0.13);
   border-radius: 12px;
   padding: 0.5rem 1rem;
-  color: white;
   font-weight: 600;
   font-size: 0.9rem;
   text-align: center;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-  border: 1.5px solid rgba(255, 255, 255, 0.18);
+  border: none;
   backdrop-filter: blur(6px);
   display: inline-block;
   transition: all 0.3s ease;
@@ -369,6 +391,29 @@
 /* Fix for bg-primary conflict */
 .bg-primary {
   background-color: transparent !important;
+}
+
+/* Pagination styling */
+.pagination {
+  margin-bottom: 0;
+}
+
+.page-link {
+  border: 1px solid #dee2e6;
+  color: #4f46e5;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.page-link:hover {
+  background-color: #4f46e5;
+  border-color: #4f46e5;
+  color: white;
+}
+
+.page-item.active .page-link {
+  background-color: #4f46e5;
+  border-color: #4f46e5;
 }
 
 /* Responsive adjustments */
@@ -519,4 +564,27 @@
 .form-select {
   position: relative;
   z-index: 1000;
+}
+
+/* Loading spinner enhancement */
+.spinner-border {
+  width: 3rem;
+  height: 3rem;
+}
+
+/* Alert styling */
+.alert {
+  border: none;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.alert-success {
+  background-color: #e6f7ee;
+  color: #00b894;
+  border-left: 4px solid #00b894;
+}
+
+.alert-dismissible .btn-close {
+  padding: 0.75rem;
 }
