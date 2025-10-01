@@ -1,16 +1,3 @@
-/* Reports.css - Modern Sales Dashboard */
-:root {
-  --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-  --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-  --info-gradient: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-  --warning-gradient: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-  --danger-gradient: linear-gradient(135deg, #ff057c 0%, #8d0b93 100%);
-  --dark-gradient: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
-  --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-  --card-hover-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
-}
-
 .analytics-dashboard {
   background: linear-gradient(135deg, #f5f7fa 0%, #e4e7eb 100%);
   min-height: 100vh;
@@ -18,19 +5,21 @@
   width: 100%;
   margin: 0;
   font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  margin-top: 40px;
+  margin-top: 100px;
 }
 
+/* CONSISTENT DASHBOARD HEADER */
 .dashboard-header {
-  background: var(--primary-gradient);
+  background: linear-gradient(135deg, #6b73ff 0%, #000dff 100%);
   color: white;
   padding: 2rem 0;
   margin-bottom: 2rem;
   border-radius: 16px;
-  box-shadow: var(--card-shadow);
+  box-shadow: 0 8px 32px rgba(0, 13, 255, 0.13);
   width: 100%;
   position: relative;
   overflow: hidden;
+  margin-top: 2rem;
 }
 
 .dashboard-header::before {
@@ -49,6 +38,7 @@
   font-weight: 700;
   font-size: 2.2rem;
   position: relative;
+  color: white;
 }
 
 .dashboard-header .subtitle {
@@ -57,6 +47,7 @@
   font-size: 1rem;
   font-weight: 400;
   position: relative;
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .gradient-text {
@@ -71,7 +62,7 @@
   border: none;
   border-radius: 16px;
   height: 100%;
-  box-shadow: var(--card-shadow);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
   overflow: hidden;
   position: relative;
 }
@@ -87,23 +78,23 @@
 
 .summary-card:hover {
   transform: translateY(-5px);
-  box-shadow: var(--card-hover-shadow);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
 }
 
-.card-sales::before { background: var(--primary-gradient); }
-.card-profit::before { background: var(--success-gradient); }
-.card-purchase::before { background: var(--info-gradient); }
-.card-due::before { background: var(--warning-gradient); }
-.card-expense::before { background: var(--danger-gradient); }
-.card-products::before { background: var(--dark-gradient); }
+.card-sales::before { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+.card-profit::before { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+.card-purchase::before { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+.card-due::before { background: linear-gradient(135deg, #ffd89b 0%, #19547b 100%); }
+.card-expense::before { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+.card-products::before { background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%); }
 
 .summary-card .card-body {
   padding: 1.5rem;
 }
 
 .summary-icon {
-  width: 54px;
-  height: 54px;
+  width: 44px;
+  height: 44px;
   border-radius: 12px;
   display: flex;
   align-items: center;
@@ -113,12 +104,12 @@
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
-.card-sales .summary-icon { background: var(--primary-gradient); }
-.card-profit .summary-icon { background: var(--success-gradient); }
-.card-purchase .summary-icon { background: var(--info-gradient); }
-.card-due .summary-icon { background: var(--warning-gradient); }
-.card-expense .summary-icon { background: var(--danger-gradient); }
-.card-products .summary-icon { background: var(--dark-gradient); }
+.card-sales .summary-icon { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+.card-profit .summary-icon { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+.card-purchase .summary-icon { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+.card-due .summary-icon { background: linear-gradient(135deg, #ffd89b 0%, #19547b 100%); }
+.card-expense .summary-icon { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+.card-products .summary-icon { background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%); }
 
 .text-small {
   font-size: 0.85rem;
@@ -165,7 +156,7 @@
 .tabs-card {
   border-radius: 16px;
   margin-bottom: 2rem;
-  box-shadow: var(--card-shadow);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
   overflow: hidden;
 }
 
