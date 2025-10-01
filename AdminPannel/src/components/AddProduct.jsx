@@ -21,7 +21,7 @@ const AddProduct = ({
     variants: [{
       color: '',
       colorCode: '#6c757d',
-      sizes: [{ size: '', stock: 0, price: 0 }]
+      sizes: [{ size: '', stock: '', price: '' }]
     }]
   });
 
@@ -78,7 +78,7 @@ const AddProduct = ({
         {
           color: '',
           colorCode: '#6c757d',
-          sizes: [{ size: '', stock: 0, price: 0 }]
+          sizes: [{ size: '', stock: '', price: '' }]
         }
       ]
     });
@@ -86,7 +86,7 @@ const AddProduct = ({
 
   const addSize = (variantIndex) => {
     const updatedVariants = [...newProduct.variants];
-    updatedVariants[variantIndex].sizes.push({ size: '', stock: 0, price: 0 });
+    updatedVariants[variantIndex].sizes.push({ size: '', stock: '', price: '' });
     setNewProduct({ ...newProduct, variants: updatedVariants });
   };
 
@@ -107,6 +107,16 @@ const AddProduct = ({
     setIsSubmitting(true);
 
     try {
+      // Validate and convert empty strings to 0 for stock and price
+      const processedVariants = newProduct.variants.map(variant => ({
+        ...variant,
+        sizes: variant.sizes.map(size => ({
+          ...size,
+          stock: size.stock === '' ? 0 : parseInt(size.stock) || 0,
+          price: size.price === '' ? 0 : parseFloat(size.price) || 0
+        }))
+      }));
+
       const formData = new FormData();
       formData.append('name', newProduct.name);
       formData.append('description', newProduct.description);
@@ -119,7 +129,7 @@ const AddProduct = ({
         formData.append('image', newProduct.mainImage);
       }
 
-      formData.append('variants', JSON.stringify(newProduct.variants));
+      formData.append('variants', JSON.stringify(processedVariants));
 
       // Pass formData to parent handler instead of axios here
       await onAddProduct(formData);
@@ -145,7 +155,7 @@ const AddProduct = ({
       variants: [{
         color: '',
         colorCode: '#6c757d',
-        sizes: [{ size: '', stock: 0, price: 0 }]
+        sizes: [{ size: '', stock: '', price: '' }]
       }]
     });
     setImagePreview('');
@@ -417,9 +427,9 @@ const AddProduct = ({
                           <Form.Control
                             type="number"
                             min="0"
-                            placeholder="Available quantity"
+                            placeholder="Enter quantity"
                             value={size.stock}
-                            onChange={(e) => handleSizeChange(index, sIdx, 'stock', parseInt(e.target.value || 0))}
+                            onChange={(e) => handleSizeChange(index, sIdx, 'stock', e.target.value)}
                             required
                             className="border-2 py-2 px-3"
                             disabled={isSubmitting}
@@ -428,16 +438,16 @@ const AddProduct = ({
                       </Col>
                       <Col md={4}>
                         <Form.Group>
-                          <Form.Label className="fw-medium text-muted mb-2">Price ($) *</Form.Label>
+                          <Form.Label className="fw-medium text-muted mb-2">Price (R) *</Form.Label>
                           <div className="input-group">
-                            <span className="input-group-text bg-light border-2">$</span>
+                            <span className="input-group-text bg-light border-2">R</span>
                             <Form.Control
                               type="number"
                               min="0"
                               step="0.01"
-                              placeholder="0.00"
+                              placeholder="Enter price"
                               value={size.price}
-                              onChange={(e) => handleSizeChange(index, sIdx, 'price', parseFloat(e.target.value || 0))}
+                              onChange={(e) => handleSizeChange(index, sIdx, 'price', e.target.value)}
                               required
                               className="border-2 py-2 px-3"
                               disabled={isSubmitting}

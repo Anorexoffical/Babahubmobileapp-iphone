@@ -45,10 +45,10 @@ const CustomerRecords = () => {
     <>
       <Topbar />
       <div className="customer-dashboard">
-        <div className="dashboard-header">
+        <div className="dashboard-header mb-4">
           <div className="container-fluid">
-            <div className="row align-items-center mb-3">
-              <div className="col-md-6">
+            <div className="row align-items-center mb-3 mb-md-0">
+              <div className="col-md-6 mb-3 mb-md-0">
                 <h1 className="fw-bold mb-1">Customer Management</h1>
                 <p className="text-muted mb-0">Manage your customer records</p>
               </div>
@@ -72,7 +72,7 @@ const CustomerRecords = () => {
             <div className="row mt-2">
               <div className="col-12">
                 <div className="search-results-info">
-                  <span className="text-muted">
+                  <span className="text-white">
                     {filteredCustomers.length} customer{filteredCustomers.length !== 1 ? 's' : ''} found
                     {searchTerm && ` for "${searchTerm}"`}
                   </span>

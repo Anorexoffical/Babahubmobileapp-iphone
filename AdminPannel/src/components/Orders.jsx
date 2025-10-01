@@ -12,7 +12,7 @@ import {
   FiChevronRight,
   FiFilter
 } from 'react-icons/fi';
-import { Table, Pagination, Badge, Form, Button, Card, Alert, Modal } from 'react-bootstrap';
+import { Table, Pagination, Badge, Form, Button, Card, Alert, Modal, Row, Col } from 'react-bootstrap';
 import Topbar from './Topbar';
 import '../Style/Orders.css';
 import axios from 'axios';
@@ -43,6 +43,19 @@ const Orders = () => {
       setLoading(false);
     }
   };
+
+  // Calculate status counts
+  const getStatusCounts = () => {
+    const total = orders.length;
+    const pendingPayment = orders.filter(order => order.deliveryStatus === 'Pending Payment').length;
+    const processing = orders.filter(order => order.deliveryStatus === 'Processing').length;
+    const shipped = orders.filter(order => order.deliveryStatus === 'Shipped').length;
+    const completed = orders.filter(order => order.deliveryStatus === 'Completed').length;
+
+    return { total, pendingPayment, processing, shipped, completed };
+  };
+
+  const statusCounts = getStatusCounts();
 
   // Filter and pagination logic
   const filteredOrders = orders.filter(order => {
@@ -114,28 +127,50 @@ const Orders = () => {
       case 'Completed':
         return { 
           backgroundColor: '#e6f7ee',
-          color: '#00b894'
+          color: '#00b894',
+          border: '1px solid #00b894'
         };
       case 'Shipped':
         return { 
           backgroundColor: '#e6f0ff',
-          color: '#0984e3'
+          color: '#0984e3',
+          border: '1px solid #0984e3'
         };
       case 'Processing':
         return { 
           backgroundColor: '#fff4e6',
-          color: '#e17055'
+          color: '#e17055',
+          border: '1px solid #e17055'
         };
       case 'Pending Payment':
         return { 
           backgroundColor: '#ffe6e6',
-          color: '#d63031'
+          color: '#d63031',
+          border: '1px solid #d63031'
         };
       default:
         return { 
           backgroundColor: '#f0f0f0',
-          color: '#636e72'
+          color: '#636e72',
+          border: '1px solid #ddd'
         };
+    }
+  };
+
+  const getStatusCardStyle = (status) => {
+    switch(status) {
+      case 'total':
+        return { background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' };
+      case 'pending':
+        return { background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' };
+      case 'processing':
+        return { background: 'linear-gradient(135deg, #ffd89b 0%, #19547b 100%)' };
+      case 'shipped':
+        return { background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' };
+      case 'completed':
+        return { background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)' };
+      default:
+        return { background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' };
     }
   };
 
@@ -156,7 +191,7 @@ const Orders = () => {
                 <h1 className="fw-bold mb-1">Order Management</h1>
                 <p className="text-muted mb-0">View and manage customer orders</p>
               </div>
-              <div className="col-md-6 d-flex flex-column flex-md-row gap-3">
+              <div className="col-md-6 d-flex flex-column flex-md-row gap-3 align-items-start align-items-md-center">
                 <div className="search-container flex-grow-1">
                   <FiSearch className="search-icon" />
                   <Form.Control 
@@ -169,20 +204,62 @@ const Orders = () => {
                     }}
                   />
                 </div>
-                <Form.Select 
-                  value={statusFilter}
-                  onChange={(e) => {
-                    setStatusFilter(e.target.value);
-                    setCurrentPage(1);
-                  }}
-                  style={{ width: '180px' }}
-                >
-                  <option value="all">All Status</option>
-                  <option value="Pending Payment">Pending Payment</option>
-                  <option value="Processing">Processing</option>
-                  <option value="Shipped">Shipped</option>
-                  <option value="Completed">Completed</option>
-                </Form.Select>
+                <div className="filter-container">
+                  <Form.Select 
+                    value={statusFilter}
+                    onChange={(e) => {
+                      setStatusFilter(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    style={{ width: '180px' }}
+                  >
+                    <option value="all">All Status</option>
+                    <option value="Pending Payment">Pending Payment</option>
+                    <option value="Processing">Processing</option>
+                    <option value="Shipped">Shipped</option>
+                    <option value="Completed">Completed</option>
+                  </Form.Select>
+                </div>
+              </div>
+            </div>
+
+            {/* Status Count Cards */}
+            <div className="row g-3 mt-4">
+              <div className="col-6 col-md-3">
+                <div className="status-count-card" style={getStatusCardStyle('total')}>
+                  <div className="status-count-value">{statusCounts.total}</div>
+                  <div className="status-count-label">Total Orders</div>
+                  <div className="status-count-icon">
+                    <FiPackage size={24} />
+                  </div>
+                </div>
+              </div>
+              <div className="col-6 col-md-3">
+                <div className="status-count-card" style={getStatusCardStyle('pending')}>
+                  <div className="status-count-value">{statusCounts.pendingPayment}</div>
+                  <div className="status-count-label">Pending Payment</div>
+                  <div className="status-count-icon">
+                    <FiClock size={24} />
+                  </div>
+                </div>
+              </div>
+              <div className="col-6 col-md-3">
+                <div className="status-count-card" style={getStatusCardStyle('processing')}>
+                  <div className="status-count-value">{statusCounts.processing}</div>
+                  <div className="status-count-label">Processing</div>
+                  <div className="status-count-icon">
+                    <FiPackage size={24} />
+                  </div>
+                </div>
+              </div>
+              <div className="col-6 col-md-3">
+                <div className="status-count-card" style={getStatusCardStyle('completed')}>
+                  <div className="status-count-value">{statusCounts.completed}</div>
+                  <div className="status-count-label">Completed</div>
+                  <div className="status-count-icon">
+                    <FiCheckCircle size={24} />
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -224,7 +301,7 @@ const Orders = () => {
                           </div>
                         </td>
                         <td>{new Date(order.createdAt).toLocaleDateString()}</td>
-                        <td>${order.totalAmountAfterTax}</td>
+                        <td>R {order.totalAmountAfterTax}</td>
                         <td>
                           <Badge 
                             style={getStatusStyle(order.deliveryStatus)}
@@ -351,7 +428,7 @@ const Orders = () => {
                             {selectedOrder.deliveryStatus}
                           </Badge>
                         </p>
-                        <p><strong>Total:</strong> ${selectedOrder.totalAmountAfterTax}</p>
+                        <p><strong>Total:</strong> R {selectedOrder.totalAmountAfterTax}</p>
                       </Card.Body>
                     </Card>
                   </div>
@@ -378,16 +455,16 @@ const Orders = () => {
                         {selectedOrder.items.map(item => (
                           <tr key={item._id}>
                             <td>{item.title}</td>
-                            <td>${item.price}</td>
+                            <td>R {item.price}</td>
                             <td>{item.size}</td>
                             <td>{item.color}</td>
                             <td>{item.quantity}</td>
-                            <td>${(item.price * item.quantity).toFixed(2)}</td>
+                            <td>R {(item.price * item.quantity).toFixed(2)}</td>
                           </tr>
                         ))}
                         <tr>
                           <td colSpan="5" className="text-end"><strong>Total:</strong></td>
-                          <td><strong>${selectedOrder.totalAmountAfterTax}</strong></td>
+                          <td><strong>R {selectedOrder.totalAmountAfterTax}</strong></td>
                         </tr>
                       </tbody>
                     </Table>

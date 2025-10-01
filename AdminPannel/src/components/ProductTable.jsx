@@ -7,7 +7,7 @@ import {
   FiMoreHorizontal,
   FiEdit
 } from 'react-icons/fi';
-import { Modal, Button, Table, Badge, Alert } from 'react-bootstrap';
+import { Modal, Button, Table, Badge, Alert, Form } from 'react-bootstrap';
 import AddProduct from './AddProduct.jsx';
 import EditProduct from './EditProduct.jsx';
 import '../Style/ProductTable.css';
@@ -274,17 +274,18 @@ const ProductTable = () => {
                 <p className="text-muted mb-0">Manage your product catalog and inventory</p>
               </div>
 
-              <div className="col-md-6 d-flex flex-column flex-md-row gap-3">
+              <div className="col-md-6 d-flex flex-column flex-md-row gap-3 align-items-start align-items-md-center">
                 <div className="search-container flex-grow-1">
                   <FiSearch className="search-icon" />
-                  <input 
-                    className="search-input"
-                    value={searchTerm} 
+                  <Form.Control 
+                    type="search" 
+                    placeholder="Search products by name, brand, or category..." 
+                    value={searchTerm}
                     onChange={(e) => {
                       setSearchTerm(e.target.value);
                       setCurrentPage(1);
-                    }} 
-                    placeholder="Search products..." 
+                    }}
+                    className="search-input-custom"
                   />
                 </div>
                 
@@ -295,6 +296,18 @@ const ProductTable = () => {
                 >
                   <FiPlus className="me-1" /> Add Product
                 </Button>
+              </div>
+            </div>
+            
+            {/* Search Results Info */}
+            <div className="row mt-2">
+              <div className="col-12">
+                <div className="search-results-info">
+                  <span className="text-white">
+                    {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''} found
+                    {searchTerm && ` for "${searchTerm}"`}
+                  </span>
+                </div>
               </div>
             </div>
             
