@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { 
   FiSearch, 
@@ -166,33 +167,45 @@ const Orders = () => {
     switch(status) {
       case 'total':
         return { 
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          color: 'white'
+          background: 'rgba(255,255,255,0.13)',
+          color: '#333',
+          border: '1.5px solid rgba(255,255,255,0.18)',
+          backdropFilter: 'blur(6px)'
         };
       case 'pending':
         return { 
-          background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-          color: 'white'
+          background: 'rgba(255,255,255,0.13)',
+          color: '#333',
+          border: '1.5px solid rgba(255,255,255,0.18)',
+          backdropFilter: 'blur(6px)'
         };
       case 'processing':
         return { 
-          background: 'linear-gradient(135deg, #ffd89b 0%, #19547b 100%)',
-          color: 'white'
+          background: 'rgba(255,255,255,0.13)',
+          color: '#333',
+          border: '1.5px solid rgba(255,255,255,0.18)',
+          backdropFilter: 'blur(6px)'
         };
       case 'shipped':
         return { 
-          background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-          color: 'white'
+          background: 'rgba(255,255,255,0.13)',
+          color: '#333',
+          border: '1.5px solid rgba(255,255,255,0.18)',
+          backdropFilter: 'blur(6px)'
         };
       case 'completed':
         return { 
-          background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-          color: 'white'
+          background: 'rgba(255,255,255,0.13)',
+          color: '#333',
+          border: '1.5px solid rgba(255,255,255,0.18)',
+          backdropFilter: 'blur(6px)'
         };
       default:
         return { 
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          color: 'white'
+          background: 'rgba(255,255,255,0.13)',
+          color: '#333',
+          border: '1.5px solid rgba(255,255,255,0.18)',
+          backdropFilter: 'blur(6px)'
         };
     }
   };
@@ -202,7 +215,7 @@ const Orders = () => {
       <Topbar />
       <div className="orders-dashboard">
         {successMessage && (
-          <Alert variant="success" onClose={() => setSuccessMessage('')} dismissible>
+          <Alert variant="success" onClose={() => setSuccessMessage('')} dismissible className="fade-in">
             {successMessage}
           </Alert>
         )}
@@ -211,8 +224,8 @@ const Orders = () => {
           <div className="container-fluid">
             <div className="row align-items-center mb-3 mb-md-0">
               <div className="col-md-6 mb-3 mb-md-0">
-                <h1 className="fw-bold mb-1 text-white">Order Management</h1>
-                <p className="mb-0 text-white-50">View and manage customer orders</p>
+                <h1 className="fw-bold mb-1">Order Management</h1>
+                <p className="mb-0 text-muted">View and manage customer orders</p>
               </div>
               <div className="col-md-6 d-flex flex-column flex-md-row gap-3 align-items-start align-items-md-center justify-content-md-end">
                 <div className="search-container flex-grow-1" style={{ maxWidth: "400px" }}>
@@ -247,41 +260,49 @@ const Orders = () => {
               </div>
             </div>
 
-            {/* Enhanced Status Count Cards */}
+            {/* Enhanced Stats Cards - Consistent with Dashboard Design */}
             <div className="row g-3 mt-4">
               <div className="col-6 col-md-3">
-                <div className="status-count-card" style={getStatusCardStyle('total')}>
-                  <div className="status-count-value">{statusCounts.total}</div>
-                  <div className="status-count-label">Total Orders</div>
-                  <div className="status-count-icon">
-                    <FiPackage size={24} />
+                <div className="stat-card" style={getStatusCardStyle('total')}>
+                  <div className="stat-icon stat-icon-total">
+                    <FiPackage />
+                  </div>
+                  <div className="stat-content">
+                    <div className="stat-value">{statusCounts.total}</div>
+                    <div className="stat-label">Total Orders</div>
                   </div>
                 </div>
               </div>
               <div className="col-6 col-md-3">
-                <div className="status-count-card" style={getStatusCardStyle('pending')}>
-                  <div className="status-count-value">{statusCounts.pendingPayment}</div>
-                  <div className="status-count-label">Pending Payment</div>
-                  <div className="status-count-icon">
-                    <FiClock size={24} />
+                <div className="stat-card" style={getStatusCardStyle('pending')}>
+                  <div className="stat-icon stat-icon-pending">
+                    <FiClock />
+                  </div>
+                  <div className="stat-content">
+                    <div className="stat-value">{statusCounts.pendingPayment}</div>
+                    <div className="stat-label">Pending Payment</div>
                   </div>
                 </div>
               </div>
               <div className="col-6 col-md-3">
-                <div className="status-count-card" style={getStatusCardStyle('processing')}>
-                  <div className="status-count-value">{statusCounts.processing}</div>
-                  <div className="status-count-label">Processing</div>
-                  <div className="status-count-icon">
-                    <FiPackage size={24} />
+                <div className="stat-card" style={getStatusCardStyle('processing')}>
+                  <div className="stat-icon stat-icon-processing">
+                    <FiPackage />
+                  </div>
+                  <div className="stat-content">
+                    <div className="stat-value">{statusCounts.processing}</div>
+                    <div className="stat-label">Processing</div>
                   </div>
                 </div>
               </div>
               <div className="col-6 col-md-3">
-                <div className="status-count-card" style={getStatusCardStyle('completed')}>
-                  <div className="status-count-value">{statusCounts.completed}</div>
-                  <div className="status-count-label">Completed</div>
-                  <div className="status-count-icon">
-                    <FiCheckCircle size={24} />
+                <div className="stat-card" style={getStatusCardStyle('completed')}>
+                  <div className="stat-icon stat-icon-completed">
+                    <FiCheckCircle />
+                  </div>
+                  <div className="stat-content">
+                    <div className="stat-value">{statusCounts.completed}</div>
+                    <div className="stat-label">Completed</div>
                   </div>
                 </div>
               </div>
@@ -380,13 +401,13 @@ const Orders = () => {
                   ) : (
                     <tr>
                       <td colSpan="6" className="text-center py-4">
-                        <div className="py-3">
-                          <FiSearch size={48} className="text-muted mb-3" />
-                          <h5>No orders found</h5>
-                          <p className="text-muted">
+                        <div className="no-orders-found">
+                          <FiSearch className="no-orders-icon" />
+                          <h5 className="no-orders-title">No orders found</h5>
+                          <p className="no-orders-text">
                             {searchTerm 
-                              ? `No orders found for "${searchTerm}". Try a different search term.`
-                              : 'No orders available.'
+                              ? `No orders found for "${searchTerm}"`
+                              : 'Try adjusting your search or check back later'
                             }
                           </p>
                         </div>
