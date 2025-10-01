@@ -134,7 +134,7 @@ function Reports() {
 
       {/* Dashboard Content */}
       <div className="container-fluid px-3 px-md-4 dashboard-content">
-        {/* Summary Card */}
+        {/* Summary Card
         <div className="row mb-4">
           <div className="col-xl-3 col-md-6 col-sm-6 mb-4">
             <div className="summary-card card card-sales">
@@ -161,7 +161,7 @@ function Reports() {
               </div>
             </div>
           </div>
-        </div>
+        </div> */}
 
         {/* Sales Table */}
         <div className="card shadow mb-4 tabs-card">

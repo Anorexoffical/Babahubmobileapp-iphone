@@ -101,34 +101,34 @@ const ProductTable = () => {
     return 'In Stock';
   };
 
-  // Enhanced status styling with proper backgrounds (matching order system)
+  // Enhanced status styling with soft colors
   const getStatusStyle = (variants) => {
     const status = getProductStatus(variants);
     
     switch (status) {
       case 'In Stock':
         return { 
-          backgroundColor: '#e6f7ee',
-          color: '#00b894',
-          borderColor: '#00b894'
+          backgroundColor: '#f0f9f0',
+          color: '#2e8b57',
+          borderColor: '#2e8b57'
         };
       case 'Low Stock':
         return { 
-          backgroundColor: '#fff4e6',
-          color: '#e17055',
-          borderColor: '#fdcb6e'
+          backgroundColor: '#fff9f0',
+          color: '#ff8c00',
+          borderColor: '#ff8c00'
         };
       case 'Out of Stock':
         return { 
-          backgroundColor: '#ffe6e6',
-          color: '#d63031',
-          borderColor: '#d63031'
+          backgroundColor: '#fff0f0',
+          color: '#dc3545',
+          borderColor: '#dc3545'
         };
       default:
         return { 
-          backgroundColor: '#f0f0f0',
-          color: '#636e72',
-          borderColor: '#636e72'
+          backgroundColor: '#f8f9fa',
+          color: '#6c757d',
+          borderColor: '#6c757d'
         };
     }
   };
@@ -138,20 +138,14 @@ const ProductTable = () => {
     
     switch (status) {
       case 'In Stock':
-        return { backgroundColor: '#00b894' };
+        return { backgroundColor: '#2e8b57' };
       case 'Low Stock':
-        return { backgroundColor: '#fdcb6e' };
+        return { backgroundColor: '#ff8c00' };
       case 'Out of Stock':
-        return { backgroundColor: '#d63031' };
+        return { backgroundColor: '#dc3545' };
       default:
-        return { backgroundColor: '#636e72' };
+        return { backgroundColor: '#6c757d' };
     }
-  };
-
-  // Check if action buttons should be shown based on status
-  const shouldShowActionButtons = (variants) => {
-    const status = getProductStatus(variants);
-    return status !== 'Out of Stock';
   };
 
   const filteredProducts = products.filter(product => {
@@ -208,33 +202,38 @@ const ProductTable = () => {
     }
   };
 
-  // Status count cards styling (matching order system)
+  // Premium status count cards styling with soft colors
   const getStatusCardStyle = (type) => {
     switch(type) {
       case 'total':
         return { 
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          color: 'white'
+          background: 'linear-gradient(135deg, rgba(107, 115, 255, 0.1) 0%, rgba(0, 13, 255, 0.1) 100%)',
+          color: '#6b73ff',
+          border: '1px solid rgba(107, 115, 255, 0.2)'
         };
       case 'in-stock':
         return { 
-          background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-          color: 'white'
+          background: 'linear-gradient(135deg, rgba(46, 139, 87, 0.1) 0%, rgba(144, 238, 144, 0.1) 100%)',
+          color: '#2e8b57',
+          border: '1px solid rgba(46, 139, 87, 0.2)'
         };
       case 'low-stock':
         return { 
-          background: 'linear-gradient(135deg, #ffd89b 0%, #19547b 100%)',
-          color: 'white'
+          background: 'linear-gradient(135deg, rgba(255, 140, 0, 0.1) 0%, rgba(255, 215, 0, 0.1) 100%)',
+          color: '#ff8c00',
+          border: '1px solid rgba(255, 140, 0, 0.2)'
         };
       case 'out-of-stock':
         return { 
-          background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-          color: 'white'
+          background: 'linear-gradient(135deg, rgba(220, 53, 69, 0.1) 0%, rgba(255, 182, 193, 0.1) 100%)',
+          color: '#dc3545',
+          border: '1px solid rgba(220, 53, 69, 0.2)'
         };
       default:
         return { 
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          color: 'white'
+          background: 'linear-gradient(135deg, rgba(107, 115, 255, 0.1) 0%, rgba(0, 13, 255, 0.1) 100%)',
+          color: '#6b73ff',
+          border: '1px solid rgba(107, 115, 255, 0.2)'
         };
     }
   };
@@ -371,8 +370,8 @@ const ProductTable = () => {
           <div className="container-fluid">
             <div className="row align-items-center mb-3 mb-md-0">
               <div className="col-md-6 mb-3 mb-md-0">
-                <h1 className="fw-bold mb-1 text-white">Product Inventory</h1>
-                <p className="text-white-50 mb-0">Manage your product catalog and inventory</p>
+                <h1 className="fw-bold mb-1">Product Inventory</h1>
+                <p className="text-muted mb-0">Manage your product catalog and inventory</p>
               </div>
 
               <div className="col-md-6 d-flex flex-column flex-md-row gap-3 align-items-start align-items-md-center justify-content-md-end">
@@ -392,7 +391,7 @@ const ProductTable = () => {
                 
                 {/* Stock Filter Dropdown */}
                 <Dropdown className="stock-filter-dropdown">
-                  <Dropdown.Toggle variant="outline-light" id="stock-filter-dropdown" className="d-flex align-items-center gap-2">
+                  <Dropdown.Toggle variant="outline-secondary" id="stock-filter-dropdown" className="d-flex align-items-center gap-2">
                     <FiFilter size={16} />
                     {getFilterLabel()}
                   </Dropdown.Toggle>
@@ -433,7 +432,7 @@ const ProductTable = () => {
             <div className="row mt-2">
               <div className="col-12">
                 <div className="search-results-info">
-                  <span className="text-white">
+                  <span className="text-dark">
                     {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''} found
                     {searchTerm && ` for "${searchTerm}"`}
                     {stockFilter !== 'all' && ` (${getFilterLabel()})`}
@@ -479,7 +478,7 @@ const ProductTable = () => {
         </div>
 
         <div className="container-fluid mt-4">
-          <div className="card">
+          <div className="card premium-card">
             <div className="card-body p-0">
               {loading ? (
                 <div className="text-center py-5">
@@ -536,25 +535,23 @@ const ProductTable = () => {
                             <td className="d-none d-lg-table-cell">{product.brand}</td>
                             <td className="d-none d-lg-table-cell">{product.category}</td>
                             <td>
-                              <div className={`action-buttons-container ${!shouldShowActionButtons(product.variants) ? 'hidden-actions' : ''}`}>
+                              <div className="action-buttons-container">
                                 <Button 
                                   variant="outline-primary" 
                                   size="sm" 
                                   onClick={() => openDetailsModal(product)}
-                                  className="d-flex align-items-center gap-1 details-btn"
+                                  className="d-flex align-items-center gap-1"
                                 >
                                   <FiMoreHorizontal /> Details
                                 </Button>
-                                {shouldShowActionButtons(product.variants) && (
-                                  <Button 
-                                    variant="outline-success" 
-                                    size="sm" 
-                                    onClick={() => openEditModal(product)}
-                                    className="d-flex align-items-center gap-1"
-                                  >
-                                    <FiEdit /> Update
-                                  </Button>
-                                )}
+                                <Button 
+                                  variant="outline-success" 
+                                  size="sm" 
+                                  onClick={() => openEditModal(product)}
+                                  className="d-flex align-items-center gap-1"
+                                >
+                                  <FiEdit /> Update
+                                </Button>
                               </div>
                             </td>
                           </tr>
