@@ -24,7 +24,7 @@
   margin: 0;
 }
 
-/* Search Container */
+/* Improved Search Container */
 .search-container {
   position: relative;
   display: flex;
@@ -37,12 +37,12 @@
 .search-input {
   width: 100%;
   padding: 0.75rem 1rem 0.75rem 2.5rem;
-  border: 2px solid rgba(255, 255, 255, 0.4);
+  border: 1px solid #e2e8f0;
   border-radius: 8px;
-  background-color: rgba(255, 255, 255, 0.95);
+  background-color: #ffffff;
   font-size: 0.95rem;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.15);
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   height: 46px;
   color: #333;
   font-weight: 500;
@@ -50,14 +50,14 @@
 
 .search-input:focus {
   outline: none;
-  border-color: rgba(255, 255, 255, 0.8);
+  border-color: #6b73ff;
   background-color: white;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-  transform: translateY(-2px);
+  box-shadow: 0 0 0 3px rgba(107, 115, 255, 0.1);
+  transform: none;
 }
 
 .search-input::placeholder {
-  color: #666;
+  color: #94a3b8;
   font-weight: 400;
 }
 
@@ -66,7 +66,7 @@
   left: 1rem;
   top: 50%;
   transform: translateY(-50%);
-  color: #666;
+  color: #64748b;
   pointer-events: none;
   z-index: 2;
 }
@@ -84,6 +84,7 @@
   margin-left: 5rem;
 }
 
+/* CONSISTENT DASHBOARD HEADER */
 .dashboard-header {
   margin-top: 2rem;
   border-radius: 1.25rem;
@@ -91,9 +92,38 @@
   color: white;
   padding: 1.5rem;
   margin-bottom: 1.5rem;
-  transition: all 0.3s ease;
   box-shadow: 0 4px 20px rgba(0, 13, 255, 0.1);
   width: 100%;
+  position: relative;
+}
+
+.dashboard-header .text-muted {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.dashboard-header h1 {
+  color: white;
+  margin-bottom: 0.5rem;
+  font-size: 1.8rem;
+  font-weight: 600;
+}
+
+/* Pending Payment Badge - Top Right Corner */
+.pending-payment-badge {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
 }
 
 .container-fluid {
@@ -127,25 +157,18 @@
   box-sizing: border-box;
 }
 
-.dashboard-header .text-muted {
-  color: rgba(255, 255, 255, 0.8) !important;
-}
-
-.dashboard-header h1 {
-  color: white;
-  margin-bottom: 0.5rem;
-}
-
 .search-results-info {
   padding: 0;
   font-size: 0.9rem;
   font-weight: 500;
   text-align: left;
   flex-shrink: 0;
+  color: white;
 }
 
 .pagination-info {
   font-size: 0.9rem;
+  color: white;
 }
 
 .table-container {
@@ -525,6 +548,14 @@
   .search-container {
     min-width: 100%;
     max-width: 100%;
+  }
+
+  .pending-payment-badge {
+    position: relative;
+    top: auto;
+    right: auto;
+    margin-top: 1rem;
+    align-self: flex-start;
   }
 }
 
