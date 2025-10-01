@@ -304,6 +304,161 @@
   align-items: center !important;
 }
 
+/* Status Badge Styles */
+.custom-status-badge {
+  font-weight: 500;
+  border: 1px solid #dee2e6 !important;
+  color: #000 !important;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.75rem;
+  border-radius: 50px;
+  min-width: 120px;
+  text-align: center;
+  display: inline-block;
+}
+
+/* Specific status background colors */
+.bg-pending-payment {
+  background-color: #ffebee !important;
+  color: #000 !important;
+  border-color: #f5c6cb !important;
+}
+
+.bg-processing {
+  background-color: #fff3e0 !important;
+  color: #000 !important;
+  border-color: #ffeaa7 !important;
+}
+
+.bg-completed {
+  background-color: #e8f5e8 !important;
+  color: #000 !important;
+  border-color: #c8e6c9 !important;
+}
+
+.bg-shipped {
+  background-color: #e3f2fd !important;
+  color: #000 !important;
+  border-color: #bbdefb !important;
+}
+
+.bg-out-of-stock {
+  background-color: #ffebee !important;
+  color: #000 !important;
+  border-color: #f5c6cb !important;
+}
+
+.bg-low-stock {
+  background-color: #fff3e0 !important;
+  color: #000 !important;
+  border-color: #ffeaa7 !important;
+}
+
+.bg-in-stock {
+  background-color: #e8f5e8 !important;
+  color: #000 !important;
+  border-color: #c8e6c9 !important;
+}
+
+/* Action button visibility control */
+.action-buttons-container {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.action-buttons-container.hidden-actions {
+  justify-content: flex-start;
+}
+
+.action-buttons-container.hidden-actions .btn:not(.details-btn) {
+  display: none !important;
+}
+
+/* Fade in animation for alerts */
+.fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Loading spinner */
+.spinner-border {
+  width: 3rem;
+  height: 3rem;
+}
+
+/* Table row hover effects */
+.products-table tbody tr {
+  transition: all 0.2s ease;
+}
+
+.products-table tbody tr:hover {
+  background-color: #f8f9fa;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Modal enhancements */
+.modal-content {
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+  border-bottom: 1px solid #e9ecef;
+  padding: 1.25rem 1.5rem;
+}
+
+.modal-footer {
+  border-top: 1px solid #e9ecef;
+  padding: 1.25rem 1.5rem;
+}
+
+/* Badge enhancements in modal */
+.modal .badge {
+  font-size: 0.8rem;
+  padding: 0.4rem 0.8rem;
+}
+
+/* Responsive table improvements */
+.table-responsive {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* Pagination improvements */
+.pagination {
+  margin-bottom: 0;
+}
+
+.page-link {
+  border-radius: 6px;
+  margin: 0 2px;
+  border: 1px solid #dee2e6;
+  transition: all 0.2s;
+}
+
+.page-link:hover {
+  background-color: #e9ecef;
+  border-color: #dee2e6;
+}
+
+.page-item.active .page-link {
+  background-color: #3b82f6;
+  border-color: #3b82f6;
+}
+
 /* Better responsive behavior */
 @media (max-width: 768px) {
   .search-input-custom {
@@ -321,6 +476,22 @@
   .stock-filter-dropdown .dropdown-toggle {
     min-width: 140px;
     font-size: 0.9rem;
+  }
+  
+  .custom-status-badge {
+    min-width: 100px;
+    font-size: 0.7rem;
+    padding: 0.25rem 0.5rem;
+  }
+  
+  .action-buttons-container {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  
+  .action-buttons-container .btn {
+    width: 100%;
+    justify-content: center;
   }
 }
 
@@ -352,5 +523,46 @@
   .stock-filter-dropdown .dropdown-toggle {
     width: 100%;
     justify-content: center;
+  }
+  
+  .product-dashboard {
+    margin-left: 1rem;
+    width: 95vw;
+    max-width: 95vw;
+  }
+  
+  .stat-card {
+    padding: 0.75rem;
+  }
+  
+  .stat-value {
+    font-size: 1.25rem;
+  }
+  
+  .custom-status-badge {
+    min-width: 80px;
+    font-size: 0.65rem;
+    padding: 0.2rem 0.4rem;
+  }
+}
+
+/* Print styles */
+@media print {
+  .dashboard-header {
+    background: #6b73ff !important;
+    -webkit-print-color-adjust: exact;
+    color-adjust: exact;
+  }
+  
+  .add-product-btn,
+  .stock-filter-dropdown,
+  .search-container {
+    display: none !important;
+  }
+  
+  .custom-status-badge {
+    border: 1px solid #000 !important;
+    -webkit-print-color-adjust: exact;
+    color-adjust: exact;
   }
 }

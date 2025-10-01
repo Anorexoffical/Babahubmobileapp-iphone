@@ -53,7 +53,7 @@ const CustomerRecords = () => {
                 <p className="text-muted mb-0">Manage your customer records</p>
               </div>
               <div className="col-md-6 d-flex flex-column flex-md-row gap-3 align-items-start align-items-md-center justify-content-md-end">
-                <div className="search-container flex-grow-1" style={{ maxWidth: "400px" }}>
+                <div className="search-container flex-grow-1">
                   <FiSearch className="search-icon" />
                   <input
                     className="search-input"

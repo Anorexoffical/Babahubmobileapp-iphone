@@ -101,11 +101,27 @@ const ProductTable = () => {
     return 'In Stock';
   };
 
+  // Updated status background colors with black text
   const getStatusVariant = (variants) => {
+    const status = getProductStatus(variants);
+    
+    // For order statuses (based on your image data)
+    if (status === 'Pending Payment') return 'pending-payment';
+    if (status === 'Processing') return 'processing';
+    if (status === 'Completed') return 'completed';
+    if (status === 'Shipped') return 'shipped';
+    
+    // For stock statuses (existing functionality)
     const total = calculateTotalStock(variants);
-    if (total === 0) return 'danger';
-    if (total < 10) return 'warning';
-    return 'success';
+    if (total === 0) return 'out-of-stock';
+    if (total < 10) return 'low-stock';
+    return 'in-stock';
+  };
+
+  // Check if action buttons should be shown based on status
+  const shouldShowActionButtons = (variants) => {
+    const status = getProductStatus(variants);
+    return status !== 'Pending Payment';
   };
 
   const filteredProducts = products.filter(product => {
@@ -214,7 +230,9 @@ const ProductTable = () => {
                       <span>{selectedProduct.category}</span>
                     </div>
                   </div>
-                  <Badge bg={getStatusVariant(selectedProduct.variants)} className="fs-6">
+                  <Badge 
+                    className={`custom-status-badge bg-${getStatusVariant(selectedProduct.variants)}`}
+                  >
                     {getProductStatus(selectedProduct.variants)}
                   </Badge>
                 </div>
@@ -422,7 +440,9 @@ const ProductTable = () => {
                               </div>
                             </td>
                             <td>
-                              <Badge bg={getStatusVariant(product.variants)} className="fs-6">
+                              <Badge 
+                                className={`custom-status-badge bg-${getStatusVariant(product.variants)}`}
+                              >
                                 {getProductStatus(product.variants)}
                               </Badge>
                             </td>
@@ -437,23 +457,25 @@ const ProductTable = () => {
                             <td className="d-none d-lg-table-cell">{product.brand}</td>
                             <td className="d-none d-lg-table-cell">{product.category}</td>
                             <td>
-                              <div className="d-flex gap-2">
+                              <div className={`action-buttons-container ${!shouldShowActionButtons(product.variants) ? 'hidden-actions' : ''}`}>
                                 <Button 
                                   variant="outline-primary" 
                                   size="sm" 
                                   onClick={() => openDetailsModal(product)}
-                                  className="d-flex align-items-center gap-1"
+                                  className="d-flex align-items-center gap-1 details-btn"
                                 >
                                   <FiMoreHorizontal /> Details
                                 </Button>
-                                <Button 
-                                  variant="outline-success" 
-                                  size="sm" 
-                                  onClick={() => openEditModal(product)}
-                                  className="d-flex align-items-center gap-1"
-                                >
-                                  <FiEdit /> Update
-                                </Button>
+                                {shouldShowActionButtons(product.variants) && (
+                                  <Button 
+                                    variant="outline-success" 
+                                    size="sm" 
+                                    onClick={() => openEditModal(product)}
+                                    className="d-flex align-items-center gap-1"
+                                  >
+                                    <FiEdit /> Update
+                                  </Button>
+                                )}
                               </div>
                             </td>
                           </tr>

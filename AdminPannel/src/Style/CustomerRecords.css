@@ -1,4 +1,3 @@
-/* CustomerRecords.css */
 .customer-records {
   padding: 20px;
   border-radius: 8px;
@@ -25,27 +24,25 @@
   margin: 0;
 }
 
-/* Search Container Wrapper */
-
-
 /* Search Container */
 .search-container {
   position: relative;
   display: flex;
   align-items: center;
   width: 100%;
+  min-width: 300px;
   max-width: 400px;
 }
 
 .search-input {
   width: 100%;
   padding: 0.75rem 1rem 0.75rem 2.5rem;
-  border: 2px solid #e2e8f0;
+  border: 2px solid rgba(255, 255, 255, 0.4);
   border-radius: 8px;
-  background-color: white;
+  background-color: rgba(255, 255, 255, 0.95);
   font-size: 0.95rem;
   transition: all 0.3s ease;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.15);
   height: 46px;
   color: #333;
   font-weight: 500;
@@ -53,14 +50,14 @@
 
 .search-input:focus {
   outline: none;
-  border-color: #6b73ff;
+  border-color: rgba(255, 255, 255, 0.8);
   background-color: white;
-  box-shadow: 0 4px 15px rgba(107, 115, 255, 0.2);
-  transform: translateY(-1px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  transform: translateY(-2px);
 }
 
 .search-input::placeholder {
-  color: #64748b;
+  color: #666;
   font-weight: 400;
 }
 
@@ -69,25 +66,12 @@
   left: 1rem;
   top: 50%;
   transform: translateY(-50%);
-  color: #64748b;
+  color: #666;
   pointer-events: none;
   z-index: 2;
 }
 
-/* Remove the customer count badge styles since we're removing that element */
-.customer-count-badge {
-  display: none;
-}
-
-.search-container-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  flex-grow: 1;
-  justify-content: flex-end;
-}
-
-/* Rest of your existing CSS remains the same */
+/* Customer Dashboard */
 .customer-dashboard {
   min-height: 100vh;
   width: 90vw;
@@ -112,32 +96,44 @@
   width: 100%;
 }
 
-
-.search-input {
+.container-fluid {
   width: 100%;
-  padding: 0.75rem 1rem 0.75rem 2.5rem;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 8px;
-  background-color: rgba(255, 255, 255, 0.95);
-  font-size: 0.95rem;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  height: 46px;
-  color: #333;
-  font-weight: 500;
+  max-width: 100%;
+  margin: 0 auto;
+  padding-left: 0;
+  padding-right: 0;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
-.search-input:focus {
-  outline: none;
-  border-color: rgba(255, 255, 255, 0.8);
-  background-color: white;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
-  transform: translateY(-1px);
+.row {
+  width: 100%;
+  max-width: 100%;
+  margin-left: 0;
+  margin-right: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
-.search-input::placeholder {
-  color: #666;
-  font-weight: 400;
+.card,
+.card-body,
+.table-responsive {
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.dashboard-header .text-muted {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.dashboard-header h1 {
+  color: white;
+  margin-bottom: 0.5rem;
 }
 
 .search-results-info {
@@ -431,62 +427,6 @@
   background-color: #f5f5f5;
 }
 
-/* Customer Dashboard */
-.customer-dashboard {
-  min-height: 100vh;
-  width: 90vw;
-  max-width: 90vw;
-  margin: 0 auto;
-  padding: 0;
-  flex-direction: column;
-  align-items: center;
-  margin-top: 100px;
-  margin-left: 5rem;
-}
-
-.dashboard-header {
-  margin-top: 2rem;
-  border-radius: 1.25rem;
-  background: linear-gradient(135deg, #6b73ff 0%, #000dff 100%);
-  color: white;
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 20px rgba(0, 13, 255, 0.1);
-  width: 100%;
-}
-
-.container-fluid {
-  width: 100%;
-  max-width: 100%;
-  margin: 0 auto;
-  padding-left: 0;
-  padding-right: 0;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.row {
-  width: 100%;
-  max-width: 100%;
-  margin-left: 0;
-  margin-right: 0;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-
-.card,
-.card-body,
-.table-responsive {
-  width: 100%;
-  max-width: 100%;
-  margin: 0 auto;
-  box-sizing: border-box;
-}
-
 /* Empty State */
 .empty-state {
   text-align: center;
@@ -523,57 +463,6 @@
 
 .page-item.disabled .page-link {
   color: #6c757d;
-}
-
-/* Customer Count Badge */
-.customer-count-badge {
-  background: rgba(255, 255, 255, 0.13);
-  border-radius: 12px;
-  padding: 0.5rem 1rem;
-  color: white;
-  font-weight: 600;
-  font-size: 0.9rem;
-  text-align: center;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-  border: 1.5px solid rgba(255, 255, 255, 0.18);
-  backdrop-filter: blur(6px);
-  display: inline-block;
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
-  white-space: nowrap;
-  min-width: fit-content;
-}
-
-.customer-count-badge:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-}
-
-.customer-count-badge::before {
-  content: '';
-  position: absolute;
-  top: -50%;
-  right: -50%;
-  width: 100%;
-  height: 100%;
-  background: rgba(255, 255, 255, 0.1);
-  transform: rotate(30deg);
-  transition: all 0.3s ease;
-}
-
-.customer-count-badge:hover::before {
-  transform: rotate(45deg) scale(1.2);
-}
-
-/* Consistent header styling */
-.dashboard-header .text-muted {
-  color: rgba(255, 255, 255, 0.8) !important;
-}
-
-.dashboard-header h1 {
-  color: white;
-  margin-bottom: 0.5rem;
 }
 
 /* Responsive adjustments */
@@ -633,17 +522,9 @@
     margin-bottom: 1rem;
   }
 
-  .search-container-wrapper {
-    flex-direction: column;
-    gap: 10px;
-    width: 100%;
-  }
-
-  .customer-count-badge {
-    padding: 0.4rem 0.8rem;
-    font-size: 0.8rem;
-    text-align: center;
-    width: 100%;
+  .search-container {
+    min-width: 100%;
+    max-width: 100%;
   }
 }
 
@@ -659,10 +540,5 @@
   .pagination {
     flex-wrap: wrap;
     justify-content: center;
-  }
-
-  .customer-count-badge {
-    padding: 0.35rem 0.7rem;
-    font-size: 0.75rem;
   }
 }
