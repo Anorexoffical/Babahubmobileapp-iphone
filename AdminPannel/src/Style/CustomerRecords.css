@@ -26,27 +26,42 @@
 }
 
 /* Search Container Wrapper */
-.search-container-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  flex-grow: 1;
-}
 
+
+/* Search Container */
 .search-container {
   position: relative;
   display: flex;
   align-items: center;
   width: 100%;
-  flex-grow: 1;
+  max-width: 400px;
 }
 
-.search-container input {
-  padding: 10px 15px 10px 35px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  min-width: 250px;
-  font-size: 14px;
+.search-input {
+  width: 100%;
+  padding: 0.75rem 1rem 0.75rem 2.5rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  background-color: white;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  height: 46px;
+  color: #333;
+  font-weight: 500;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #6b73ff;
+  background-color: white;
+  box-shadow: 0 4px 15px rgba(107, 115, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.search-input::placeholder {
+  color: #64748b;
+  font-weight: 400;
 }
 
 .search-icon {
@@ -58,6 +73,45 @@
   pointer-events: none;
   z-index: 2;
 }
+
+/* Remove the customer count badge styles since we're removing that element */
+.customer-count-badge {
+  display: none;
+}
+
+.search-container-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  flex-grow: 1;
+  justify-content: flex-end;
+}
+
+/* Rest of your existing CSS remains the same */
+.customer-dashboard {
+  min-height: 100vh;
+  width: 90vw;
+  max-width: 90vw;
+  margin: 0 auto;
+  padding: 0;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 100px;
+  margin-left: 5rem;
+}
+
+.dashboard-header {
+  margin-top: 2rem;
+  border-radius: 1.25rem;
+  background: linear-gradient(135deg, #6b73ff 0%, #000dff 100%);
+  color: white;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 20px rgba(0, 13, 255, 0.1);
+  width: 100%;
+}
+
 
 .search-input {
   width: 100%;

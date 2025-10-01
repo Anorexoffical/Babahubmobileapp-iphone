@@ -5,9 +5,10 @@ import {
   FiChevronLeft,
   FiChevronRight,
   FiMoreHorizontal,
-  FiEdit
+  FiEdit,
+  FiFilter
 } from 'react-icons/fi';
-import { Modal, Button, Table, Badge, Alert, Form } from 'react-bootstrap';
+import { Modal, Button, Table, Badge, Alert, Form, Dropdown } from 'react-bootstrap';
 import AddProduct from './AddProduct.jsx';
 import EditProduct from './EditProduct.jsx';
 import '../Style/ProductTable.css';
@@ -152,6 +153,15 @@ const ProductTable = () => {
     setEditingProduct(null);
   };
 
+  const getFilterLabel = () => {
+    switch (stockFilter) {
+      case 'all': return 'All Products';
+      case 'low': return 'Low Stock';
+      case 'out': return 'Out of Stock';
+      default: return 'All Products';
+    }
+  };
+
   return (
     <>
       <Topbar />
@@ -274,8 +284,8 @@ const ProductTable = () => {
                 <p className="text-muted mb-0">Manage your product catalog and inventory</p>
               </div>
 
-              <div className="col-md-6 d-flex flex-column flex-md-row gap-3 align-items-start align-items-md-center">
-                <div className="search-container flex-grow-1">
+              <div className="col-md-6 d-flex flex-column flex-md-row gap-3 align-items-start align-items-md-center justify-content-md-end">
+                <div className="search-container flex-grow-1" style={{ maxWidth: "400px" }}>
                   <FiSearch className="search-icon" />
                   <Form.Control 
                     type="search" 
@@ -288,6 +298,35 @@ const ProductTable = () => {
                     className="search-input-custom"
                   />
                 </div>
+                
+                {/* Stock Filter Dropdown */}
+                <Dropdown className="stock-filter-dropdown">
+                  <Dropdown.Toggle variant="outline-light" id="stock-filter-dropdown" className="d-flex align-items-center gap-2">
+                    <FiFilter size={16} />
+                    {getFilterLabel()}
+                  </Dropdown.Toggle>
+
+                  <Dropdown.Menu>
+                    <Dropdown.Item 
+                      onClick={() => setStockFilter('all')}
+                      className={stockFilter === 'all' ? 'active' : ''}
+                    >
+                      All Products
+                    </Dropdown.Item>
+                    <Dropdown.Item 
+                      onClick={() => setStockFilter('low')}
+                      className={stockFilter === 'low' ? 'active' : ''}
+                    >
+                      Low Stock
+                    </Dropdown.Item>
+                    <Dropdown.Item 
+                      onClick={() => setStockFilter('out')}
+                      className={stockFilter === 'out' ? 'active' : ''}
+                    >
+                      Out of Stock
+                    </Dropdown.Item>
+                  </Dropdown.Menu>
+                </Dropdown>
                 
                 <Button 
                   variant="primary" 
@@ -306,32 +345,8 @@ const ProductTable = () => {
                   <span className="text-white">
                     {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''} found
                     {searchTerm && ` for "${searchTerm}"`}
+                    {stockFilter !== 'all' && ` (${getFilterLabel()})`}
                   </span>
-                </div>
-              </div>
-            </div>
-            
-            <div className="row mt-3">
-              <div className="col-12">
-                <div className="stock-filter-tabs">
-                  <button 
-                    className={`filter-tab ${stockFilter === 'all' ? 'active' : ''}`}
-                    onClick={() => setStockFilter('all')}
-                  >
-                    All Products
-                  </button>
-                  <button 
-                    className={`filter-tab ${stockFilter === 'low' ? 'active' : ''}`}
-                    onClick={() => setStockFilter('low')}
-                  >
-                    Low Stock
-                  </button>
-                  <button 
-                    className={`filter-tab ${stockFilter === 'out' ? 'active' : ''}`}
-                    onClick={() => setStockFilter('out')}
-                  >
-                    Out of Stock
-                  </button>
                 </div>
               </div>
             </div>

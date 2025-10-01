@@ -61,6 +61,7 @@
 
 /* Search Container Wrapper */
 .search-container-wrapper {
+  background-color: white;
   display: flex;
   align-items: center;
   gap: 15px;
