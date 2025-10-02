@@ -1,4 +1,3 @@
-
 import axios from "axios";
 import { useState } from "react";
 import {
@@ -49,6 +48,20 @@ function Reports() {
       alert("Failed to fetch sales data");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Function to get badge class based on delivery status
+  const getBadgeClass = (deliveryStatus) => {
+    switch (deliveryStatus) {
+      case "Completed":
+        return "badge-complete";
+      case "Shipped":
+        return "badge-shipped";
+      case "Processing":
+        return "badge-pending";
+      default:
+        return "badge-pending";
     }
   };
 
@@ -134,8 +147,8 @@ function Reports() {
 
       {/* Dashboard Content */}
       <div className="container-fluid px-3 px-md-4 dashboard-content">
-        {/* Summary Card
-        <div className="row mb-4">
+        {/* Summary Card - Uncomment if needed */}
+        {/* <div className="row mb-4">
           <div className="col-xl-3 col-md-6 col-sm-6 mb-4">
             <div className="summary-card card card-sales">
               <div className="card-body">
@@ -217,13 +230,7 @@ function Reports() {
                         </td>
                         <td>
                           <span
-                            className={`badge ${
-                              order.deliveryStatus === "Completed"
-                                ? "bg-success"
-                                : order.deliveryStatus === "Shipped"
-                                ? "bg-primary"
-                                : "bg-warning"
-                            }`}
+                            className={`badge ${getBadgeClass(order.deliveryStatus)}`}
                           >
                             {order.deliveryStatus}
                           </span>
