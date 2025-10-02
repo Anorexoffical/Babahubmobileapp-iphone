@@ -194,7 +194,7 @@
   transform: none;
 }
 
-/* Status Badges - UPDATED WITH SIMPLE COLORS */
+/* Status Badges - FIXED */
 .badge {
   font-weight: 500;
   padding: 0.5em 0.8em;
@@ -204,17 +204,17 @@
 }
 
 .badge-shipped {
-  background: #007bff;
+  background:  #667eea;
   color: white;
 }
 
 .badge-pending {
-  background: #000000;
+  background:  #f5576c ;
   color: white;
 }
 
 .badge-complete {
-  background: #28a745;
+  background:#43e97b;
   color: white;
 }
 
