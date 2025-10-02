@@ -7,6 +7,7 @@ const AddProduct = ({
   show, 
   onHide, 
   onAddProduct, 
+  onAddProductError,
   isSubmitting,
   setIsSubmitting
 }) => {
@@ -185,9 +186,9 @@ const AddProduct = ({
       formData.append('category', newProduct.category);
       formData.append('isFeatured', newProduct.isFeatured);
 
-      // FIXED: Use 'mainImage' as the field name to match backend expectations
+      // Use 'mainImage' as the field name to match backend expectations
       if (newProduct.mainImage) {
-        formData.append('mainImage', newProduct.mainImage); // Changed back to 'mainImage'
+        formData.append('mainImage', newProduct.mainImage);
       }
 
       formData.append('variants', JSON.stringify(processedVariants));
@@ -199,7 +200,7 @@ const AddProduct = ({
         isFeatured: newProduct.isFeatured,
         variants: processedVariants,
         hasImage: !!newProduct.mainImage,
-        imageField: 'mainImage' // Using 'mainImage' field name to match backend
+        imageField: 'mainImage'
       });
 
       // Make API call with proper error handling
@@ -212,13 +213,14 @@ const AddProduct = ({
 
       console.log('Product added successfully:', response.data);
       
-      setSuccessMessage(`Product "${response.data.name}" added successfully!`);
-      
-      // Call parent handler to update products list
+      // Call parent handler to show success message
       if (onAddProduct) {
         onAddProduct(response.data);
       }
 
+      // Show local success message
+      setSuccessMessage(`Product "${response.data.name}" added successfully!`);
+      
       // Reset form and close modal after success
       setTimeout(() => {
         resetForm();
@@ -242,7 +244,13 @@ const AddProduct = ({
         errorMsg = error.message || 'An unexpected error occurred.';
       }
       
+      // Set local error message
       setErrorMessage(errorMsg);
+      
+      // Also call parent error handler to show error in Orders component
+      if (onAddProductError) {
+        onAddProductError(errorMsg);
+      }
     } finally {
       setIsSubmitting(false);
     }

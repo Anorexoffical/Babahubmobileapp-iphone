@@ -17,7 +17,7 @@ import { Table, Pagination, Badge, Form, Button, Card, Alert, Modal, Row, Col } 
 import Topbar from './Topbar';
 import '../Style/Orders.css';
 import axios from 'axios';
-import AddProduct from './AddProduct'; // Import the AddProduct component
+import AddProduct from './AddProduct';
 
 const Orders = () => {
   const [orders, setOrders] = useState([]);
@@ -26,6 +26,7 @@ const Orders = () => {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showDetails, setShowDetails] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const ordersPerPage = 10;
   const [statusFilter, setStatusFilter] = useState('all');
@@ -45,6 +46,7 @@ const Orders = () => {
       setOrders(res.data);
     } catch (error) {
       console.error('Error fetching orders:', error);
+      setErrorMessage('Failed to fetch orders');
     } finally {
       setLoading(false);
     }
@@ -52,13 +54,15 @@ const Orders = () => {
 
   // Handle adding new product
   const handleAddProduct = (newProduct) => {
-    // You can add the new product to your products list if needed
     console.log('New product added:', newProduct);
     setSuccessMessage(`Product "${newProduct.name}" added successfully!`);
     setTimeout(() => setSuccessMessage(''), 3000);
-    
-    // If you have a products state, you can update it here:
-    // setProducts(prev => [newProduct, ...prev]);
+  };
+
+  // Handle add product error
+  const handleAddProductError = (errorMsg) => {
+    setErrorMessage(errorMsg);
+    setTimeout(() => setErrorMessage(''), 5000);
   };
 
   // Calculate status counts
@@ -123,8 +127,8 @@ const Orders = () => {
       }
     } catch (error) {
       console.error('Error updating order status:', error);
-      setSuccessMessage(`Failed to update order status: ${error.response?.data?.error || error.message}`);
-      setTimeout(() => setSuccessMessage(''), 3000);
+      setErrorMessage(`Failed to update order status: ${error.response?.data?.error || error.message}`);
+      setTimeout(() => setErrorMessage(''), 3000);
     }
   };
 
@@ -233,6 +237,12 @@ const Orders = () => {
         {successMessage && (
           <Alert variant="success" onClose={() => setSuccessMessage('')} dismissible className="fade-in">
             {successMessage}
+          </Alert>
+        )}
+
+        {errorMessage && (
+          <Alert variant="danger" onClose={() => setErrorMessage('')} dismissible className="fade-in">
+            {errorMessage}
           </Alert>
         )}
 
@@ -603,6 +613,7 @@ const Orders = () => {
           show={showAddProduct}
           onHide={() => setShowAddProduct(false)}
           onAddProduct={handleAddProduct}
+          onAddProductError={handleAddProductError}
           isSubmitting={isSubmitting}
           setIsSubmitting={setIsSubmitting}
         />
