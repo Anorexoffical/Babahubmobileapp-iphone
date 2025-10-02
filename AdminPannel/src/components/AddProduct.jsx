@@ -185,9 +185,9 @@ const AddProduct = ({
       formData.append('category', newProduct.category);
       formData.append('isFeatured', newProduct.isFeatured);
 
-      // Use 'mainImage' as the field name to match backend
+      // IMPORTANT: Use 'image' as the field name to match backend expectations
       if (newProduct.mainImage) {
-        formData.append('mainImage', newProduct.mainImage);
+        formData.append('image', newProduct.mainImage); // Changed from 'mainImage' to 'image'
       }
 
       formData.append('variants', JSON.stringify(processedVariants));
@@ -198,15 +198,16 @@ const AddProduct = ({
         category: newProduct.category,
         isFeatured: newProduct.isFeatured,
         variants: processedVariants,
-        hasImage: !!newProduct.mainImage
+        hasImage: !!newProduct.mainImage,
+        imageField: 'image' // Using 'image' field name
       });
 
-      // Make API call
+      // Make API call with proper error handling
       const response = await axios.post('https://account.babahub.co/api/products', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
-        timeout: 30000, // 30 second timeout
+        timeout: 30000,
       });
 
       console.log('Product added successfully:', response.data);
@@ -232,6 +233,7 @@ const AddProduct = ({
       if (error.response) {
         // Server responded with error status
         errorMsg = error.response.data?.error || error.response.data?.message || `Server error: ${error.response.status}`;
+        console.error('Server error details:', error.response.data);
       } else if (error.request) {
         // Request made but no response received
         errorMsg = 'No response from server. Please check your connection.';
