@@ -54,13 +54,15 @@
   gap: 0.75rem;
 }
 
-.logo-shape {
-  width: 32px;
-  height: 32px;
-  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-  border-radius: 8px;
-  transform: rotate(45deg);
-  box-shadow: 0 4px 6px rgba(99, 102, 241, 0.3);
+.babahub-logo {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  transition: var(--transition);
+}
+
+.babahub-logo:hover {
+  transform: scale(1.05);
 }
 
 .topbar-title {
@@ -83,6 +85,8 @@
 .topbar-title span {
   font-weight: 600;
 }
+
+/* Rest of the CSS remains the same... */
 
 /* Mobile toggle button */
 .menu-toggle {
@@ -201,8 +205,8 @@
   gap: 1rem;
 }
 
-/* User Profile Dropdown */
-.dropdown-container {
+/* User Profile Menu */
+.profile-menu-container {
   position: relative;
 }
 
@@ -274,19 +278,34 @@
   color: var(--gray);
 }
 
-.dropdown-arrow {
+.profile-menu-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: var(--transition);
+  cursor: pointer;
   margin-left: 0.5rem;
+}
+
+.profile-menu-arrow:hover {
+  background: rgba(99, 102, 241, 0.2);
+}
+
+.profile-arrow {
   font-size: 0.8rem;
   color: var(--gray-dark);
   transition: var(--transition);
+  pointer-events: none;
 }
 
-.dropdown-arrow.open {
+.profile-arrow.open {
   transform: rotate(180deg);
   color: var(--primary);
 }
 
-.dropdown-menu {
+.profile-menu {
   position: absolute;
   right: 0;
   top: 100%;
@@ -302,7 +321,7 @@
   border: 1px solid rgba(226, 232, 240, 0.8);
 }
 
-.topbar.dark .dropdown-menu {
+.topbar.dark .profile-menu {
   background: var(--dark);
   border: 1px solid rgba(71, 85, 105, 0.5);
 }
@@ -312,7 +331,7 @@
   to { opacity: 1; transform: scale(1) translateY(0); }
 }
 
-.dropdown-header {
+.profile-menu-header {
   display: flex;
   align-items: center;
   padding: 1rem;
@@ -320,12 +339,12 @@
   border-bottom: 1px solid rgba(226, 232, 240, 0.5);
 }
 
-.topbar.dark .dropdown-header {
+.topbar.dark .profile-menu-header {
   background: rgba(99, 102, 241, 0.1);
   border-bottom: 1px solid rgba(71, 85, 105, 0.5);
 }
 
-.dropdown-user-avatar {
+.profile-menu-avatar {
   width: 50px;
   height: 50px;
   border-radius: 50%;
@@ -335,32 +354,32 @@
   object-fit: cover;
 }
 
-.dropdown-user-info {
+.profile-menu-info {
   display: flex;
   flex-direction: column;
 }
 
-.dropdown-user-name {
+.profile-menu-name {
   font-weight: 600;
   color: var(--dark);
   font-size: 0.95rem;
 }
 
-.topbar.dark .dropdown-user-name {
+.topbar.dark .profile-menu-name {
   color: var(--light);
 }
 
-.dropdown-user-email {
+.profile-menu-email {
   color: var(--gray-dark);
   font-size: 0.8rem;
   margin-top: 0.1rem;
 }
 
-.topbar.dark .dropdown-user-email {
+.topbar.dark .profile-menu-email {
   color: var(--gray);
 }
 
-.dropdown-item {
+.profile-menu-item {
   display: flex;
   align-items: center;
   padding: 0.75rem 1rem;
@@ -375,30 +394,30 @@
   cursor: pointer;
 }
 
-.topbar.dark .dropdown-item {
+.topbar.dark .profile-menu-item {
   color: var(--light);
 }
 
-.dropdown-item:hover {
+.profile-menu-item:hover {
   background: rgba(99, 102, 241, 0.1);
   padding-left: 1.2rem;
 }
 
-.topbar.dark .dropdown-item:hover {
+.topbar.dark .profile-menu-item:hover {
   background: rgba(99, 102, 241, 0.2);
 }
 
-.dropdown-divider {
+.profile-menu-divider {
   height: 1px;
   background: rgba(226, 232, 240, 0.8);
   margin: 0.25rem 0;
 }
 
-.topbar.dark .dropdown-divider {
+.topbar.dark .profile-menu-divider {
   background: rgba(71, 85, 105, 0.5);
 }
 
-.dropdown-icon {
+.profile-menu-icon {
   margin-right: 0.75rem;
   font-size: 0.9rem;
   color: var(--gray-dark);
@@ -406,19 +425,19 @@
   text-align: center;
 }
 
-.topbar.dark .dropdown-icon {
+.topbar.dark .profile-menu-icon {
   color: var(--gray);
 }
 
-.dropdown-item.logout {
+.profile-menu-item.logout {
   color: var(--danger);
 }
 
-.dropdown-item.logout:hover {
+.profile-menu-item.logout:hover {
   background: rgba(239, 68, 68, 0.1);
 }
 
-.topbar.dark .dropdown-item.logout:hover {
+.topbar.dark .profile-menu-item.logout:hover {
   background: rgba(239, 68, 68, 0.2);
 }
 
@@ -564,7 +583,7 @@
     display: none;
   }
   
-  .dropdown-arrow {
+  .profile-menu-arrow {
     display: none;
   }
   
@@ -572,7 +591,7 @@
     display: flex;
   }
   
-  .dropdown-container {
+  .profile-menu-container {
     display: none;
   }
 }
@@ -586,9 +605,9 @@
     font-size: 1.2rem;
   }
   
-  .logo-shape {
-    width: 28px;
-    height: 28px;
+  .babahub-logo {
+    width: 32px;
+    height: 32px;
   }
   
   .menu-toggle {
@@ -610,49 +629,4 @@
 @keyframes slideDown {
   from { opacity: 0; transform: translateY(-20px); }
   to { opacity: 1; transform: translateY(0); }
-}
-
-/* Add to existing CSS */
-
-.dropdown-arrow-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.25rem;
-  border-radius: 4px;
-  transition: var(--transition);
-  cursor: pointer;
-}
-
-.dropdown-arrow-container:hover {
-  background: rgba(99, 102, 241, 0.2);
-}
-
-.dropdown-arrow {
-  margin-left: 0.5rem;
-  font-size: 0.8rem;
-  color: var(--gray-dark);
-  transition: var(--transition);
-  pointer-events: none; /* Prevent arrow from blocking clicks */
-}
-
-.dropdown-arrow.open {
-  transform: rotate(180deg);
-  color: var(--primary);
-}
-
-/* Ensure the entire user profile area is clickable */
-.user-profile {
-  cursor: pointer;
-}
-
-/* Fix for mobile dropdown */
-@media (max-width: 768px) {
-  .dropdown-arrow-container {
-    display: none;
-  }
-  
-  .user-profile {
-    padding: 0.5rem;
-  }
 }

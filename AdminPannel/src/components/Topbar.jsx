@@ -17,13 +17,16 @@ import {
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import '../Style/Topbar.css';
 
+// Import your logo - adjust the path according to your project structure
+import babahubLogo from '../assets/logo.png';
+
 const Topbar = ({ onLogout, userName }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [currentUserName, setCurrentUserName] = useState('');
-  const dropdownRef = useRef(null);
+  const profileMenuRef = useRef(null);
   const profileRef = useRef(null);
 
   // Get user name from localStorage and props, and update when they change
@@ -38,12 +41,12 @@ const Topbar = ({ onLogout, userName }) => {
     }
   }, [userName]);
 
-  // Close dropdown when clicking outside
+  // Close profile menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target) &&
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target) &&
           profileRef.current && !profileRef.current.contains(event.target)) {
-        setDropdownOpen(false);
+        setProfileMenuOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -55,14 +58,14 @@ const Topbar = ({ onLogout, userName }) => {
   const toggleMenu = () => setMenuOpen(!menuOpen);
   const closeMenu = () => setMenuOpen(false);
   
-  const toggleDropdown = (e) => {
+  const toggleProfileMenu = (e) => {
     e.stopPropagation();
-    setDropdownOpen(!dropdownOpen);
+    setProfileMenuOpen(!profileMenuOpen);
   };
 
   const handleProfileClick = (e) => {
     e.stopPropagation();
-    setDropdownOpen(!dropdownOpen);
+    setProfileMenuOpen(!profileMenuOpen);
   };
 
   const handleLogout = () => {
@@ -81,8 +84,8 @@ const Topbar = ({ onLogout, userName }) => {
     // Reset user name state
     setCurrentUserName('User');
     
-    // Close dropdown
-    setDropdownOpen(false);
+    // Close profile menu
+    setProfileMenuOpen(false);
     
     // Call parent logout handler if provided
     if (onLogout) {
@@ -98,7 +101,11 @@ const Topbar = ({ onLogout, userName }) => {
       {/* Left Logo/Title */}
       <div className="topbar-left">
         <div className="logo-container">
-          <div className="logo-shape"></div>
+          <img 
+            src={babahubLogo} 
+            alt="BabaHub Logo" 
+            className="babahub-logo"
+          />
           <h4 className="topbar-title">Baba<span>Hub</span></h4>
         </div>
       </div>
@@ -169,8 +176,8 @@ const Topbar = ({ onLogout, userName }) => {
 
       {/* Right Side Controls */}
       <div className="topbar-right">
-        {/* User Profile Dropdown */}
-        <div className="dropdown-container" ref={dropdownRef}>
+        {/* User Profile Menu */}
+        <div className="profile-menu-container" ref={profileMenuRef}>
           <div className="user-profile" onClick={handleProfileClick} ref={profileRef}>
             <img 
               src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face" 
@@ -181,40 +188,40 @@ const Topbar = ({ onLogout, userName }) => {
               <div className="user-name">{currentUserName}</div>
               <small className="user-role">Super Admin</small>
             </div>
-            <div className="dropdown-arrow-container" onClick={toggleDropdown}>
-              <FaChevronDown className={`dropdown-arrow ${dropdownOpen ? 'open' : ''}`} />
+            <div className="profile-menu-arrow" onClick={toggleProfileMenu}>
+              <FaChevronDown className={`profile-arrow ${profileMenuOpen ? 'open' : ''}`} />
             </div>
           </div>
           
-          {dropdownOpen && (
-            <div className="dropdown-menu">
-              <div className="dropdown-header">
+          {profileMenuOpen && (
+            <div className="profile-menu">
+              <div className="profile-menu-header">
                 <img 
                   src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&h=80&fit=crop&crop=face" 
                   alt="User" 
-                  className="dropdown-user-avatar" 
+                  className="profile-menu-avatar" 
                 />
-                <div className="dropdown-user-info">
-                  <div className="dropdown-user-name">{currentUserName}</div>
-                  <div className="dropdown-user-email">admin@babahub.com</div>
+                <div className="profile-menu-info">
+                  <div className="profile-menu-name">{currentUserName}</div>
+                  <div className="profile-menu-email">admin@babahub.com</div>
                 </div>
               </div>
-              <div className="dropdown-divider"></div>
-              <Link to="/profile" className="dropdown-item" onClick={() => setDropdownOpen(false)}>
-                <FaUser className="dropdown-icon" />
+              <div className="profile-menu-divider"></div>
+              <Link to="/profile" className="profile-menu-item" onClick={() => setProfileMenuOpen(false)}>
+                <FaUser className="profile-menu-icon" />
                 <span>My Profile</span>
               </Link>
-              <Link to="/settings" className="dropdown-item" onClick={() => setDropdownOpen(false)}>
-                <FaCog className="dropdown-icon" />
+              <Link to="/settings" className="profile-menu-item" onClick={() => setProfileMenuOpen(false)}>
+                <FaCog className="profile-menu-icon" />
                 <span>Settings</span>
               </Link>
-              <Link to="/super-admin" className="dropdown-item" onClick={() => setDropdownOpen(false)}>
-                <FaUserShield className="dropdown-icon" />
+              <Link to="/super-admin" className="profile-menu-item" onClick={() => setProfileMenuOpen(false)}>
+                <FaUserShield className="profile-menu-icon" />
                 <span>Super Admin Panel</span>
               </Link>
-              <div className="dropdown-divider"></div>
-              <button className="dropdown-item logout" onClick={handleLogout}>
-                <FaSignOutAlt className="dropdown-icon" />
+              <div className="profile-menu-divider"></div>
+              <button className="profile-menu-item logout" onClick={handleLogout}>
+                <FaSignOutAlt className="profile-menu-icon" />
                 <span>Log Out</span>
               </button>
             </div>
