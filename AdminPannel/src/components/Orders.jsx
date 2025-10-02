@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { 
   FiSearch, 
@@ -10,14 +11,12 @@ import {
   FiUser,
   FiChevronLeft,
   FiChevronRight,
-  FiFilter,
-  FiPlus
+  FiFilter
 } from 'react-icons/fi';
 import { Table, Pagination, Badge, Form, Button, Card, Alert, Modal, Row, Col } from 'react-bootstrap';
 import Topbar from './Topbar';
 import '../Style/Orders.css';
 import axios from 'axios';
-import AddProduct from './AddProduct';
 
 const Orders = () => {
   const [orders, setOrders] = useState([]);
@@ -26,14 +25,9 @@ const Orders = () => {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showDetails, setShowDetails] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
-  const [errorMessage, setErrorMessage] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const ordersPerPage = 10;
   const [statusFilter, setStatusFilter] = useState('all');
-  
-  // AddProduct modal states
-  const [showAddProduct, setShowAddProduct] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     fetchOrders();
@@ -46,34 +40,10 @@ const Orders = () => {
       setOrders(res.data);
     } catch (error) {
       console.error('Error fetching orders:', error);
-      setErrorMessage('Failed to fetch orders');
-      setTimeout(() => setErrorMessage(''), 5000);
     } finally {
       setLoading(false);
     }
   };
-
-  // Handle adding new product - FIXED VERSION
-  const handleAddProduct = (newProduct) => {
-    console.log('New product added:', newProduct);
-    setSuccessMessage(`Product "${newProduct.name}" added successfully!`);
-    setShowAddProduct(false); // Close modal on success
-    setTimeout(() => setSuccessMessage(''), 5000);
-  };
-
-  // Handle add product error - FIXED VERSION
-  const handleAddProductError = (errorMsg) => {
-    setErrorMessage(errorMsg);
-    setTimeout(() => setErrorMessage(''), 5000);
-  };
-
-  // Clear messages when modal opens/closes
-  useEffect(() => {
-    if (showAddProduct) {
-      setSuccessMessage('');
-      setErrorMessage('');
-    }
-  }, [showAddProduct]);
 
   // Calculate status counts
   const getStatusCounts = () => {
@@ -137,8 +107,8 @@ const Orders = () => {
       }
     } catch (error) {
       console.error('Error updating order status:', error);
-      setErrorMessage(`Failed to update order status: ${error.response?.data?.error || error.message}`);
-      setTimeout(() => setErrorMessage(''), 5000);
+      setSuccessMessage(`Failed to update order status: ${error.response?.data?.error || error.message}`);
+      setTimeout(() => setSuccessMessage(''), 3000);
     }
   };
 
@@ -246,19 +216,7 @@ const Orders = () => {
       <div className="orders-dashboard">
         {successMessage && (
           <Alert variant="success" onClose={() => setSuccessMessage('')} dismissible className="fade-in">
-            <div className="d-flex align-items-center">
-              <FiCheckCircle className="me-2" size={18} />
-              {successMessage}
-            </div>
-          </Alert>
-        )}
-
-        {errorMessage && (
-          <Alert variant="danger" onClose={() => setErrorMessage('')} dismissible className="fade-in">
-            <div className="d-flex align-items-center">
-              <FiCheckCircle className="me-2" size={18} />
-              {errorMessage}
-            </div>
+            {successMessage}
           </Alert>
         )}
 
@@ -270,16 +228,6 @@ const Orders = () => {
                 <p className="mb-0 text-muted">View and manage customer orders</p>
               </div>
               <div className="col-md-6 d-flex flex-column flex-md-row gap-3 align-items-start align-items-md-center justify-content-md-end">
-                {/* Add Product Button */}
-                <Button 
-                  variant="primary" 
-                  onClick={() => setShowAddProduct(true)}
-                  className="d-flex align-items-center gap-2"
-                >
-                  <FiPlus size={18} />
-                  Add Product
-                </Button>
-                
                 <div className="search-container flex-grow-1" style={{ maxWidth: "400px" }}>
                   <FiSearch className="search-icon" />
                   <Form.Control 
@@ -623,16 +571,6 @@ const Orders = () => {
             </>
           )}
         </Modal>
-
-        {/* Add Product Modal */}
-        <AddProduct
-          show={showAddProduct}
-          onHide={() => setShowAddProduct(false)}
-          onAddProduct={handleAddProduct}
-          onAddProductError={handleAddProductError}
-          isSubmitting={isSubmitting}
-          setIsSubmitting={setIsSubmitting}
-        />
       </div>
     </>
   );
