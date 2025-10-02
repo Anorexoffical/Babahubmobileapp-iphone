@@ -185,9 +185,9 @@ const AddProduct = ({
       formData.append('category', newProduct.category);
       formData.append('isFeatured', newProduct.isFeatured);
 
-      // IMPORTANT: Use 'image' as the field name to match backend expectations
+      // FIXED: Use 'mainImage' as the field name to match backend expectations
       if (newProduct.mainImage) {
-        formData.append('image', newProduct.mainImage); // Changed from 'mainImage' to 'image'
+        formData.append('mainImage', newProduct.mainImage); // Changed back to 'mainImage'
       }
 
       formData.append('variants', JSON.stringify(processedVariants));
@@ -199,7 +199,7 @@ const AddProduct = ({
         isFeatured: newProduct.isFeatured,
         variants: processedVariants,
         hasImage: !!newProduct.mainImage,
-        imageField: 'image' // Using 'image' field name
+        imageField: 'mainImage' // Using 'mainImage' field name to match backend
       });
 
       // Make API call with proper error handling
