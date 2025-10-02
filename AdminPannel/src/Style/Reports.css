@@ -204,25 +204,18 @@
 }
 
 .badge-shipped {
-  background:  #667eea;
+  background: rgb(9, 132, 227);
   color: white;
 }
 
 .badge-pending {
-  background:  #f5576c ;
+  background: rgb(225, 112, 85);
   color: white;
 }
 
 .badge-complete {
-  background:#43e97b;
+  background: rgb(0, 184, 148);
   color: white;
-}
-
-/* Override Bootstrap badge styles if needed */
-.badge.badge-shipped,
-.badge.badge-pending, 
-.badge.badge-complete {
-  background-color: transparent !important;
 }
 
 /* Table Styles */
