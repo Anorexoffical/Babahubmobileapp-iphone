@@ -162,15 +162,7 @@ const Topbar = ({ onLogout, userName }) => {
           <span>Reports</span>
           <div className="active-indicator"></div>
         </Link>
-        <Link 
-          to="/super-admin" 
-          className={`menu-item ${location.pathname === '/super-admin' ? 'active' : ''}`} 
-          onClick={closeMenu}
-        >
-          <FaUserShield className="menu-icon" />
-          <span>Super Admin</span>
-          <div className="active-indicator"></div>
-        </Link>
+      
       </div>
 
       {/* Right Side Controls */}
