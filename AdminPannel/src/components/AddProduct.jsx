@@ -17,7 +17,6 @@ const AddProduct = ({
     category: '',
     mainImage: null,
     isFeatured: false,
-    image: '',
     variants: [{
       color: '',
       colorCode: '#6c757d',
@@ -26,6 +25,7 @@ const AddProduct = ({
   });
 
   const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
   const [imagePreview, setImagePreview] = useState('');
 
   // Reset form when modal is opened/closed
@@ -102,18 +102,79 @@ const AddProduct = ({
     setNewProduct({ ...newProduct, variants: updatedVariants });
   };
 
+  const validateForm = () => {
+    // Basic field validation
+    if (!newProduct.name.trim()) {
+      setErrorMessage('Product name is required');
+      return false;
+    }
+    if (!newProduct.brand.trim()) {
+      setErrorMessage('Brand is required');
+      return false;
+    }
+    if (!newProduct.category.trim()) {
+      setErrorMessage('Category is required');
+      return false;
+    }
+    if (!newProduct.mainImage) {
+      setErrorMessage('Product image is required');
+      return false;
+    }
+
+    // Variant validation
+    for (let vIndex = 0; vIndex < newProduct.variants.length; vIndex++) {
+      const variant = newProduct.variants[vIndex];
+      
+      if (!variant.color.trim()) {
+        setErrorMessage(`Variant ${vIndex + 1}: Color name is required`);
+        return false;
+      }
+      if (!variant.colorCode.trim()) {
+        setErrorMessage(`Variant ${vIndex + 1}: Color code is required`);
+        return false;
+      }
+
+      // Size validation
+      for (let sIndex = 0; sIndex < variant.sizes.length; sIndex++) {
+        const size = variant.sizes[sIndex];
+        
+        if (!size.size.trim()) {
+          setErrorMessage(`Variant ${vIndex + 1}, Size ${sIndex + 1}: Size is required`);
+          return false;
+        }
+        if (size.stock === '' || isNaN(size.stock) || parseInt(size.stock) < 0) {
+          setErrorMessage(`Variant ${vIndex + 1}, Size ${sIndex + 1}: Valid stock quantity is required`);
+          return false;
+        }
+        if (size.price === '' || isNaN(size.price) || parseFloat(size.price) <= 0) {
+          setErrorMessage(`Variant ${vIndex + 1}, Size ${sIndex + 1}: Valid price is required`);
+          return false;
+        }
+      }
+    }
+
+    return true;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setErrorMessage('');
     setIsSubmitting(true);
 
     try {
-      // Validate and convert empty strings to 0 for stock and price
+      // Validate form
+      if (!validateForm()) {
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Process variants - convert string numbers to actual numbers
       const processedVariants = newProduct.variants.map(variant => ({
         ...variant,
         sizes: variant.sizes.map(size => ({
           ...size,
-          stock: size.stock === '' ? 0 : parseInt(size.stock) || 0,
-          price: size.price === '' ? 0 : parseFloat(size.price) || 0
+          stock: parseInt(size.stock) || 0,
+          price: parseFloat(size.price) || 0
         }))
       }));
 
@@ -124,21 +185,62 @@ const AddProduct = ({
       formData.append('category', newProduct.category);
       formData.append('isFeatured', newProduct.isFeatured);
 
-      // Use 'image' as the field name to match backend expectations
+      // Use 'mainImage' as the field name to match backend
       if (newProduct.mainImage) {
-        formData.append('image', newProduct.mainImage);
+        formData.append('mainImage', newProduct.mainImage);
       }
 
       formData.append('variants', JSON.stringify(processedVariants));
 
-      // Pass formData to parent handler instead of axios here
-      await onAddProduct(formData);
+      console.log('Sending product data:', {
+        name: newProduct.name,
+        brand: newProduct.brand,
+        category: newProduct.category,
+        isFeatured: newProduct.isFeatured,
+        variants: processedVariants,
+        hasImage: !!newProduct.mainImage
+      });
 
-      resetForm();
-      onHide();
+      // Make API call
+      const response = await axios.post('https://account.babahub.co/api/products', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        timeout: 30000, // 30 second timeout
+      });
+
+      console.log('Product added successfully:', response.data);
+      
+      setSuccessMessage(`Product "${response.data.name}" added successfully!`);
+      
+      // Call parent handler to update products list
+      if (onAddProduct) {
+        onAddProduct(response.data);
+      }
+
+      // Reset form and close modal after success
+      setTimeout(() => {
+        resetForm();
+        onHide();
+      }, 2000);
+
     } catch (error) {
       console.error('Error saving product:', error);
-      alert('Error adding product. Please try again.');
+      
+      let errorMsg = 'Failed to add product. Please try again.';
+      
+      if (error.response) {
+        // Server responded with error status
+        errorMsg = error.response.data?.error || error.response.data?.message || `Server error: ${error.response.status}`;
+      } else if (error.request) {
+        // Request made but no response received
+        errorMsg = 'No response from server. Please check your connection.';
+      } else {
+        // Something else happened
+        errorMsg = error.message || 'An unexpected error occurred.';
+      }
+      
+      setErrorMessage(errorMsg);
     } finally {
       setIsSubmitting(false);
     }
@@ -159,6 +261,8 @@ const AddProduct = ({
       }]
     });
     setImagePreview('');
+    setErrorMessage('');
+    setSuccessMessage('');
   };
 
   const handleModalClose = () => {
@@ -188,6 +292,15 @@ const AddProduct = ({
           </Alert>
         )}
         
+        {errorMessage && (
+          <Alert variant="danger" className="mb-4 border-0 shadow-sm" onClose={() => setErrorMessage('')} dismissible>
+            <div className="d-flex align-items-center">
+              <FiStar className="me-2" size={18} />
+              {errorMessage}
+            </div>
+          </Alert>
+        )}
+        
         <Form onSubmit={handleSubmit} className="product-form">
           {/* Basic Information Section */}
           <div className="mb-5">
@@ -209,6 +322,7 @@ const AddProduct = ({
                     required 
                     placeholder="Enter product name"
                     className="border-2 py-2 px-3"
+                    disabled={isSubmitting}
                   />
                 </Form.Group>
               </Col>
@@ -222,6 +336,7 @@ const AddProduct = ({
                     required 
                     placeholder="Enter brand name"
                     className="border-2 py-2 px-3"
+                    disabled={isSubmitting}
                   />
                 </Form.Group>
               </Col>
@@ -235,6 +350,7 @@ const AddProduct = ({
                     required 
                     placeholder="Enter category"
                     className="border-2 py-2 px-3"
+                    disabled={isSubmitting}
                   />
                 </Form.Group>
               </Col>
@@ -246,6 +362,7 @@ const AddProduct = ({
                   checked={newProduct.isFeatured}
                   onChange={handleToggleFeatured}
                   className="ms-2"
+                  disabled={isSubmitting}
                 />
                 {newProduct.isFeatured && (
                   <Badge bg="warning" className="ms-2 d-flex align-items-center">
@@ -266,6 +383,7 @@ const AddProduct = ({
                       required
                       className="d-none" 
                       id="mainImageUpload"
+                      disabled={isSubmitting}
                     />
                     <Form.Label 
                       htmlFor="mainImageUpload" 
@@ -276,16 +394,16 @@ const AddProduct = ({
                           <img 
                             src={imagePreview} 
                             alt="Preview" 
-                            className="img-fluid mb-2" 
-                            style={{ maxHeight: '150px' }}
+                            className="img-fluid mb-2 rounded" 
+                            style={{ maxHeight: '150px', maxWidth: '200px' }}
                           />
                           <span className="text-primary fw-medium">Change Image</span>
                         </>
                       ) : (
                         <>
                           <FiUpload size={24} className="mb-2 text-muted" />
-                          <span className="text-muted">Click to upload product image</span>
-                          <small className="text-danger mt-1">* Required</small>
+                          <span className="text-muted text-center">Click to upload product image</span>
+                          <small className="text-danger mt-1">* Required - JPG, PNG supported</small>
                         </>
                       )}
                     </Form.Label>
@@ -303,6 +421,7 @@ const AddProduct = ({
                     onChange={handleInputChange} 
                     placeholder="Enter detailed product description..."
                     className="border-2 py-2 px-3"
+                    disabled={isSubmitting}
                   />
                 </Form.Group>
               </Col>
@@ -325,7 +444,7 @@ const AddProduct = ({
                 className="d-flex align-items-center gap-1"
                 disabled={isSubmitting}
               >
-                <FiPlus size={16} /> More Variant
+                <FiPlus size={16} /> Add Variant
               </Button>
             </div>
 
@@ -344,13 +463,15 @@ const AddProduct = ({
                 )}
                 
                 <div className="d-flex align-items-center mb-3">
-                  <div className="color-preview me-2" style={{ 
-                    backgroundColor: variant.colorCode, 
-                    width: '20px', 
-                    height: '20px', 
-                    borderRadius: '50%',
-                    border: '1px solid #dee2e6'
-                  }} />
+                  <div 
+                    className="color-preview me-2 rounded-circle border"
+                    style={{ 
+                      backgroundColor: variant.colorCode, 
+                      width: '24px', 
+                      height: '24px',
+                      border: '2px solid #dee2e6'
+                    }} 
+                  />
                   <h6 className="mb-0 text-muted fw-medium">Variant #{index + 1}</h6>
                 </div>
                 
@@ -389,7 +510,7 @@ const AddProduct = ({
                   </Col>
                 </Row>
 
-                <div className="mt-4 pt-3">
+                <div className="mt-4 pt-3 border-top">
                   <div className="d-flex justify-content-between align-items-center mb-3">
                     <h6 className="fw-medium text-muted mb-0">
                       <FiDollarSign className="me-2" size={16} />
@@ -402,7 +523,7 @@ const AddProduct = ({
                       className="d-flex align-items-center gap-1"
                       disabled={isSubmitting}
                     >
-                      <FiPlus size={14} /> More Size Variant
+                      <FiPlus size={14} /> Add Size
                     </Button>
                   </div>
                   
@@ -427,7 +548,7 @@ const AddProduct = ({
                           <Form.Control
                             type="number"
                             min="0"
-                            placeholder="Enter quantity"
+                            placeholder="0"
                             value={size.stock}
                             onChange={(e) => handleSizeChange(index, sIdx, 'stock', e.target.value)}
                             required
@@ -445,7 +566,7 @@ const AddProduct = ({
                               type="number"
                               min="0"
                               step="0.01"
-                              placeholder="Enter price"
+                              placeholder="0.00"
                               value={size.price}
                               onChange={(e) => handleSizeChange(index, sIdx, 'price', e.target.value)}
                               required
