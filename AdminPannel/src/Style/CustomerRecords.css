@@ -100,6 +100,19 @@
 .dashboard-header .text-muted {
   color: rgba(255, 255, 255, 0.8) !important;
 }
+.search-input-forclient{
+  width: 100%;
+  padding: 0.75rem 1rem 0.75rem 2.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background-color: #ffffff;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  height: 46px;
+  color: #333;
+  font-weight: 500;
+}
 
 .dashboard-header h1 {
   color: white;
