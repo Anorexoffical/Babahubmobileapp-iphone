@@ -611,3 +611,48 @@
   from { opacity: 0; transform: translateY(-20px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* Add to existing CSS */
+
+.dropdown-arrow-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: var(--transition);
+  cursor: pointer;
+}
+
+.dropdown-arrow-container:hover {
+  background: rgba(99, 102, 241, 0.2);
+}
+
+.dropdown-arrow {
+  margin-left: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--gray-dark);
+  transition: var(--transition);
+  pointer-events: none; /* Prevent arrow from blocking clicks */
+}
+
+.dropdown-arrow.open {
+  transform: rotate(180deg);
+  color: var(--primary);
+}
+
+/* Ensure the entire user profile area is clickable */
+.user-profile {
+  cursor: pointer;
+}
+
+/* Fix for mobile dropdown */
+@media (max-width: 768px) {
+  .dropdown-arrow-container {
+    display: none;
+  }
+  
+  .user-profile {
+    padding: 0.5rem;
+  }
+}

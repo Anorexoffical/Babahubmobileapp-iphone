@@ -24,6 +24,7 @@ const Topbar = ({ onLogout, userName }) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [currentUserName, setCurrentUserName] = useState('');
   const dropdownRef = useRef(null);
+  const profileRef = useRef(null);
 
   // Get user name from localStorage and props, and update when they change
   useEffect(() => {
@@ -40,7 +41,8 @@ const Topbar = ({ onLogout, userName }) => {
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target) &&
+          profileRef.current && !profileRef.current.contains(event.target)) {
         setDropdownOpen(false);
       }
     };
@@ -52,7 +54,16 @@ const Topbar = ({ onLogout, userName }) => {
 
   const toggleMenu = () => setMenuOpen(!menuOpen);
   const closeMenu = () => setMenuOpen(false);
-  const toggleDropdown = () => setDropdownOpen(!dropdownOpen);
+  
+  const toggleDropdown = (e) => {
+    e.stopPropagation();
+    setDropdownOpen(!dropdownOpen);
+  };
+
+  const handleProfileClick = (e) => {
+    e.stopPropagation();
+    setDropdownOpen(!dropdownOpen);
+  };
 
   const handleLogout = () => {
     // Clear all authentication data from localStorage
@@ -160,7 +171,7 @@ const Topbar = ({ onLogout, userName }) => {
       <div className="topbar-right">
         {/* User Profile Dropdown */}
         <div className="dropdown-container" ref={dropdownRef}>
-          <div className="user-profile" onClick={toggleDropdown}>
+          <div className="user-profile" onClick={handleProfileClick} ref={profileRef}>
             <img 
               src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face" 
               alt="User" 
@@ -170,7 +181,9 @@ const Topbar = ({ onLogout, userName }) => {
               <div className="user-name">{currentUserName}</div>
               <small className="user-role">Super Admin</small>
             </div>
-            <FaChevronDown className={`dropdown-arrow ${dropdownOpen ? 'open' : ''}`} />
+            <div className="dropdown-arrow-container" onClick={toggleDropdown}>
+              <FaChevronDown className={`dropdown-arrow ${dropdownOpen ? 'open' : ''}`} />
+            </div>
           </div>
           
           {dropdownOpen && (
