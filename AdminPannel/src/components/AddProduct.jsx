@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiPlus, FiTrash2, FiStar, FiImage, FiDollarSign, FiUpload, FiSave } from 'react-icons/fi';
+import { FiPlus, FiTrash2, FiStar, FiImage, FiDollarSign, FiUpload, FiSave, FiCheckCircle } from 'react-icons/fi';
 import { Modal, Button, Spinner, Form, Row, Col, Alert, Badge } from 'react-bootstrap';
 import axios from 'axios';
 
@@ -160,6 +160,7 @@ const AddProduct = ({
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage('');
+    setSuccessMessage('');
     setIsSubmitting(true);
 
     try {
@@ -213,19 +214,15 @@ const AddProduct = ({
 
       console.log('Product added successfully:', response.data);
       
-      // Call parent handler to show success message
-      if (onAddProduct) {
-        onAddProduct(response.data);
-      }
-
       // Show local success message
       setSuccessMessage(`Product "${response.data.name}" added successfully!`);
       
-      // Reset form and close modal after success
+      // Call parent success handler after a short delay to show success message
       setTimeout(() => {
-        resetForm();
-        onHide();
-      }, 2000);
+        if (onAddProduct) {
+          onAddProduct(response.data);
+        }
+      }, 1000);
 
     } catch (error) {
       console.error('Error saving product:', error);
@@ -296,7 +293,7 @@ const AddProduct = ({
         {successMessage && (
           <Alert variant="success" className="mb-4 border-0 shadow-sm" onClose={() => setSuccessMessage('')} dismissible>
             <div className="d-flex align-items-center">
-              <FiStar className="me-2" size={18} />
+              <FiCheckCircle className="me-2" size={18} />
               {successMessage}
             </div>
           </Alert>
@@ -305,7 +302,7 @@ const AddProduct = ({
         {errorMessage && (
           <Alert variant="danger" className="mb-4 border-0 shadow-sm" onClose={() => setErrorMessage('')} dismissible>
             <div className="d-flex align-items-center">
-              <FiStar className="me-2" size={18} />
+              <FiCheckCircle className="me-2" size={18} />
               {errorMessage}
             </div>
           </Alert>

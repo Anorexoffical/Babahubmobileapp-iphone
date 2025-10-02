@@ -47,23 +47,33 @@ const Orders = () => {
     } catch (error) {
       console.error('Error fetching orders:', error);
       setErrorMessage('Failed to fetch orders');
+      setTimeout(() => setErrorMessage(''), 5000);
     } finally {
       setLoading(false);
     }
   };
 
-  // Handle adding new product
+  // Handle adding new product - FIXED VERSION
   const handleAddProduct = (newProduct) => {
     console.log('New product added:', newProduct);
     setSuccessMessage(`Product "${newProduct.name}" added successfully!`);
-    setTimeout(() => setSuccessMessage(''), 3000);
+    setShowAddProduct(false); // Close modal on success
+    setTimeout(() => setSuccessMessage(''), 5000);
   };
 
-  // Handle add product error
+  // Handle add product error - FIXED VERSION
   const handleAddProductError = (errorMsg) => {
     setErrorMessage(errorMsg);
     setTimeout(() => setErrorMessage(''), 5000);
   };
+
+  // Clear messages when modal opens/closes
+  useEffect(() => {
+    if (showAddProduct) {
+      setSuccessMessage('');
+      setErrorMessage('');
+    }
+  }, [showAddProduct]);
 
   // Calculate status counts
   const getStatusCounts = () => {
@@ -128,7 +138,7 @@ const Orders = () => {
     } catch (error) {
       console.error('Error updating order status:', error);
       setErrorMessage(`Failed to update order status: ${error.response?.data?.error || error.message}`);
-      setTimeout(() => setErrorMessage(''), 3000);
+      setTimeout(() => setErrorMessage(''), 5000);
     }
   };
 
@@ -236,13 +246,19 @@ const Orders = () => {
       <div className="orders-dashboard">
         {successMessage && (
           <Alert variant="success" onClose={() => setSuccessMessage('')} dismissible className="fade-in">
-            {successMessage}
+            <div className="d-flex align-items-center">
+              <FiCheckCircle className="me-2" size={18} />
+              {successMessage}
+            </div>
           </Alert>
         )}
 
         {errorMessage && (
           <Alert variant="danger" onClose={() => setErrorMessage('')} dismissible className="fade-in">
-            {errorMessage}
+            <div className="d-flex align-items-center">
+              <FiCheckCircle className="me-2" size={18} />
+              {errorMessage}
+            </div>
           </Alert>
         )}
 
