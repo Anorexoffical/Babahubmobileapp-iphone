@@ -11,7 +11,8 @@ import {
   FaUser,
   FaCog,
   FaSignOutAlt,
-  FaPowerOff
+  FaPowerOff,
+  FaUserShield
 } from 'react-icons/fa';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import '../Style/Topbar.css';
@@ -144,30 +145,30 @@ const Topbar = ({ onLogout, userName }) => {
           <span>Reports</span>
           <div className="active-indicator"></div>
         </Link>
+        <Link 
+          to="/super-admin" 
+          className={`menu-item ${location.pathname === '/super-admin' ? 'active' : ''}`} 
+          onClick={closeMenu}
+        >
+          <FaUserShield className="menu-icon" />
+          <span>Super Admin</span>
+          <div className="active-indicator"></div>
+        </Link>
       </div>
 
       {/* Right Side Controls */}
       <div className="topbar-right">
-        {/* Logout Button */}
-        <button 
-          className="logout-btn" 
-          onClick={handleLogout}
-          title="Logout"
-        >
-          <FaPowerOff />
-        </button>
-
         {/* User Profile Dropdown */}
         <div className="dropdown-container" ref={dropdownRef}>
           <div className="user-profile" onClick={toggleDropdown}>
             <img 
-              src="https://randomuser.me/api/portraits/women/44.jpg" 
+              src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face" 
               alt="User" 
               className="user-avatar" 
             />
             <div className="user-info">
               <div className="user-name">{currentUserName}</div>
-              <small className="user-role">Admin</small>
+              <small className="user-role">Super Admin</small>
             </div>
             <FaChevronDown className={`dropdown-arrow ${dropdownOpen ? 'open' : ''}`} />
           </div>
@@ -175,6 +176,11 @@ const Topbar = ({ onLogout, userName }) => {
           {dropdownOpen && (
             <div className="dropdown-menu">
               <div className="dropdown-header">
+                <img 
+                  src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&h=80&fit=crop&crop=face" 
+                  alt="User" 
+                  className="dropdown-user-avatar" 
+                />
                 <div className="dropdown-user-info">
                   <div className="dropdown-user-name">{currentUserName}</div>
                   <div className="dropdown-user-email">admin@babahub.com</div>
@@ -189,6 +195,10 @@ const Topbar = ({ onLogout, userName }) => {
                 <FaCog className="dropdown-icon" />
                 <span>Settings</span>
               </Link>
+              <Link to="/super-admin" className="dropdown-item" onClick={() => setDropdownOpen(false)}>
+                <FaUserShield className="dropdown-icon" />
+                <span>Super Admin Panel</span>
+              </Link>
               <div className="dropdown-divider"></div>
               <button className="dropdown-item logout" onClick={handleLogout}>
                 <FaSignOutAlt className="dropdown-icon" />
@@ -197,6 +207,15 @@ const Topbar = ({ onLogout, userName }) => {
             </div>
           )}
         </div>
+
+        {/* Logout Button - Visible on mobile */}
+        <button 
+          className="logout-btn mobile-logout" 
+          onClick={handleLogout}
+          title="Logout"
+        >
+          <FaPowerOff />
+        </button>
       </div>
     </div>
   );
