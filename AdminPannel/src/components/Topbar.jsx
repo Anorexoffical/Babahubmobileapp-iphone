@@ -106,7 +106,6 @@ const Topbar = ({ onLogout, userName }) => {
             alt="BabaHub Logo" 
             className="babahub-logo"
           />
-          <h4 className="topbar-title">Baba<span>Hub</span></h4>
         </div>
       </div>
 
@@ -207,18 +206,9 @@ const Topbar = ({ onLogout, userName }) => {
                 </div>
               </div>
               <div className="profile-menu-divider"></div>
-              <Link to="/profile" className="profile-menu-item" onClick={() => setProfileMenuOpen(false)}>
-                <FaUser className="profile-menu-icon" />
-                <span>My Profile</span>
-              </Link>
-              <Link to="/settings" className="profile-menu-item" onClick={() => setProfileMenuOpen(false)}>
-                <FaCog className="profile-menu-icon" />
-                <span>Settings</span>
-              </Link>
-              <Link to="/super-admin" className="profile-menu-item" onClick={() => setProfileMenuOpen(false)}>
-                <FaUserShield className="profile-menu-icon" />
-                <span>Super Admin Panel</span>
-              </Link>
+             
+             
+           
               <div className="profile-menu-divider"></div>
               <button className="profile-menu-item logout" onClick={handleLogout}>
                 <FaSignOutAlt className="profile-menu-icon" />
