@@ -7,7 +7,6 @@ import {
   FiCalendar,
   FiSearch,
   FiFilter,
-  FiAlertCircle,
 } from "react-icons/fi";
 import "../Style/Reports.css";
 
@@ -61,8 +60,8 @@ function Reports() {
         return "badge-shipped";
       case "Processing":
         return "badge-pending";
-      case "Payment":
-        return "badge-payment";
+      case "Pending Payment":
+        return "badge-payment-pending";
       default:
         return "badge-pending";
     }
@@ -79,12 +78,6 @@ function Reports() {
               <p className="subtitle">
                 Track and analyze your sales performance
               </p>
-            </div>
-
-            {/* Pending Payment Badge */}
-            <div className="pending-payment-badge">
-              <FiAlertCircle size={14} />
-              Pending Payment
             </div>
 
             {/* Filters */}
@@ -125,7 +118,7 @@ function Reports() {
                   <option value="Processing">Processing</option>
                   <option value="Shipped">Shipped</option>
                   <option value="Completed">Completed</option>
-                  <option value="Payment">Payment</option>
+                  <option value="Pending Payment">Pending Payment</option>
                 </select>
               </div>
 
@@ -262,7 +255,7 @@ function Reports() {
                         Totals:
                       </td>
                       <td className="fw-bold text-success">
-                        ${totalSaleAmount.toLocaleString()}
+                        R{totalSaleAmount.toLocaleString()}
                       </td>
                       <td></td>
                     </tr>
