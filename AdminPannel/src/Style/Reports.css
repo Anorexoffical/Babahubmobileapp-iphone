@@ -194,7 +194,7 @@
   transform: none;
 }
 
-/* Status Badges - FIXED */
+/* SIMPLE STATUS BADGES - UPDATED */
 .badge {
   font-weight: 500;
   padding: 0.5em 0.8em;
@@ -204,21 +204,21 @@
 }
 
 .badge-shipped {
-  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  background-color: #007bff; /* Blue */
   color: white;
 }
 
 .badge-pending {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-  color: white;
+  background-color: #ffc107; /* Yellow/Amber */
+  color: black;
 }
 
 .badge-complete {
-  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+  background-color: #28a745; /* Green */
   color: white;
 }
 
-/* Override Bootstrap badge styles if needed */
+/* Override Bootstrap badge styles */
 .badge.badge-shipped,
 .badge.badge-pending, 
 .badge.badge-complete {
