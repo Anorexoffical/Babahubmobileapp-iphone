@@ -53,13 +53,13 @@
   align-items: center;
 
   gap: 0.75rem;
-  width: 100px;
-  height: 100px;
+  width: 20px;
+  height: 20px;
 }
 
 .babahub-logo {
-  width: 40px;
-  height: 40px;
+  width: 100px;
+  height: 100px;
   object-fit: contain;
   transition: var(--transition);
 }
