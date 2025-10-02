@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiPlus, FiTrash2, FiStar, FiImage, FiDollarSign, FiUpload, FiSave, FiCheckCircle } from 'react-icons/fi';
+import { FiPlus, FiTrash2, FiStar, FiImage, FiDollarSign, FiUpload, FiSave, FiCheckCircle, FiAlertCircle } from 'react-icons/fi';
 import { Modal, Button, Spinner, Form, Row, Col, Alert, Badge } from 'react-bootstrap';
 import axios from 'axios';
 
@@ -214,11 +214,14 @@ const AddProduct = ({
 
       console.log('Product added successfully:', response.data);
       
-      // Call parent success handler - this will close the modal and show success message
+      // Reset form first
+      resetForm();
+      
+      // Then call parent success handler
       if (onAddProduct) {
         onAddProduct(response.data);
       }
-
+      
     } catch (error) {
       console.error('Error saving product:', error);
       
@@ -239,10 +242,11 @@ const AddProduct = ({
       // Set local error message
       setErrorMessage(errorMsg);
       
-      // Also call parent error handler to show error in Orders component
+      // Also call parent error handler to show error in ProductTable component
       if (onAddProductError) {
         onAddProductError(errorMsg);
       }
+    } finally {
       setIsSubmitting(false);
     }
   };
@@ -287,7 +291,7 @@ const AddProduct = ({
         {errorMessage && (
           <Alert variant="danger" className="mb-4 border-0 shadow-sm" onClose={() => setErrorMessage('')} dismissible>
             <div className="d-flex align-items-center">
-              <FiCheckCircle className="me-2" size={18} />
+              <FiAlertCircle className="me-2" size={18} />
               {errorMessage}
             </div>
           </Alert>

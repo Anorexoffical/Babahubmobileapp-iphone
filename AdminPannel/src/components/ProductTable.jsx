@@ -72,8 +72,13 @@ const ProductTable = () => {
     } catch (err) {
       console.error('Error adding product:', err);
       setError('Failed to add product. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
-    setIsSubmitting(false);
+  };
+
+  const handleAddProductError = (errorMsg) => {
+    setError(errorMsg);
   };
 
   const handleUpdateProduct = async (product) => {
@@ -88,8 +93,9 @@ const ProductTable = () => {
     } catch (err) {
       console.error('Error updating product:', err);
       setError('Failed to update product. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
-    setIsSubmitting(false);
   };
 
   const calculateTotalStock = (variants) => {
@@ -212,13 +218,19 @@ const ProductTable = () => {
       <div className="product-dashboard">
         {successMessage && (
           <Alert variant="success" onClose={() => setSuccessMessage('')} dismissible className="fade-in">
-            {successMessage}
+            <div className="d-flex align-items-center">
+              <FiCheckCircle className="me-2" />
+              {successMessage}
+            </div>
           </Alert>
         )}
 
         {error && (
           <Alert variant="danger" onClose={() => setError('')} dismissible className="fade-in">
-            {error}
+            <div className="d-flex align-items-center">
+              <FiAlertTriangle className="me-2" />
+              {error}
+            </div>
           </Alert>
         )}
 
@@ -227,6 +239,7 @@ const ProductTable = () => {
           show={showAddModal}
           onHide={handleAddModalClose}
           onAddProduct={handleAddProduct}
+          onAddProductError={handleAddProductError}
           isSubmitting={isSubmitting}
           setIsSubmitting={setIsSubmitting}
         />
