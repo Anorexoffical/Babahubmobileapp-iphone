@@ -10,12 +10,14 @@ import {
   FiUser,
   FiChevronLeft,
   FiChevronRight,
-  FiFilter
+  FiFilter,
+  FiPlus
 } from 'react-icons/fi';
 import { Table, Pagination, Badge, Form, Button, Card, Alert, Modal, Row, Col } from 'react-bootstrap';
 import Topbar from './Topbar';
 import '../Style/Orders.css';
 import axios from 'axios';
+import AddProduct from './AddProduct'; // Import the AddProduct component
 
 const Orders = () => {
   const [orders, setOrders] = useState([]);
@@ -27,6 +29,10 @@ const Orders = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const ordersPerPage = 10;
   const [statusFilter, setStatusFilter] = useState('all');
+  
+  // AddProduct modal states
+  const [showAddProduct, setShowAddProduct] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     fetchOrders();
@@ -42,6 +48,17 @@ const Orders = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Handle adding new product
+  const handleAddProduct = (newProduct) => {
+    // You can add the new product to your products list if needed
+    console.log('New product added:', newProduct);
+    setSuccessMessage(`Product "${newProduct.name}" added successfully!`);
+    setTimeout(() => setSuccessMessage(''), 3000);
+    
+    // If you have a products state, you can update it here:
+    // setProducts(prev => [newProduct, ...prev]);
   };
 
   // Calculate status counts
@@ -227,6 +244,16 @@ const Orders = () => {
                 <p className="mb-0 text-muted">View and manage customer orders</p>
               </div>
               <div className="col-md-6 d-flex flex-column flex-md-row gap-3 align-items-start align-items-md-center justify-content-md-end">
+                {/* Add Product Button */}
+                <Button 
+                  variant="primary" 
+                  onClick={() => setShowAddProduct(true)}
+                  className="d-flex align-items-center gap-2"
+                >
+                  <FiPlus size={18} />
+                  Add Product
+                </Button>
+                
                 <div className="search-container flex-grow-1" style={{ maxWidth: "400px" }}>
                   <FiSearch className="search-icon" />
                   <Form.Control 
@@ -570,6 +597,15 @@ const Orders = () => {
             </>
           )}
         </Modal>
+
+        {/* Add Product Modal */}
+        <AddProduct
+          show={showAddProduct}
+          onHide={() => setShowAddProduct(false)}
+          onAddProduct={handleAddProduct}
+          isSubmitting={isSubmitting}
+          setIsSubmitting={setIsSubmitting}
+        />
       </div>
     </>
   );
