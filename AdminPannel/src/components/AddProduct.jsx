@@ -214,15 +214,10 @@ const AddProduct = ({
 
       console.log('Product added successfully:', response.data);
       
-      // Show local success message
-      setSuccessMessage(`Product "${response.data.name}" added successfully!`);
-      
-      // Call parent success handler after a short delay to show success message
-      setTimeout(() => {
-        if (onAddProduct) {
-          onAddProduct(response.data);
-        }
-      }, 1000);
+      // Call parent success handler - this will close the modal and show success message
+      if (onAddProduct) {
+        onAddProduct(response.data);
+      }
 
     } catch (error) {
       console.error('Error saving product:', error);
@@ -248,7 +243,6 @@ const AddProduct = ({
       if (onAddProductError) {
         onAddProductError(errorMsg);
       }
-    } finally {
       setIsSubmitting(false);
     }
   };
@@ -290,15 +284,6 @@ const AddProduct = ({
         </Modal.Title>
       </Modal.Header>
       <Modal.Body className="px-4 py-3">
-        {successMessage && (
-          <Alert variant="success" className="mb-4 border-0 shadow-sm" onClose={() => setSuccessMessage('')} dismissible>
-            <div className="d-flex align-items-center">
-              <FiCheckCircle className="me-2" size={18} />
-              {successMessage}
-            </div>
-          </Alert>
-        )}
-        
         {errorMessage && (
           <Alert variant="danger" className="mb-4 border-0 shadow-sm" onClose={() => setErrorMessage('')} dismissible>
             <div className="d-flex align-items-center">

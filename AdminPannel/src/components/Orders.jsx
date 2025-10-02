@@ -53,21 +53,28 @@ const Orders = () => {
     }
   };
 
-  // Handle adding new product - FIXED VERSION
+  // Handle adding new product - UPDATED
   const handleAddProduct = (newProduct) => {
     console.log('New product added:', newProduct);
+    // Close modal first
+    setShowAddProduct(false);
+    // Then show success message on orders page
     setSuccessMessage(`Product "${newProduct.name}" added successfully!`);
-    setShowAddProduct(false); // Close modal on success
     setTimeout(() => setSuccessMessage(''), 5000);
   };
 
-  // Handle add product error - FIXED VERSION
+  // Handle add product error - UPDATED
   const handleAddProductError = (errorMsg) => {
     setErrorMessage(errorMsg);
     setTimeout(() => setErrorMessage(''), 5000);
   };
 
-  // Clear messages when modal opens/closes
+  // Handle modal close
+  const handleCloseAddProduct = () => {
+    setShowAddProduct(false);
+  };
+
+  // Clear messages when modal opens
   useEffect(() => {
     if (showAddProduct) {
       setSuccessMessage('');
@@ -244,6 +251,7 @@ const Orders = () => {
     <>
       <Topbar />
       <div className="orders-dashboard">
+        {/* Success Alert - Show on Orders page after modal closes */}
         {successMessage && (
           <Alert variant="success" onClose={() => setSuccessMessage('')} dismissible className="fade-in">
             <div className="d-flex align-items-center">
@@ -253,6 +261,7 @@ const Orders = () => {
           </Alert>
         )}
 
+        {/* Error Alert */}
         {errorMessage && (
           <Alert variant="danger" onClose={() => setErrorMessage('')} dismissible className="fade-in">
             <div className="d-flex align-items-center">
@@ -627,7 +636,7 @@ const Orders = () => {
         {/* Add Product Modal */}
         <AddProduct
           show={showAddProduct}
-          onHide={() => setShowAddProduct(false)}
+          onHide={handleCloseAddProduct}
           onAddProduct={handleAddProduct}
           onAddProductError={handleAddProductError}
           isSubmitting={isSubmitting}
