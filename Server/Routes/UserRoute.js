@@ -37,7 +37,7 @@ router.post("/login", async (req, res) => {
     const user = await User.findOne({ email, role });
     console.log("Found user:", user);
     if (!user) {
-      return res.status(400).json({ message: "Invalid credentials or role" });
+      return res.status(400).json({ message: "Invalid credentials " });
     }
 
     const isMatch = await user.matchPassword(password);

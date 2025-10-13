@@ -8,13 +8,41 @@ import {
   Pressable,
   Alert,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  Animated,
+  Image,
+  Dimensions,
 } from 'react-native';
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'expo-router';
 import Mybutton from '../components/Mybutton';
-import Icon from 'react-native-vector-icons/FontAwesome';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useAuth } from './contexts/AuthContext';
+
+const { width, height } = Dimensions.get('window');
+
+// Enhanced Brand Color Palette
+const COLORS = {
+  primary: '#6366F1',
+  primaryLight: '#8B5CF6',
+  primaryDark: '#4F46E5',
+  secondary: '#EC4899',
+  secondaryLight: '#F472B6',
+  accent: '#10B981',
+  accentLight: '#34D399',
+  dark: '#1F2937',
+  darkLight: '#374151',
+  gray: '#6B7280',
+  grayLight: '#9CA3AF',
+  light: '#F3F4F6',
+  background: '#F9FAFB',
+  white: '#FFFFFF',
+  success: '#059669',
+  warning: '#D97706',
+  error: '#DC2626',
+};
 
 const Login = () => {
   const router = useRouter();
@@ -26,6 +54,26 @@ const Login = () => {
   const [emailFocus, setEmailFocus] = useState(false);
   const [passwordFocus, setPasswordFocus] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Animation values
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(50)).current;
+
+  useEffect(() => {
+    // Start animations when component mounts
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
 
   // Simple validation function
   const validateInputs = () => {
@@ -53,42 +101,40 @@ const Login = () => {
     return true;
   };
 
-const handleLogin = async () => {
-  if (!validateInputs()) return;
+  const handleLogin = async () => {
+    if (!validateInputs()) return;
 
-  setIsLoading(true);
+    setIsLoading(true);
 
-  try {
-    const response = await fetch("https://account.babahub.co/api/users/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email,
-        password,
-        role: "customer",
-      }),
-    });
+    try {
+      const response = await fetch("https://account.babahub.co/api/users/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          password,
+          role: "customer",
+        }),
+      });
 
-    const data = await response.json();
-    console.log("Login response:", data);
+      const data = await response.json();
+      console.log("Login response:", data);
 
-    if (response.ok) {
-      const { user } = data;
-      const authToken = "mock-or-jwt"; // replace with real JWT later
-      await signIn(authToken, user);
-      router.replace("/(tabs)/HomeScreen");
-    } else {
-      Alert.alert("Login Failed", data.message || "Invalid credentials");
+      if (response.ok) {
+        const { user } = data;
+        const authToken = "mock-or-jwt"; // replace with real JWT later
+        await signIn(authToken, user);
+        router.replace("/(tabs)/HomeScreen");
+      } else {
+        Alert.alert("Login Failed", data.message || "Invalid credentials");
+      }
+    } catch (err) {
+      console.error("Login error:", err.message);
+      Alert.alert("Error", "Failed to connect to server");
+    } finally {
+      setIsLoading(false);
     }
-  } catch (err) {
-    console.error("Login error:", err.message);
-    Alert.alert("Error", "Failed to connect to server");
-  } finally {
-    setIsLoading(false);
-  }
-};
-
-
+  };
 
   const handleCreateAccount = () => {
     router.push('/CreateAccount'); 
@@ -99,213 +145,405 @@ const handleLogin = async () => {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.header}>Welcome Back</Text>
-      <Text style={styles.subHeader}>Please log in to your account</Text>
-
-      <Text style={styles.label}>Email</Text>
-      <TextInput
-        placeholder="hello@example.com"
-        style={[styles.input, emailFocus && styles.inputActive]}
-        keyboardType="email-address"
-        value={email}
-        onChangeText={setEmail}
-        onFocus={() => setEmailFocus(true)}
-        onBlur={() => setEmailFocus(false)}
-        underlineColorAndroid="transparent"
-        selectionColor="#3366FF"
-        autoCapitalize="none"
-        editable={!isLoading}
-      />
-
-      <Text style={styles.label}>Password</Text>
-      <Pressable
-        style={[styles.passwordInputContainer, passwordFocus && styles.inputActive]}
+    <KeyboardAvoidingView 
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
-        <TextInput
-          placeholder="••••••••"
-          style={styles.passwordInput}
-          secureTextEntry={!passwordVisible}
-          value={password}
-          onChangeText={setPassword}
-          onFocus={() => setPasswordFocus(true)}
-          onBlur={() => setPasswordFocus(false)}
-          underlineColorAndroid="transparent"
-          selectionColor="#3366FF"
-          editable={!isLoading}
-        />
-        <TouchableOpacity onPress={() => setPasswordVisible(!passwordVisible)}>
-          <MaterialIcons
-            name={passwordVisible ? 'visibility' : 'visibility-off'}
-            size={22}
-            color="#888"
-          />
-        </TouchableOpacity>
-      </Pressable>
+        <Animated.View 
+          style={[
+            styles.content,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }]
+            }
+          ]}
+        >
+          {/* Header Section */}
+          <View style={styles.headerSection}>
+            <View style={styles.logoContainer}>
+              <Image
+                source={require('../assets/images/babahublogobgless.png')}
+                style={styles.logoImage}
+                resizeMode="contain"
+              />
+            </View>
+            <Text style={styles.header}>Welcome Back</Text>
+            <Text style={styles.subHeader}>
+              Sign in to continue your shopping journey
+            </Text>
+          </View>
 
-      <TouchableOpacity
-        style={styles.customCheckboxContainer}
-        onPress={() => setChecked(!checked)}
-        activeOpacity={0.8}
-        disabled={isLoading}
-      >
-        <View style={[styles.customCheckbox, checked && styles.customCheckboxChecked]}>
-          {checked && <MaterialIcons name="check" size={16} color="#fff" />}
-        </View>
-        <Text style={styles.checkboxLabel}>Keep me signed in</Text>
-      </TouchableOpacity>
+          {/* Form Section */}
+          <View style={styles.formSection}>
+            {/* Email Input */}
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>
+                Email Address
+                <Text style={styles.required}> *</Text>
+              </Text>
+              <View style={[
+                styles.inputWrapper,
+                emailFocus && styles.inputWrapperFocused,
+                isLoading && styles.inputDisabled
+              ]}>
+                <MaterialIcons 
+                  name="email" 
+                  size={20} 
+                  color={emailFocus ? COLORS.primary : COLORS.grayLight} 
+                  style={styles.inputIcon}
+                />
+                <TextInput
+                  placeholder="hello@example.com"
+                  placeholderTextColor={COLORS.grayLight}
+                  style={styles.input}
+                  keyboardType="email-address"
+                  value={email}
+                  onChangeText={setEmail}
+                  onFocus={() => setEmailFocus(true)}
+                  onBlur={() => setEmailFocus(false)}
+                  underlineColorAndroid="transparent"
+                  selectionColor={COLORS.primary}
+                  autoCapitalize="none"
+                  editable={!isLoading}
+                />
+              </View>
+            </View>
 
-      <TouchableOpacity disabled={isLoading}>
-        <Text style={styles.forgotText} onPress={forgetpassword}>Forgot Password?</Text>
-      </TouchableOpacity>
+            {/* Password Input */}
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>
+                Password
+                <Text style={styles.required}> *</Text>
+              </Text>
+              <View style={[
+                styles.inputWrapper,
+                passwordFocus && styles.inputWrapperFocused,
+                isLoading && styles.inputDisabled
+              ]}>
+                <MaterialIcons 
+                  name="lock" 
+                  size={20} 
+                  color={passwordFocus ? COLORS.primary : COLORS.grayLight} 
+                  style={styles.inputIcon}
+                />
+                <TextInput
+                  placeholder="••••••••"
+                  placeholderTextColor={COLORS.grayLight}
+                  style={styles.input}
+                  secureTextEntry={!passwordVisible}
+                  value={password}
+                  onChangeText={setPassword}
+                  onFocus={() => setPasswordFocus(true)}
+                  onBlur={() => setPasswordFocus(false)}
+                  underlineColorAndroid="transparent"
+                  selectionColor={COLORS.primary}
+                  editable={!isLoading}
+                />
+                <TouchableOpacity 
+                  onPress={() => setPasswordVisible(!passwordVisible)}
+                  style={styles.visibilityButton}
+                >
+                  <MaterialIcons
+                    name={passwordVisible ? 'visibility' : 'visibility-off'}
+                    size={22}
+                    color={COLORS.gray}
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
 
-      {isLoading ? (
-        <ActivityIndicator size="large" color="#3366FF" style={styles.loader} />
-      ) : (
-        <Mybutton btntitle="Login" onPress={handleLogin} />
-      )}
+            {/* Remember Me & Forgot Password */}
+            <View style={styles.helperContainer}>
+              <TouchableOpacity
+                style={styles.rememberContainer}
+                onPress={() => setChecked(!checked)}
+                activeOpacity={0.8}
+                disabled={isLoading}
+              >
+                <View style={[
+                  styles.checkbox,
+                  checked && styles.checkboxChecked
+                ]}>
+                  {checked && (
+                    <MaterialIcons name="check" size={16} color={COLORS.white} />
+                  )}
+                </View>
+                <Text style={styles.rememberText}>Remember me</Text>
+              </TouchableOpacity>
 
-    
+              <TouchableOpacity 
+                onPress={forgetpassword} 
+                disabled={isLoading}
+              >
+                <Text style={styles.forgotText}>Forgot Password?</Text>
+              </TouchableOpacity>
+            </View>
 
-      <TouchableOpacity onPress={handleCreateAccount} disabled={isLoading}>
-        <Text style={styles.createAccount}>Don't have an account? Create one</Text>
-      </TouchableOpacity>
-    </View>
+            {/* Login Button */}
+            {isLoading ? (
+              <View style={styles.loaderContainer}>
+                <ActivityIndicator size="large" color={COLORS.primary} />
+                <Text style={styles.loadingText}>Signing you in...</Text>
+              </View>
+            ) : (
+              <TouchableOpacity
+                style={styles.loginButton}
+                onPress={handleLogin}
+                activeOpacity={0.9}
+              >
+                <Text style={styles.loginButtonText}>Sign In</Text>
+                <MaterialIcons name="arrow-forward" size={20} color={COLORS.white} />
+              </TouchableOpacity>
+            )}
+
+            {/* Divider */}
+            <View style={styles.divider}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>or</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
+            {/* Create Account */}
+            <View style={styles.createAccountContainer}>
+              <Text style={styles.createAccountText}>
+                Don't have an account?{' '}
+              </Text>
+              <TouchableOpacity 
+                onPress={handleCreateAccount} 
+                disabled={isLoading}
+              >
+                <Text style={styles.createAccountLink}>Create one</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Footer */}
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>
+              By continuing, you agree to our{' '}
+              <Text style={styles.footerLink}>Terms of Service</Text> and{' '}
+              <Text style={styles.footerLink}>Privacy Policy</Text>
+            </Text>
+          </View>
+        </Animated.View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 24,
+    backgroundColor: COLORS.background,
+  },
+  scrollContent: {
+    flexGrow: 1,
     justifyContent: 'center',
-    backgroundColor: '#fff',
+    minHeight: height - 100, // Ensure content fits on screen
+  },
+  content: {
+    paddingHorizontal: 24,
+    paddingVertical: 20, // Reduced vertical padding
+  },
+  headerSection: {
+    alignItems: 'center',
+    marginBottom: 30, // Reduced margin
+  },
+  logoContainer: {
+    marginBottom: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  logoImage: {
+    width: 140, // Increased from 100 to 140
+    height: 140, // Increased from 100 to 140
   },
   header: {
-    fontSize: 30,
-    fontWeight: '700',
-    marginBottom: 6,
-    color: '#222',
+    fontSize: 28, // Slightly reduced from 32
+    fontWeight: '800',
+    marginBottom: 6, // Reduced margin
+    color: COLORS.dark,
+    textAlign: 'center',
+    letterSpacing: 0.5,
   },
   subHeader: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 30,
+    fontSize: 15, // Slightly reduced
+    color: COLORS.gray,
+    textAlign: 'center',
+    lineHeight: 20, // Reduced line height
+  },
+  formSection: {
+    marginBottom: 20, // Reduced margin
+  },
+  inputContainer: {
+    marginBottom: 16, // Reduced margin
   },
   label: {
     fontWeight: '600',
-    marginBottom: 6,
+    marginBottom: 6, // Reduced margin
     fontSize: 14,
-    color: '#333',
+    color: COLORS.dark,
+    letterSpacing: 0.3,
+  },
+  required: {
+    color: COLORS.error,
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: COLORS.light,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    backgroundColor: COLORS.white,
+    height: 52, // Slightly reduced height
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  inputWrapperFocused: {
+    borderColor: COLORS.primary,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  inputDisabled: {
+    opacity: 0.6,
+  },
+  inputIcon: {
+    marginRight: 12,
   },
   input: {
-    height: 50,
-    borderWidth: 2,
-    borderColor: '#ccc',
-    borderRadius: 12,
-    paddingHorizontal: 18,
-    marginBottom: 20,
-    backgroundColor: '#fff',
-    fontSize: 15,
-  },
-  inputActive: {
-    borderColor: '#3366FF',
-  },
-  passwordInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#ccc',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    backgroundColor: '#fff',
-    marginBottom: 20,
-    height: 50,
-  },
-  passwordInput: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 16,
+    color: COLORS.dark,
     paddingVertical: 0,
-    paddingHorizontal: 0,
-    margin: 0,
-    color: '#000',
   },
-  customCheckboxContainer: {
+  visibilityButton: {
+    padding: 4,
+  },
+  helperContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24, // Reduced margin
+  },
+  rememberContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 15,
   },
-  customCheckbox: {
-    width: 22,
-    height: 22,
-    borderWidth: 1.5,
-    borderColor: '#ccc',
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderWidth: 2,
+    borderColor: COLORS.grayLight,
     borderRadius: 6,
     marginRight: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
   },
-  customCheckboxChecked: {
-    backgroundColor: '#3366FF',
-    borderColor: '#3366FF',
+  checkboxChecked: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
   },
-  checkboxLabel: {
+  rememberText: {
     fontSize: 14,
-    color: '#333',
+    color: COLORS.dark,
+    fontWeight: '500',
   },
   forgotText: {
-    color: '#3366FF',
-    fontSize: 13,
-    marginBottom: 30,
-    textAlign: 'right',
-  },
-  orContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 20,
-  },
-  line: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#ccc',
-  },
-  orText: {
-    marginHorizontal: 10,
-    color: '#999',
+    color: COLORS.primary,
     fontSize: 14,
+    fontWeight: '600',
   },
-  googleButton: {
+  loaderContainer: {
+    alignItems: 'center',
+    paddingVertical: 16, // Reduced padding
+  },
+  loadingText: {
+    marginTop: 10, // Reduced margin
+    fontSize: 14,
+    color: COLORS.gray,
+    fontWeight: '500',
+  },
+  loginButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 30,
-    backgroundColor: '#f1f1f1',
-    height: 50,
-    paddingHorizontal: 20,
-    marginBottom: 20,
+    backgroundColor: COLORS.primary,
+    borderRadius: 16,
+    height: 52, // Slightly reduced height
+    paddingHorizontal: 24,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 8,
+    gap: 8,
   },
-  googleIconColorful: {
-    marginRight: 10,
-    color: '#DB4437',
+  loginButtonText: {
+    fontSize: 17, // Slightly reduced
+    fontWeight: '700',
+    color: COLORS.white,
+    letterSpacing: 0.5,
   },
-  googleText: {
-    fontSize: 16,
-    color: '#333',
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 20, // Reduced margin
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: COLORS.light,
+  },
+  dividerText: {
+    marginHorizontal: 16,
+    color: COLORS.gray,
+    fontSize: 14,
     fontWeight: '500',
   },
-  createAccount: {
-    color: '#3366FF',
+  createAccountContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 10, // Added margin bottom
+  },
+  createAccountText: {
+    fontSize: 15,
+    color: COLORS.gray,
+  },
+  createAccountLink: {
+    fontSize: 15,
+    color: COLORS.primary,
+    fontWeight: '700',
+  },
+  footer: {
+    alignItems: 'center',
+    paddingTop: 15, // Reduced padding
+  },
+  footerText: {
+    fontSize: 12,
+    color: COLORS.grayLight,
     textAlign: 'center',
-    marginTop: 20,
-    fontWeight: '600',
-    fontSize: 14,
+    lineHeight: 16,
   },
-  loader: {
-    marginVertical: 20,
-  },
-  disabledButton: {
-    opacity: 0.5,
+  footerLink: {
+    color: COLORS.primary,
+    fontWeight: '500',
   },
 });
 

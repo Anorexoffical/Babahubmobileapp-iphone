@@ -8,18 +8,52 @@ import {
   Platform,
   Text,
   TouchableOpacity,
-  StyleSheet
+  StyleSheet,
+  SafeAreaView,
+  Animated,
+  Dimensions,
+  StatusBar
 } from "react-native";
 import { WebView } from 'react-native-webview';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+
+const { width, height } = Dimensions.get('window');
+
+// Consistent color palette matching your brand
+const COLORS = {
+  primary: '#6366F1',
+  primaryLight: '#8B5CF6',
+  primaryDark: '#4F46E5',
+  secondary: '#EC4899',
+  secondaryLight: '#F472B6',
+  accent: '#10B981',
+  accentLight: '#34D399',
+  dark: '#1F2937',
+  darkLight: '#374151',
+  gray: '#6B7280',
+  grayLight: '#9CA3AF',
+  light: '#F3F4F6',
+  background: '#F9FAFB',
+  white: '#FFFFFF',
+  success: '#059669',
+  warning: '#D97706',
+  error: '#DC2626',
+};
 
 const PaymentScreen = () => {
   const [loading, setLoading] = useState(true);
   const [paymentUrl, setPaymentUrl] = useState(null);
   const [hasError, setHasError] = useState(false);
+  const [progress, setProgress] = useState(0);
   const webViewRef = useRef(null);
   const router = useRouter();
+
+  // Animation values
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(20)).current;
+  const progressAnim = useRef(new Animated.Value(0)).current;
 
   // Handle Android back button
   useEffect(() => {
@@ -29,11 +63,18 @@ const PaymentScreen = () => {
           "Cancel Payment",
           "Are you sure you want to cancel this payment?",
           [
-            { text: "Continue Payment", style: "cancel" },
+            { 
+              text: "Continue Payment", 
+              style: "cancel",
+              onPress: () => {}
+            },
             { 
               text: "Cancel Payment", 
               style: "destructive",
-              onPress: () => router.back()
+              onPress: () => {
+                AsyncStorage.removeItem("latestPaymentUrl");
+                router.back();
+              }
             }
           ]
         );
@@ -49,20 +90,49 @@ const PaymentScreen = () => {
   useEffect(() => {
     const loadPaymentUrl = async () => {
       try {
+        setLoading(true);
         const storedUrl = await AsyncStorage.getItem("latestPaymentUrl");
         console.log("Loaded PayFast URL:", storedUrl);
 
         if (!storedUrl) {
-          Alert.alert("Error", "No payment URL found!");
-          router.back();
+          Alert.alert(
+            "Payment Error", 
+            "No payment session found. Please try checking out again.",
+            [{ 
+              text: "OK", 
+              onPress: () => router.back() 
+            }]
+          );
           return;
         }
 
         setPaymentUrl(storedUrl);
+        
+        // Start entrance animations
+        Animated.parallel([
+          Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: 600,
+            useNativeDriver: true,
+          }),
+          Animated.spring(slideAnim, {
+            toValue: 0,
+            tension: 60,
+            friction: 8,
+            useNativeDriver: true,
+          })
+        ]).start();
+
       } catch (error) {
         console.error("Error loading payment URL:", error);
-        Alert.alert("Error", "Failed to load payment page");
-        router.back();
+        Alert.alert(
+          "Connection Error", 
+          "Failed to load payment page. Please check your connection.",
+          [{ 
+            text: "OK", 
+            onPress: () => router.back() 
+          }]
+        );
       }
     };
 
@@ -72,59 +142,125 @@ const PaymentScreen = () => {
   // Reset error state when paymentUrl changes
   useEffect(() => {
     setHasError(false);
+    setProgress(0);
   }, [paymentUrl]);
 
-  // Updated navigation state handler
+  // Animate progress bar
+  useEffect(() => {
+    Animated.timing(progressAnim, {
+      toValue: progress,
+      duration: 300,
+      useNativeDriver: false,
+    }).start();
+  }, [progress]);
+
+  // Enhanced navigation state handler
   const onNavigationStateChange = (navState) => {
-    const { url, title } = navState;
+    const { url, title, loading: navLoading } = navState;
     
-    console.log("Current URL:", url);
+    console.log("Payment Page URL:", url);
     console.log("Page Title:", title);
 
-    // Improved URL pattern matching
+    // Update progress for loading bar
+    if (navLoading) {
+      setProgress(0.7); // Partial progress while loading
+    } else {
+      setProgress(1); // Complete when loaded
+      setTimeout(() => setProgress(0), 500); // Hide after completion
+    }
+
+    // Improved URL pattern matching for success
     const isSuccessUrl = 
       url.includes('/success') || 
       url.includes('payment/success') ||
       url.includes('payfast/success') ||
-      (title && title.toLowerCase().includes('success')) ||
-      (title && title.toLowerCase().includes('thank you'));
+      url.includes('return?status=success') ||
+      (title && (
+        title.toLowerCase().includes('success') ||
+        title.toLowerCase().includes('thank you') ||
+        title.toLowerCase().includes('payment successful') ||
+        title.toLowerCase().includes('approved')
+      ));
 
+    // Improved URL pattern matching for cancellation
     const isCancelUrl = 
       url.includes('/cancel') || 
       url.includes('payment/cancel') ||
       url.includes('payfast/cancel') ||
-      (title && title.toLowerCase().includes('cancel'));
+      url.includes('return?status=cancel') ||
+      (title && (
+        title.toLowerCase().includes('cancel') ||
+        title.toLowerCase().includes('cancelled') ||
+        title.toLowerCase().includes('payment cancelled')
+      ));
 
-    // Check for success URL
+    // Check for failure URLs
+    const isFailureUrl = 
+      url.includes('/failure') || 
+      url.includes('payment/failure') ||
+      url.includes('payfast/failure') ||
+      url.includes('return?status=failure') ||
+      (title && (
+        title.toLowerCase().includes('failed') ||
+        title.toLowerCase().includes('failure') ||
+        title.toLowerCase().includes('declined') ||
+        title.toLowerCase().includes('error')
+      ));
+
+    // Handle success URL
     if (isSuccessUrl) {
       setLoading(false);
       AsyncStorage.removeItem("latestPaymentUrl");
-      router.replace({
-        pathname: '/OrderSuccessScreen',
-        params: { paymentStatus: 'success' }
-      });
+      setTimeout(() => {
+        router.replace({
+          pathname: '/OrderSuccessScreen',
+          params: { paymentStatus: 'success' }
+        });
+      }, 1000);
       return;
     }
     
-    // Check for cancel URL
+    // Handle cancel URL
     if (isCancelUrl) {
       setLoading(false);
       AsyncStorage.removeItem("latestPaymentUrl");
-      Alert.alert(
-        "Payment Cancelled", 
-        "Your payment was cancelled.",
-        [{ 
-          text: "OK", 
-          onPress: () => router.replace('/(tabs)/CartScreen') 
-        }]
-      );
+      setTimeout(() => {
+        Alert.alert(
+          "Payment Cancelled", 
+          "Your payment was cancelled. You can try again anytime.",
+          [{ 
+            text: "Back to Cart", 
+            onPress: () => router.replace('/(tabs)/CartScreen') 
+          }]
+        );
+      }, 500);
       return;
     }
 
-    // Hide loader when page loads
-    if (!navState.loading) {
+    // Handle failure URL
+    if (isFailureUrl) {
       setLoading(false);
+      AsyncStorage.removeItem("latestPaymentUrl");
+      setTimeout(() => {
+        Alert.alert(
+          "Payment Failed", 
+          "We couldn't process your payment. Please try again or use a different payment method.",
+          [{ 
+            text: "Try Again", 
+            onPress: () => router.back() 
+          }]
+        );
+      }, 500);
+      return;
     }
+
+    // Update loading state
+    setLoading(navLoading);
+  };
+
+  // Enhanced WebView loading progress
+  const onLoadProgress = ({ nativeEvent }) => {
+    setProgress(nativeEvent.progress);
   };
 
   // Handle message posting from WebView
@@ -145,7 +281,7 @@ const PaymentScreen = () => {
     }
   };
 
-  // Handle WebView errors
+  // Enhanced WebView error handling
   const onError = (syntheticEvent) => {
     const { nativeEvent } = syntheticEvent;
     console.error('WebView error:', nativeEvent);
@@ -153,14 +289,25 @@ const PaymentScreen = () => {
     setHasError(true);
     
     Alert.alert(
-      "Payment Error",
-      "Failed to load payment page. Please check your internet connection.",
+      "Connection Error",
+      "We're having trouble loading the payment page. Please check your internet connection and try again.",
       [
-        { text: "Try Again", onPress: () => {
-          setHasError(false);
-          webViewRef.current?.reload();
-        }},
-        { text: "Cancel", onPress: () => router.back() }
+        { 
+          text: "Try Again", 
+          onPress: () => {
+            setHasError(false);
+            setProgress(0);
+            webViewRef.current?.reload();
+          }
+        },
+        { 
+          text: "Cancel", 
+          style: "destructive",
+          onPress: () => {
+            AsyncStorage.removeItem("latestPaymentUrl");
+            router.back();
+          }
+        }
       ]
     );
   };
@@ -170,229 +317,536 @@ const PaymentScreen = () => {
     const { nativeEvent } = syntheticEvent;
     console.error('HTTP error:', nativeEvent);
     setHasError(true);
-    Alert.alert("Error", "Payment page not available");
+    Alert.alert(
+      "Payment Unavailable", 
+      "The payment gateway is currently unavailable. Please try again later."
+    );
   };
 
-  // Error UI
+  // Enhanced Error UI
   if (hasError) {
     return (
-      <View style={styles.errorContainer}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Text style={styles.backButtonText}>‹ Back</Text>
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Payment Error</Text>
-          <View style={styles.headerSpacer} />
-        </View>
-        
-        <View style={styles.errorContent}>
-          <Text style={styles.errorText}>Payment failed to load</Text>
-          <TouchableOpacity 
-            style={styles.retryButton}
-            onPress={() => {
-              setHasError(false);
-              webViewRef.current?.reload();
-            }}
-          >
-            <Text style={styles.retryText}>Retry Payment</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.backButtonError}
-            onPress={() => router.back()}
-          >
-            <Text style={styles.backText}>Go Back to Checkout</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+      <SafeAreaView style={styles.safeArea}>
+        <StatusBar backgroundColor={COLORS.primary} barStyle="light-content" />
+        <Animated.View 
+          style={[
+            styles.errorContainer,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }]
+            }
+          ]}
+        >
+          <View style={styles.header}>
+            <TouchableOpacity 
+              onPress={() => {
+                AsyncStorage.removeItem("latestPaymentUrl");
+                router.back();
+              }} 
+              style={styles.backButton}
+            >
+              <View style={styles.backButtonInner}>
+                <Ionicons name="chevron-back" size={24} color={COLORS.dark} />
+              </View>
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Payment Error</Text>
+            <View style={styles.headerRight} />
+          </View>
+          
+          <View style={styles.errorContent}>
+            <View style={styles.errorIllustration}>
+              <View style={styles.errorIconContainer}>
+                <Ionicons name="warning" size={60} color={COLORS.error} />
+              </View>
+            </View>
+            
+            <Text style={styles.errorTitle}>Payment Failed to Load</Text>
+            <Text style={styles.errorDescription}>
+              We encountered an issue while connecting to the payment gateway. This could be due to network issues or temporary service unavailability.
+            </Text>
+            
+            <View style={styles.errorActions}>
+              <TouchableOpacity 
+                style={styles.retryButton}
+                onPress={() => {
+                  setHasError(false);
+                  setProgress(0);
+                  webViewRef.current?.reload();
+                }}
+              >
+                <Ionicons name="refresh" size={20} color={COLORS.white} />
+                <Text style={styles.retryText}>Try Again</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.backButtonError}
+                onPress={() => {
+                  AsyncStorage.removeItem("latestPaymentUrl");
+                  router.back();
+                }}
+              >
+                <Ionicons name="arrow-back" size={20} color={COLORS.primary} />
+                <Text style={styles.backText}>Back to Checkout</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Animated.View>
+      </SafeAreaView>
     );
   }
 
-  // Loader component
-  if (loading && !paymentUrl) {
+  // Enhanced Loader component
+  if (!paymentUrl) {
     return (
-      <View style={styles.loaderContainer}>
-        <ActivityIndicator size="large" color="#3366FF" />
-      </View>
+      <SafeAreaView style={styles.safeArea}>
+        <StatusBar backgroundColor={COLORS.primary} barStyle="light-content" />
+        <View style={styles.loaderContainer}>
+          <View style={styles.loaderContent}>
+            <ActivityIndicator size={60} color={COLORS.primary} />
+            <Text style={styles.loaderTitle}>Preparing Payment</Text>
+            <Text style={styles.loaderSubtitle}>
+              Setting up secure payment gateway...
+            </Text>
+          </View>
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
-      {/* Custom Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Text style={styles.backButtonText}>‹ Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Secure Payment</Text>
-        <View style={styles.headerSpacer} />
-      </View>
-
-      {loading && (
-        <View style={styles.loadingBar}>
-          <ActivityIndicator size="small" color="#3366FF" />
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar backgroundColor={COLORS.primary} barStyle="light-content" />
+      
+      <Animated.View 
+        style={[
+          styles.container,
+          {
+            opacity: fadeAnim,
+            transform: [{ translateY: slideAnim }]
+          }
+        ]}
+      >
+        {/* Premium Header */}
+        <View style={styles.header}>
+          <TouchableOpacity 
+            onPress={() => {
+              Alert.alert(
+                "Cancel Payment",
+                "Are you sure you want to cancel this payment?",
+                [
+                  { text: "Continue Payment", style: "cancel" },
+                  { 
+                    text: "Cancel Payment", 
+                    style: "destructive",
+                    onPress: () => {
+                      AsyncStorage.removeItem("latestPaymentUrl");
+                      router.back();
+                    }
+                  }
+                ]
+              );
+            }} 
+            style={styles.backButton}
+          >
+            <View style={styles.backButtonInner}>
+              <Ionicons name="chevron-back" size={24} color={COLORS.dark} />
+            </View>
+          </TouchableOpacity>
+          
+          <View style={styles.headerCenter}>
+            <Text style={styles.headerTitle}>Secure Payment</Text>
+            <Text style={styles.headerSubtitle}>Powered by PayFast</Text>
+          </View>
+          
+          <View style={styles.secureBadge}>
+            <Ionicons name="lock-closed" size={16} color={COLORS.white} />
+            <Text style={styles.secureText}>Secure</Text>
+          </View>
         </View>
-      )}
 
-      {/* --- UPDATED WEBVIEW --- */}
-      <WebView
-        ref={webViewRef}
-        source={{ uri: paymentUrl }}
-        style={styles.webview}
-        onLoadStart={() => setLoading(true)}
-        onLoadEnd={() => setLoading(false)}
-        onNavigationStateChange={onNavigationStateChange}
-        onError={onError}
-        onHttpError={onHttpError}
-        onMessage={onMessage}
-        allowsBackForwardNavigationGestures={true}
-        startInLoadingState={true}
-        renderLoading={() => (
-          <View style={styles.webviewLoader}>
-            <ActivityIndicator size="large" color="#3366FF" />
-            <Text style={styles.loadingText}>Loading payment gateway...</Text>
+        {/* Animated Progress Bar */}
+        {loading && (
+          <View style={styles.progressContainer}>
+            <Animated.View 
+              style={[
+                styles.progressBar,
+                {
+                  width: progressAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: ['0%', '100%'],
+                  }),
+                }
+              ]} 
+            />
           </View>
         )}
-        javaScriptEnabled={true}
-        domStorageEnabled={true}
-        sharedCookiesEnabled={true}
-        thirdPartyCookiesEnabled={true}
-        injectedJavaScript={`
-          setTimeout(function() {
-            if (window.location.href.includes('/success') || 
-                window.location.href.includes('payment/success') ||
-                window.location.href.includes('payfast/success') ||
-                document.title.toLowerCase().includes('success') ||
-                document.title.toLowerCase().includes('thank you')) {
-              window.ReactNativeWebView.postMessage(JSON.stringify({type: 'payment_success'}));
-            }
-            if (window.location.href.includes('/cancel') || 
-                window.location.href.includes('payment/cancel') ||
-                window.location.href.includes('payfast/cancel') ||
-                document.title.toLowerCase().includes('cancel')) {
-              window.ReactNativeWebView.postMessage(JSON.stringify({type: 'payment_cancel'}));
-            }
-          }, 1000);
-          const originalPushState = history.pushState;
-          history.pushState = function() {
-            originalPushState.apply(this, arguments);
-            setTimeout(() => {
-              if (window.location.href.includes('/success') || 
-                  window.location.href.includes('payment/success')) {
-                window.ReactNativeWebView.postMessage(JSON.stringify({type: 'payment_success'}));
+
+        {/* Security Status Bar */}
+        <View style={styles.securityBar}>
+          <Ionicons name="shield-checkmark" size={16} color={COLORS.success} />
+          <Text style={styles.securityText}>
+            Your payment is secured with 256-bit SSL encryption
+          </Text>
+        </View>
+
+        {/* Enhanced WebView */}
+        <View style={styles.webviewContainer}>
+          <WebView
+            ref={webViewRef}
+            source={{ uri: paymentUrl }}
+            style={styles.webview}
+            onLoadStart={() => {
+              setLoading(true);
+              setProgress(0.1);
+            }}
+            onLoadProgress={onLoadProgress}
+            onLoadEnd={() => {
+              setLoading(false);
+              setProgress(1);
+            }}
+            onNavigationStateChange={onNavigationStateChange}
+            onError={onError}
+            onHttpError={onHttpError}
+            onMessage={onMessage}
+            allowsBackForwardNavigationGestures={true}
+            startInLoadingState={true}
+            renderLoading={() => (
+              <View style={styles.webviewLoader}>
+                <View style={styles.loadingContent}>
+                  <ActivityIndicator size={50} color={COLORS.primary} />
+                  <Text style={styles.loadingTitle}>Loading Payment Gateway</Text>
+                  <Text style={styles.loadingSubtitle}>
+                    Please wait while we connect to our secure payment partner...
+                  </Text>
+                </View>
+              </View>
+            )}
+            javaScriptEnabled={true}
+            domStorageEnabled={true}
+            sharedCookiesEnabled={true}
+            thirdPartyCookiesEnabled={true}
+            injectedJavaScript={`
+              // Enhanced payment detection
+              function checkPaymentStatus() {
+                const currentUrl = window.location.href;
+                const pageTitle = document.title.toLowerCase();
+                
+                // Success detection
+                if (currentUrl.includes('/success') || 
+                    currentUrl.includes('payment/success') ||
+                    currentUrl.includes('payfast/success') ||
+                    currentUrl.includes('return?status=success') ||
+                    pageTitle.includes('success') ||
+                    pageTitle.includes('thank you') ||
+                    pageTitle.includes('payment successful') ||
+                    pageTitle.includes('approved')) {
+                  window.ReactNativeWebView.postMessage(JSON.stringify({
+                    type: 'payment_success',
+                    url: currentUrl,
+                    title: document.title
+                  }));
+                }
+                
+                // Cancel detection
+                if (currentUrl.includes('/cancel') || 
+                    currentUrl.includes('payment/cancel') ||
+                    currentUrl.includes('payfast/cancel') ||
+                    currentUrl.includes('return?status=cancel') ||
+                    pageTitle.includes('cancel') ||
+                    pageTitle.includes('cancelled')) {
+                  window.ReactNativeWebView.postMessage(JSON.stringify({
+                    type: 'payment_cancel',
+                    url: currentUrl,
+                    title: document.title
+                  }));
+                }
               }
-            }, 500);
-          };
-        `}
-        userAgent={
-          Platform.OS === 'ios' 
-            ? 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1'
-            : 'Mozilla/5.0 (Linux; Android 10; SM-G973F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36'
-        }
-      />
-    </View>
+              
+              // Initial check
+              setTimeout(checkPaymentStatus, 1000);
+              
+              // Monitor URL changes
+              const originalPushState = history.pushState;
+              history.pushState = function() {
+                originalPushState.apply(this, arguments);
+                setTimeout(checkPaymentStatus, 500);
+              };
+              
+              // Monitor hash changes
+              window.addEventListener('hashchange', checkPaymentStatus);
+              
+              // Monitor popstate
+              window.addEventListener('popstate', checkPaymentStatus);
+            `}
+            userAgent={
+              Platform.OS === 'ios' 
+                ? 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1'
+                : 'Mozilla/5.0 (Linux; Android 10; SM-G973F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36'
+            }
+          />
+        </View>
+
+        {/* Payment Tips Footer */}
+        <View style={styles.footer}>
+          <View style={styles.tipsContainer}>
+            <Ionicons name="information-circle" size={18} color={COLORS.primary} />
+            <Text style={styles.tipsText}>
+              • Ensure all payment details are correct{'\n'}
+              • Do not close the app during payment{'\n'}
+              • You'll be redirected automatically upon completion
+            </Text>
+          </View>
+        </View>
+      </Animated.View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: COLORS.primary,
+  },
   container: {
     flex: 1,
-    backgroundColor: 'white'
+    backgroundColor: COLORS.background,
   },
-  loaderContainer: {
-    flex: 1,
-    justifyContent: "center", 
-    alignItems: "center"
-  },
+  // Header Styles
   header: {
-    height: 60,
-    backgroundColor: 'white',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 15,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: COLORS.white,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-    zIndex: 1000,
-    paddingTop: Platform.OS === 'ios' ? 10 : 0
+    borderBottomColor: COLORS.light,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
   },
   backButton: {
-    padding: 5
+    padding: 4,
   },
-  backButtonText: {
-    color: '#3366FF',
-    fontSize: 16,
-    fontWeight: '600'
+  backButtonInner: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.light,
+    borderRadius: 12,
+  },
+  headerCenter: {
+    alignItems: 'center',
+    flex: 1,
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333'
+    fontWeight: '700',
+    color: COLORS.dark,
+    marginBottom: 2,
   },
-  headerSpacer: {
-    flex: 1
+  headerSubtitle: {
+    fontSize: 12,
+    color: COLORS.gray,
+    fontWeight: '500',
   },
-  loadingBar: {
+  headerRight: {
+    width: 40,
+  },
+  secureBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.success,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+    gap: 4,
+  },
+  secureText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: COLORS.white,
+  },
+  // Progress Bar
+  progressContainer: {
     height: 3,
-    backgroundColor: '#3366FF',
-    position: 'absolute',
-    top: 60,
-    right: 0,
-    left: 0
+    backgroundColor: COLORS.light,
+    overflow: 'hidden',
   },
-  webviewLoader: {
+  progressBar: {
+    height: '100%',
+    backgroundColor: COLORS.primary,
+  },
+  // Security Bar
+  securityBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.success + '15',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    gap: 8,
+  },
+  securityText: {
+    fontSize: 12,
+    color: COLORS.success,
+    fontWeight: '600',
+  },
+  // WebView Styles
+  webviewContainer: {
     flex: 1,
-    justifyContent: "center", 
-    alignItems: "center"
+    backgroundColor: COLORS.white,
   },
   webview: {
     flex: 1,
-    zIndex: 1000
   },
-  loadingText: {
+  webviewLoader: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.background,
+  },
+  loadingContent: {
+    alignItems: 'center',
+    padding: 30,
+  },
+  loadingTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.dark,
+    marginTop: 20,
+    marginBottom: 8,
+  },
+  loadingSubtitle: {
     fontSize: 14,
-    color: '#666',
-    marginTop: 10
+    color: COLORS.gray,
+    textAlign: 'center',
+    lineHeight: 20,
   },
-  // --- Error UI styles ---
+  // Footer Tips
+  footer: {
+    padding: 16,
+    backgroundColor: COLORS.white,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.light,
+  },
+  tipsContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  tipsText: {
+    flex: 1,
+    fontSize: 12,
+    color: COLORS.gray,
+    lineHeight: 16,
+  },
+  // Loader Styles
+  loaderContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.background,
+  },
+  loaderContent: {
+    alignItems: 'center',
+    padding: 40,
+  },
+  loaderTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: COLORS.dark,
+    marginTop: 20,
+    marginBottom: 8,
+  },
+  loaderSubtitle: {
+    fontSize: 15,
+    color: COLORS.gray,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  // Error Styles
   errorContainer: {
     flex: 1,
-    backgroundColor: 'white'
+    backgroundColor: COLORS.background,
   },
   errorContent: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20
+    paddingHorizontal: 40,
+    paddingVertical: 60,
   },
-  errorText: {
-    fontSize: 18,
-    color: 'red',
-    marginBottom: 20,
-    textAlign: 'center'
+  errorIllustration: {
+    marginBottom: 24,
+  },
+  errorIconContainer: {
+    width: 120,
+    height: 120,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(220, 38, 38, 0.05)',
+    borderRadius: 60,
+  },
+  errorTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: COLORS.dark,
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  errorDescription: {
+    fontSize: 15,
+    color: COLORS.gray,
+    textAlign: 'center',
+    marginBottom: 32,
+    lineHeight: 22,
+  },
+  errorActions: {
+    width: '100%',
+    gap: 12,
   },
   retryButton: {
-    backgroundColor: '#3366FF',
-    padding: 15,
-    borderRadius: 8,
-    width: '100%',
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10
+    justifyContent: 'center',
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    borderRadius: 12,
+    gap: 8,
   },
   retryText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 16
+    color: COLORS.white,
+    fontSize: 16,
+    fontWeight: '600',
   },
   backButtonError: {
-    padding: 15,
-    width: '100%',
-    alignItems: 'center'
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: COLORS.primary,
+    gap: 8,
   },
   backText: {
-    color: '#3366FF',
-    fontWeight: 'bold',
-    fontSize: 16
-  }
+    color: COLORS.primary,
+    fontSize: 16,
+    fontWeight: '600',
+  },
 });
 
 export default PaymentScreen;
