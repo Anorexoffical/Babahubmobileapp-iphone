@@ -183,7 +183,7 @@ const Login = () => {
           <View style={styles.headerSection}>
             <View style={styles.logoContainer}>
               <Image
-                source={require('../assets/images/babahublogobgless.png')}
+                source={require('../assets/images/babahubbgless.png')}
                 style={styles.logoImage}
                 resizeMode="contain"
               />

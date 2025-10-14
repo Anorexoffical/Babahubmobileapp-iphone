@@ -16,7 +16,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
-import LottieView from 'lottie-react-native';
 
 const { width, height } = Dimensions.get('window');
 
@@ -42,6 +41,15 @@ const COLORS = {
 // Maximum unique items allowed in cart
 const MAX_CART_ITEMS = 3;
 
+// Function to correctly get full image URL for product images
+const getImageUrl = (imagePath) => {
+  if (!imagePath) return '';
+  if (imagePath.startsWith('http')) return imagePath;
+  
+  const normalizedPath = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
+  return `https://account.babahub.co${normalizedPath}`;
+};
+
 const WishlistScreen = () => {
   const [wishlistItems, setWishlistItems] = useState([]);
   const [cartItems, setCartItems] = useState([]);
@@ -49,11 +57,9 @@ const WishlistScreen = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [showAddToCartModal, setShowAddToCartModal] = useState(false);
   const [productToAdd, setProductToAdd] = useState(null);
-  const [showSuccess, setShowSuccess] = useState(false); // Renamed this
-  const router = useRouter();
   
   // Refs for animations
-  const confettiAnim = useRef(null);
+  const router = useRouter();
   
   // Enhanced Animations
   const fadeAnim = useState(new Animated.Value(0))[0];
@@ -61,8 +67,6 @@ const WishlistScreen = () => {
   const overlayOpacity = useState(new Animated.Value(0))[0];
   const buttonScaleAnim = useState(new Animated.Value(1))[0];
   const modalScaleAnim = useState(new Animated.Value(0.9))[0];
-  const successScaleAnim = useState(new Animated.Value(0))[0];
-  const successOpacityAnim = useState(new Animated.Value(0))[0];
 
   useFocusEffect(
     React.useCallback(() => {
@@ -155,72 +159,35 @@ const WishlistScreen = () => {
     ]).start();
   };
 
-  const playSuccessAnimation = () => { // Renamed this function
-    setShowSuccess(true);
-    successScaleAnim.setValue(0);
-    successOpacityAnim.setValue(0);
-    
-    // Play confetti animation
-    if (confettiAnim.current) {
-      confettiAnim.current.play();
-    }
-
-    // Success message animation
-    Animated.parallel([
-      Animated.spring(successScaleAnim, {
-        toValue: 1,
-        tension: 60,
-        friction: 7,
-        useNativeDriver: true,
-      }),
-      Animated.timing(successOpacityAnim, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      })
-    ]).start();
-
-    // Auto hide after 3 seconds
-    setTimeout(() => {
-      hideSuccessAnimation();
-    }, 3000);
-  };
-
-  const hideSuccessAnimation = () => {
-    Animated.parallel([
-      Animated.timing(successScaleAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-      Animated.timing(successOpacityAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      })
-    ]).start(() => {
-      setShowSuccess(false);
-    });
-  };
-
   const loadWishlist = async () => {
     try {
       setRefreshing(true);
       const storedWishlist = await AsyncStorage.getItem('wishlist');
       if (storedWishlist) {
         const parsedWishlist = JSON.parse(storedWishlist);
-        const validatedWishlist = parsedWishlist.map(item => ({
-          id: item.id || Math.random().toString(),
-          title: item.title || 'Unknown Product',
-          brand: item.brand || 'Unknown Brand',
-          image: item.image || getRandomProductImage(),
-          price: item.price || 0,
-          rating: item.rating || 4.5,
-          reviews: item.reviews || 0,
-          description: item.description || 'No description available',
-          category: item.category || 'General'
-        }));
-        setWishlistItems(validatedWishlist);
+        
+        // Remove duplicates and ensure proper image URLs
+        const uniqueWishlist = [];
+        const seenIds = new Set();
+        
+        parsedWishlist.forEach(item => {
+          if (!seenIds.has(item.id)) {
+            seenIds.add(item.id);
+            uniqueWishlist.push({
+              id: item.id || Math.random().toString(),
+              title: item.title || 'Unknown Product',
+              brand: item.brand || 'Unknown Brand',
+              image: getImageUrl(item.image) || getRandomProductImage(),
+              price: item.price || 0,
+              rating: item.rating || 4.5,
+              reviews: item.reviews || 0,
+              description: item.description || 'No description available',
+              category: item.category || 'General'
+            });
+          }
+        });
+        
+        setWishlistItems(uniqueWishlist);
       } else {
         setWishlistItems([]);
       }
@@ -308,9 +275,8 @@ const WishlistScreen = () => {
       setCartItems(updatedCart);
       await AsyncStorage.setItem('cart', JSON.stringify(updatedCart));
       
-      // Close modal and show success animation
+      // Simply close the modal without showing success message
       animateModalOut();
-      playSuccessAnimation(); // Updated function call
 
     } catch (error) {
       console.error('Failed to add to cart', error);
@@ -398,7 +364,7 @@ const WishlistScreen = () => {
               source={{ uri: item.image }} 
               style={styles.image}
               resizeMode="cover"
-              onError={() => console.log('Image failed to load')}
+              onError={() => console.log('Image failed to load for:', item.title)}
             />
             <View style={styles.wishlistBadge}>
               <Ionicons name="heart" size={16} color={COLORS.error} />
@@ -416,22 +382,18 @@ const WishlistScreen = () => {
             
             <View style={styles.priceActionContainer}>
               <Text style={styles.price}>R{((item.price || 0) * 18).toFixed(2)}</Text>
-              <TouchableOpacity 
-                style={[
-                  styles.cartButton,
-                  cartQuantity > 0 && styles.cartButtonActive
-                ]}
-                onPress={() => handleAddToCartPress(item)}
-              >
-                {cartQuantity > 0 ? (
-                  <View style={styles.quantityContainer}>
-                    {renderCartQuantityBadge(cartQuantity)}
-                    <Ionicons name="cart" size={16} color={COLORS.white} />
-                  </View>
-                ) : (
+              <View style={styles.cartButtonContainer}>
+                <TouchableOpacity 
+                  style={[
+                    styles.cartButton,
+                    cartQuantity > 0 && styles.cartButtonActive
+                  ]}
+                  onPress={() => handleAddToCartPress(item)}
+                >
                   <Ionicons name="cart" size={16} color={COLORS.white} />
-                )}
-              </TouchableOpacity>
+                </TouchableOpacity>
+                {cartQuantity > 0 && renderCartQuantityBadge(cartQuantity)}
+              </View>
             </View>
           </View>
         </TouchableOpacity>
@@ -445,68 +407,6 @@ const WishlistScreen = () => {
       </Animated.View>
     );
   };
-
-  // Success Animation Component
-  const SuccessAnimation = () => (
-    <Modal
-      visible={showSuccess} // Updated variable name
-      transparent
-      animationType="none"
-      statusBarTranslucent
-    >
-      <View style={styles.successOverlay}>
-        {/* Confetti Animation */}
-        <View style={styles.confettiContainer}>
-          <LottieView
-            ref={confettiAnim}
-            source={require('../../assets/animations/confetti.json')}
-            autoPlay
-            loop={false}
-            style={styles.confetti}
-          />
-        </View>
-        
-        {/* Success Message */}
-        <Animated.View 
-          style={[
-            styles.successMessage,
-            {
-              opacity: successOpacityAnim,
-              transform: [{ scale: successScaleAnim }]
-            }
-          ]}
-        >
-          <View style={styles.successIcon}>
-            <Ionicons name="checkmark-circle" size={60} color={COLORS.success} />
-          </View>
-          <Text style={styles.successTitle}>Added to Cart! 🎉</Text>
-          <Text style={styles.successText}>
-            {productToAdd?.title} has been added to your cart
-          </Text>
-          
-          <View style={styles.successButtons}>
-            <TouchableOpacity 
-              style={styles.continueShoppingBtn}
-              onPress={hideSuccessAnimation}
-            >
-              <Text style={styles.continueShoppingBtnText}>Continue Shopping</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.viewCartBtn}
-              onPress={() => {
-                hideSuccessAnimation();
-                router.push('/(tabs)/cart');
-              }}
-            >
-              <Ionicons name="cart" size={20} color={COLORS.white} />
-              <Text style={styles.viewCartBtnText}>View Cart</Text>
-            </TouchableOpacity>
-          </View>
-        </Animated.View>
-      </View>
-    </Modal>
-  );
 
   // Enhanced Add to Cart Confirmation Modal with Smooth Animations
   const AddToCartModal = () => (
@@ -550,11 +450,14 @@ const WishlistScreen = () => {
 
               {productToAdd && (
                 <View style={styles.modalProductInfo}>
-                  <Image 
-                    source={{ uri: productToAdd.image }} 
-                    style={styles.modalProductImage}
-                    resizeMode="cover"
-                  />
+                  <View style={styles.modalImageContainer}>
+                    <Image 
+                      source={{ uri: productToAdd.image }} 
+                      style={styles.modalProductImage}
+                      resizeMode="cover"
+                      onError={(error) => console.log('Modal image failed to load:', error)}
+                    />
+                  </View>
                   <View style={styles.modalProductDetails}>
                     <Text style={styles.modalProductBrand}>{productToAdd.brand}</Text>
                     <Text style={styles.modalProductName} numberOfLines={2}>
@@ -697,12 +600,9 @@ const WishlistScreen = () => {
       )}
 
       <AddToCartModal />
-      <SuccessAnimation />
     </View>
   );
 };
-
-// ... (styles remain exactly the same as in the previous code)
 
 const styles = StyleSheet.create({
   container: {
@@ -898,6 +798,11 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: COLORS.primary,
   },
+  cartButtonContainer: {
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   cartButton: {
     backgroundColor: COLORS.primary,
     width: 36,
@@ -913,11 +818,6 @@ const styles = StyleSheet.create({
   },
   cartButtonActive: {
     backgroundColor: COLORS.success,
-  },
-  quantityContainer: {
-    position: 'relative',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   quantityBadge: {
     position: 'absolute',
@@ -981,6 +881,9 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 16,
     marginBottom: 20,
+  },
+  modalImageContainer: {
+    position: 'relative',
   },
   modalProductImage: {
     width: 80,
@@ -1109,97 +1012,6 @@ const styles = StyleSheet.create({
     color: COLORS.gray,
     textAlign: 'center',
     fontStyle: 'italic',
-  },
-
-  // Success Animation Styles
-  successOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  confettiContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 1,
-  },
-  confetti: {
-    flex: 1,
-    width: '100%',
-    height: '100%',
-  },
-  successMessage: {
-    backgroundColor: COLORS.white,
-    borderRadius: 30,
-    padding: 32,
-    margin: 20,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 20,
-    zIndex: 2,
-    minWidth: width * 0.8,
-  },
-  successIcon: {
-    marginBottom: 20,
-  },
-  successTitle: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: COLORS.dark,
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  successText: {
-    fontSize: 16,
-    color: COLORS.gray,
-    textAlign: 'center',
-    marginBottom: 24,
-    lineHeight: 22,
-  },
-  successButtons: {
-    flexDirection: 'row',
-    gap: 12,
-    width: '100%',
-  },
-  continueShoppingBtn: {
-    flex: 1,
-    backgroundColor: COLORS.light,
-    paddingVertical: 16,
-    borderRadius: 16,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: COLORS.grayLight,
-  },
-  continueShoppingBtnText: {
-    color: COLORS.dark,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  viewCartBtn: {
-    flex: 1,
-    backgroundColor: COLORS.primary,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-    borderRadius: 16,
-    gap: 8,
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  viewCartBtnText: {
-    color: COLORS.white,
-    fontSize: 16,
-    fontWeight: '600',
   },
 });
 
