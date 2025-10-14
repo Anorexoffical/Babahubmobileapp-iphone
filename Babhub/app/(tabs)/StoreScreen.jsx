@@ -846,7 +846,6 @@ const StickyHeader = ({ user, cartItems, wishlist, router, scrollY }) => {
     </Animated.View>
   );
 };
-
 const StoreScreen = () => {
   const [searchText, setSearchText] = useState('');
   const [wishlist, setWishlist] = useState([]);
@@ -1154,11 +1153,12 @@ const StoreScreen = () => {
     try {
       const price = product.variants?.[0]?.sizes?.[0]?.price || product.price || 0;
       
+      // FIXED: Use getImageUrl to ensure consistent image URLs
       const wishlistItem = {
         id: product._id,
         title: product.name,
         brand: product.brand,
-        image: product.image,
+        image: getImageUrl(product.image), // FIXED: Use the same URL function
         price: price
       };
 
@@ -1642,6 +1642,24 @@ const StoreScreen = () => {
                       windowSize={5}
                     />
                   ) : null}
+                </View>
+
+                {/* New User Offer Banner */}
+                <View style={styles.middleBannerContainer}>
+                  <MiddleBanner item={middleBanners[2]} />
+                  <View style={styles.middleBannerPagination}>
+                    {middleBanners.map((_, index) => (
+                      <View
+                        key={index}
+                        style={[
+                          styles.middlePaginationDot,
+                          {
+                            backgroundColor: index === 2 ? COLORS.primary : COLORS.grayLight,
+                          },
+                        ]}
+                      />
+                    ))}
+                  </View>
                 </View>
 
                 {/* New User Offer Banner */}

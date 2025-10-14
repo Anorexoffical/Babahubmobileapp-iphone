@@ -54,6 +54,7 @@ const Login = () => {
   const [emailFocus, setEmailFocus] = useState(false);
   const [passwordFocus, setPasswordFocus] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState({});
 
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -75,30 +76,27 @@ const Login = () => {
     ]).start();
   }, []);
 
-  // Simple validation function
+  // Enhanced validation function with error state
   const validateInputs = () => {
-    if (!email) {
-      Alert.alert('Error', 'Please enter your email');
-      return false;
-    }
+    const newErrors = {};
     
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      Alert.alert('Error', 'Please enter a valid email address');
-      return false;
+    if (!email.trim()) {
+      newErrors.email = "Please enter your email";
+    } else {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        newErrors.email = "Please enter a valid email address";
+      }
     }
     
     if (!password) {
-      Alert.alert('Error', 'Please enter your password');
-      return false;
+      newErrors.password = "Please enter your password";
+    } else if (password.length < 6) {
+      newErrors.password = "Password must be at least 6 characters";
     }
     
-    if (password.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters');
-      return false;
-    }
-    
-    return true;
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleLogin = async () => {
@@ -126,11 +124,29 @@ const Login = () => {
         await signIn(authToken, user);
         router.replace("/(tabs)/HomeScreen");
       } else {
-        Alert.alert("Login Failed", data.message || "Invalid credentials");
+        let errorMessage = data.message || "Invalid credentials";
+        
+        if (data.message?.toLowerCase().includes('email') || data.message?.toLowerCase().includes('not found')) {
+          errorMessage = "📧 This email address isn't registered with BabaHub.\n\nPlease check if you entered the correct email address or create a new account.";
+        } else if (data.message?.toLowerCase().includes('password') || data.message?.toLowerCase().includes('invalid')) {
+          errorMessage = "🔐 The password you entered is incorrect.\n\nPlease check your password and try again, or reset your password if you've forgotten it.";
+        } else if (data.message?.toLowerCase().includes('account') || data.message?.toLowerCase().includes('suspended')) {
+          errorMessage = "⚠️ Account Issue\n\nThere seems to be a problem with your account. Please contact support for assistance.";
+        }
+        
+        Alert.alert("Login Failed", errorMessage);
       }
     } catch (err) {
       console.error("Login error:", err.message);
-      Alert.alert("Error", "Failed to connect to server");
+      let connectionErrorMessage = "📡 Connection Issue\n\nWe're having trouble connecting to our servers. Please check your internet connection and try again.";
+      
+      if (err.message.includes('Network request failed')) {
+        connectionErrorMessage = "📡 Connection Issue\n\nWe're having trouble connecting to our servers. Please check your internet connection and try again.";
+      } else {
+        connectionErrorMessage = "⚠️ Something went wrong\n\nPlease try again in a moment. If the problem continues, contact our support team.";
+      }
+      
+      Alert.alert("Connection Error", connectionErrorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -189,12 +205,13 @@ const Login = () => {
               <View style={[
                 styles.inputWrapper,
                 emailFocus && styles.inputWrapperFocused,
+                errors.email && styles.inputWrapperError,
                 isLoading && styles.inputDisabled
               ]}>
                 <MaterialIcons 
                   name="email" 
                   size={20} 
-                  color={emailFocus ? COLORS.primary : COLORS.grayLight} 
+                  color={emailFocus ? COLORS.primary : (errors.email ? COLORS.error : COLORS.grayLight)} 
                   style={styles.inputIcon}
                 />
                 <TextInput
@@ -203,7 +220,12 @@ const Login = () => {
                   style={styles.input}
                   keyboardType="email-address"
                   value={email}
-                  onChangeText={setEmail}
+                  onChangeText={(text) => {
+                    setEmail(text);
+                    if (errors.email && text.trim()) {
+                      setErrors((prev) => ({ ...prev, email: "" }));
+                    }
+                  }}
                   onFocus={() => setEmailFocus(true)}
                   onBlur={() => setEmailFocus(false)}
                   underlineColorAndroid="transparent"
@@ -212,6 +234,12 @@ const Login = () => {
                   editable={!isLoading}
                 />
               </View>
+              {errors.email ? (
+                <View style={styles.errorContainer}>
+                  <MaterialIcons name="error-outline" size={16} color={COLORS.error} />
+                  <Text style={styles.errorText}>{errors.email}</Text>
+                </View>
+              ) : null}
             </View>
 
             {/* Password Input */}
@@ -223,12 +251,13 @@ const Login = () => {
               <View style={[
                 styles.inputWrapper,
                 passwordFocus && styles.inputWrapperFocused,
+                errors.password && styles.inputWrapperError,
                 isLoading && styles.inputDisabled
               ]}>
                 <MaterialIcons 
                   name="lock" 
                   size={20} 
-                  color={passwordFocus ? COLORS.primary : COLORS.grayLight} 
+                  color={passwordFocus ? COLORS.primary : (errors.password ? COLORS.error : COLORS.grayLight)} 
                   style={styles.inputIcon}
                 />
                 <TextInput
@@ -237,7 +266,12 @@ const Login = () => {
                   style={styles.input}
                   secureTextEntry={!passwordVisible}
                   value={password}
-                  onChangeText={setPassword}
+                  onChangeText={(text) => {
+                    setPassword(text);
+                    if (errors.password && text.trim()) {
+                      setErrors((prev) => ({ ...prev, password: "" }));
+                    }
+                  }}
                   onFocus={() => setPasswordFocus(true)}
                   onBlur={() => setPasswordFocus(false)}
                   underlineColorAndroid="transparent"
@@ -247,14 +281,21 @@ const Login = () => {
                 <TouchableOpacity 
                   onPress={() => setPasswordVisible(!passwordVisible)}
                   style={styles.visibilityButton}
+                  disabled={isLoading}
                 >
                   <MaterialIcons
                     name={passwordVisible ? 'visibility' : 'visibility-off'}
                     size={22}
-                    color={COLORS.gray}
+                    color={errors.password ? COLORS.error : COLORS.gray}
                   />
                 </TouchableOpacity>
               </View>
+              {errors.password ? (
+                <View style={styles.errorContainer}>
+                  <MaterialIcons name="error-outline" size={16} color={COLORS.error} />
+                  <Text style={styles.errorText}>{errors.password}</Text>
+                </View>
+              ) : null}
             </View>
 
             {/* Remember Me & Forgot Password */}
@@ -292,9 +333,13 @@ const Login = () => {
               </View>
             ) : (
               <TouchableOpacity
-                style={styles.loginButton}
+                style={[
+                  styles.loginButton,
+                  isLoading && styles.loginButtonDisabled
+                ]}
                 onPress={handleLogin}
                 activeOpacity={0.9}
+                disabled={isLoading}
               >
                 <Text style={styles.loginButtonText}>Sign In</Text>
                 <MaterialIcons name="arrow-forward" size={20} color={COLORS.white} />
@@ -323,13 +368,13 @@ const Login = () => {
           </View>
 
           {/* Footer */}
-          <View style={styles.footer}>
+          {/* <View style={styles.footer}>
             <Text style={styles.footerText}>
               By continuing, you agree to our{' '}
               <Text style={styles.footerLink}>Terms of Service</Text> and{' '}
               <Text style={styles.footerLink}>Privacy Policy</Text>
             </Text>
-          </View>
+          </View> */}
         </Animated.View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -344,18 +389,18 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
-    minHeight: height - 100, // Ensure content fits on screen
+    minHeight: height - 100,
   },
   content: {
     paddingHorizontal: 24,
-    paddingVertical: 20, // Reduced vertical padding
+    paddingVertical: 20,
   },
   headerSection: {
     alignItems: 'center',
-    marginBottom: 30, // Reduced margin
+    marginBottom: 40,
   },
   logoContainer: {
-    marginBottom: 15,
+    marginBottom: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.1,
@@ -363,32 +408,33 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   logoImage: {
-    width: 140, // Increased from 100 to 140
-    height: 140, // Increased from 100 to 140
+    width: 140,
+    height: 140,
   },
   header: {
-    fontSize: 28, // Slightly reduced from 32
+    fontSize: 28,
     fontWeight: '800',
-    marginBottom: 6, // Reduced margin
+    marginBottom: 8,
     color: COLORS.dark,
     textAlign: 'center',
     letterSpacing: 0.5,
   },
   subHeader: {
-    fontSize: 15, // Slightly reduced
+    fontSize: 16,
     color: COLORS.gray,
     textAlign: 'center',
-    lineHeight: 20, // Reduced line height
+    lineHeight: 22,
+    paddingHorizontal: width * 0.05,
   },
   formSection: {
-    marginBottom: 20, // Reduced margin
+    marginBottom: 30,
   },
   inputContainer: {
-    marginBottom: 16, // Reduced margin
+    marginBottom: 24,
   },
   label: {
     fontWeight: '600',
-    marginBottom: 6, // Reduced margin
+    marginBottom: 8,
     fontSize: 14,
     color: COLORS.dark,
     letterSpacing: 0.3,
@@ -399,25 +445,44 @@ const styles = StyleSheet.create({
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: COLORS.light,
-    borderRadius: 16,
+    borderWidth: 0.8,
+    borderColor: COLORS.primaryLight,
+    borderRadius: 140,
     paddingHorizontal: 16,
     backgroundColor: COLORS.white,
-    height: 52, // Slightly reduced height
+    height: 56,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOffset: { 
+      width: 0, 
+      height: 2 
+    },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
   },
   inputWrapperFocused: {
     borderColor: COLORS.primary,
+    borderWidth: 1.2,
     shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 4,
+    shadowOffset: { 
+      width: 0, 
+      height: 4 
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  inputWrapperError: {
+    borderColor: COLORS.error,
+    borderWidth: 1.2,
+    shadowColor: COLORS.error,
+    shadowOffset: { 
+      width: 0, 
+      height: 4 
+    },
+    shadowOpacity: 0.12,
+    shadowRadius: 14,
+    elevation: 6,
   },
   inputDisabled: {
     opacity: 0.6,
@@ -433,12 +498,25 @@ const styles = StyleSheet.create({
   },
   visibilityButton: {
     padding: 4,
+    marginLeft: 8,
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  errorText: {
+    color: COLORS.error,
+    fontSize: 13,
+    marginLeft: 6,
+    fontWeight: '500',
+    flex: 1,
   },
   helperContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 24, // Reduced margin
+    marginBottom: 24,
   },
   rememberContainer: {
     flexDirection: 'row',
@@ -471,10 +549,10 @@ const styles = StyleSheet.create({
   },
   loaderContainer: {
     alignItems: 'center',
-    paddingVertical: 16, // Reduced padding
+    paddingVertical: 16,
   },
   loadingText: {
-    marginTop: 10, // Reduced margin
+    marginTop: 12,
     fontSize: 14,
     color: COLORS.gray,
     fontWeight: '500',
@@ -484,18 +562,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: COLORS.primary,
-    borderRadius: 16,
-    height: 52, // Slightly reduced height
+    borderRadius: 140,
+    height: 56,
     paddingHorizontal: 24,
     shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 8,
+    shadowOffset: { 
+      width: 0, 
+      height: 8 
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    elevation: 12,
     gap: 8,
+    marginTop: 10,
+    marginBottom: 20,
+    borderWidth: 0.8,
+    borderColor: COLORS.primaryDark,
+  },
+  loginButtonDisabled: {
+    opacity: 0.7,
   },
   loginButtonText: {
-    fontSize: 17, // Slightly reduced
+    fontSize: 18,
     fontWeight: '700',
     color: COLORS.white,
     letterSpacing: 0.5,
@@ -503,7 +591,7 @@ const styles = StyleSheet.create({
   divider: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 20, // Reduced margin
+    marginVertical: 24,
   },
   dividerLine: {
     flex: 1,
@@ -520,7 +608,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 10, // Added margin bottom
+    marginBottom: 20,
   },
   createAccountText: {
     fontSize: 15,
@@ -533,7 +621,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     alignItems: 'center',
-    paddingTop: 15, // Reduced padding
+    paddingTop: 20,
   },
   footerText: {
     fontSize: 12,

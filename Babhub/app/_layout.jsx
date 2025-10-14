@@ -1,7 +1,7 @@
 // app/_layout.js
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 
@@ -15,72 +15,93 @@ function RouteProtection({ children }) {
   const { userToken, isLoading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
+  const splashHidden = useRef(false);
 
   useEffect(() => {
-    if (isLoading) return;
+    const handleNavigation = async () => {
+      if (isLoading) return;
 
-    // Hide splash once auth check is done
-    SplashScreen.hideAsync();
+      // Hide splash screen only once
+      if (!splashHidden.current) {
+        try {
+          await SplashScreen.hideAsync();
+          splashHidden.current = true;
+        } catch (error) {
+          console.log('Splash screen hide error:', error);
+        }
+      }
 
-    // Define protected routes
-    const protectedRoutes = [
-      '(tabs)', 
-      'CartScreen', 
-      'Checkout', 
-      'CustomerSupport', 
-      'MyOrder', 
-      'PrivacyPolicyScreen', 
-      'ProductDetailPage', 
-      'ProfileDetailsScreen',
-      'OrderSuccessScreen',
-      'PaymentScreen'
-    ];
+      // Define protected routes
+      const protectedRoutes = [
+        '(tabs)', 
+        'CartScreen', 
+        'Checkout', 
+        'CustomerSupport', 
+        'MyOrder', 
+        'PrivacyPolicyScreen', 
+        'ProductDetailPage', 
+        'ProfileDetailsScreen',
+        'OrderSuccessScreen',
+        'PaymentScreen',
+      ];
 
-    // Define public routes
-    const publicRoutes = [
-      'index', 
-      'login', 
-      'ForgetPassword', 
-      'CreateAccount', 
-      'ResetPassword',
-      '404'
-    ];
+      // Define public routes
+      const publicRoutes = [
+        'index', 
+        'login', 
+        'ForgetPassword', 
+        'CreateAccount', 
+        'ResetPassword',
+        '404'
+      ];
 
-    const currentRoute = segments[0] || 'index';
-    const isProtectedRoute = protectedRoutes.includes(currentRoute);
-    const isPublicRoute = publicRoutes.includes(currentRoute);
+      const currentRoute = segments[0] || 'index';
+      const isProtectedRoute = protectedRoutes.includes(currentRoute);
+      const isPublicRoute = publicRoutes.includes(currentRoute);
 
-    // 🔒 Allow payment callbacks even without auth
-    const isPaymentCallback = segments.some(segment => 
-      segment.includes('payment') || 
-      segment.includes('success') || 
-      segment.includes('cancel')
-    );
+      // 🔒 Allow payment callbacks even without auth
+      const isPaymentCallback = segments.some(segment => 
+        segment.includes('payment') || 
+        segment.includes('success') || 
+        segment.includes('cancel')
+      );
 
-    // Allow payment callbacks to proceed without redirection
-    if (isPaymentCallback) {
-      return;
-    }
+      // Allow payment callbacks to proceed without redirection
+      if (isPaymentCallback) {
+        return;
+      }
 
-    // 🔒 Redirect to login if accessing protected route without auth
-    if (isProtectedRoute && !userToken) {
-      router.replace('/login');
-      return;
-    }
+      // 🔒 Redirect to login if accessing protected route without auth
+      if (isProtectedRoute && !userToken) {
+        router.replace('/login');
+        return;
+      }
 
-    // ✅ Redirect authenticated user away from login/signup
-    if (userToken && (currentRoute === 'login' || currentRoute === 'CreateAccount')) {
-      router.replace('/(tabs)/HomeScreen');
-      return;
-    }
+      // ✅ Allow free navigation between all auth pages without redirection
+      const isAuthPage = ['login', 'CreateAccount', 'ForgetPassword', 'ResetPassword'].includes(currentRoute);
+      
+      if (isAuthPage) {
+        // Always allow navigation between auth pages
+        return;
+      }
 
-    // ❌ Handle unknown routes → go to 404
-    if (!isProtectedRoute && !isPublicRoute && currentRoute !== '404') {
-      router.replace('/404');
-    }
+      // ✅ Redirect authenticated user away from auth pages only if they land directly on them
+      if (userToken && isAuthPage && segments.length === 1) {
+        router.replace('/(tabs)/HomeScreen');
+        return;
+      }
+
+      // ❌ Handle unknown routes → go to 404
+      if (!isProtectedRoute && !isPublicRoute && currentRoute !== '404') {
+        router.replace('/404');
+        return;
+      }
+    };
+
+    handleNavigation();
   }, [userToken, segments, isLoading]);
 
-  // Loader while auth is being checked
+  // Show loading indicator while checking auth state
   if (isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFF' }}>

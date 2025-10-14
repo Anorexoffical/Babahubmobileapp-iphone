@@ -153,7 +153,7 @@ const MyOrder = () => {
   };
 
   const handleWhatsAppSupport = (orderId) => {
-    const phoneNumber = '+923001234567'; // Replace with your support number
+    const phoneNumber = '+27845000000'; // Updated WhatsApp number
     const message = `Hello, I need help with my order ${orderId}. Can you assist me?`;
     const url = `whatsapp://send?phone=${phoneNumber}&text=${encodeURIComponent(message)}`;
     
@@ -161,11 +161,6 @@ const MyOrder = () => {
       alert('WhatsApp is not installed on your device');
     });
   };
-
-  // const handleReorder = (order) => {
-  //   // Implement reorder functionality
-  //   alert(`Reorder functionality for ${formatOrderId(order.orderID)} would be implemented here`);
-  // };
 
   const renderOrder = ({ item, index }) => (
     <TouchableOpacity 
@@ -330,7 +325,7 @@ const MyOrder = () => {
               { transform: [{ translateY: modalTranslateY }] }
             ]}
           >
-            {/* Modal Header */}
+            {/* Modal Header - Consistent with main header */}
             <View style={styles.modalHeader}>
               <View style={styles.modalHeaderContent}>
                 <Text style={styles.modalTitle}>Order Details</Text>
@@ -342,7 +337,7 @@ const MyOrder = () => {
                 style={styles.closeButton}
                 onPress={hideOrderDetails}
               >
-                <Ionicons name="close" size={24} color={COLORS.gray} />
+                <Ionicons name="close" size={24} color={COLORS.white} />
               </TouchableOpacity>
             </View>
 
@@ -455,14 +450,12 @@ const MyOrder = () => {
 
             {/* Enhanced Action Buttons */}
             <View style={styles.modalActions}>
-            
-              
               <TouchableOpacity 
                 style={styles.whatsappButton}
                 onPress={() => handleWhatsAppSupport(selectedOrder.orderID)}
               >
-                <Ionicons name="logo-whatsapp" size={18} color={COLORS.white} />
-                <Text style={styles.whatsappButtonText}>Get Help</Text>
+                <Ionicons name="logo-whatsapp" size={20} color={COLORS.white} />
+                <Text style={styles.whatsappButtonText}>Get Help on WhatsApp</Text>
               </TouchableOpacity>
             </View>
           </Animated.View>
@@ -497,7 +490,7 @@ const MyOrder = () => {
     <View style={styles.container}>
       <StatusBar backgroundColor={COLORS.primary} barStyle="light-content" />
       
-      {/* Header - Fixed without extra space */}
+      {/* Header - Consistent styling */}
       <View style={styles.header}>
         <TouchableOpacity
           onPress={handleBack}
@@ -593,11 +586,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: width * 0.05,
     paddingVertical: height * 0.02,
     paddingTop: height * 0.06,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 8,
+    borderBottomLeftRadius: 25,
+    borderBottomRightRadius: 25,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 10,
   },
   backButton: {
     padding: 8,
@@ -793,7 +788,7 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     marginRight: 4,
   },
-  // Modal Styles - IMPROVED
+  // Modal Styles - IMPROVED with consistent header
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -817,8 +812,9 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     padding: 20,
     paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.light,
+    backgroundColor: COLORS.primary,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
   },
   modalHeaderContent: {
     flex: 1,
@@ -826,12 +822,12 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: width * 0.045,
     fontWeight: '800',
-    color: COLORS.dark,
+    color: COLORS.white,
     marginBottom: 4,
   },
   modalSubtitle: {
     fontSize: width * 0.032,
-    color: COLORS.gray,
+    color: 'rgba(255,255,255,0.8)',
     fontWeight: '500',
   },
   closeButton: {
@@ -1035,38 +1031,18 @@ const styles = StyleSheet.create({
   },
   // Enhanced Modal Actions
   modalActions: {
-    flexDirection: 'row',
-    gap: 12,
     padding: 20,
     paddingTop: 16,
     borderTopWidth: 1,
     borderTopColor: COLORS.light,
     backgroundColor: COLORS.white,
   },
-  reorderButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: COLORS.white,
-    paddingVertical: 14,
-    borderRadius: 12,
-    gap: 8,
-    borderWidth: 2,
-    borderColor: COLORS.primary,
-  },
-  reorderButtonText: {
-    color: COLORS.primary,
-    fontSize: width * 0.036,
-    fontWeight: '600',
-  },
   whatsappButton: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: COLORS.whatsapp,
-    paddingVertical: 14,
+    paddingVertical: 16,
     borderRadius: 12,
     gap: 8,
     shadowColor: COLORS.whatsapp,
@@ -1077,8 +1053,8 @@ const styles = StyleSheet.create({
   },
   whatsappButtonText: {
     color: COLORS.white,
-    fontSize: width * 0.036,
-    fontWeight: '600',
+    fontSize: width * 0.038,
+    fontWeight: '700',
   },
   loadingContainer: {
     flex: 1,

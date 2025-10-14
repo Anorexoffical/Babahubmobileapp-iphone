@@ -217,11 +217,17 @@ const CreateAccount = () => {
   const handleSuccessContinue = () => {
     setShowSuccessModal(false);
     clearForm();
-    router.back(); // Navigate back to login screen
+    // Use setTimeout to ensure modal is fully closed before navigation
+    setTimeout(() => {
+      router.push('/login');
+    }, 300);
   };
 
   const handleBackToLogin = () => {
-    router.back();
+    // Use setTimeout to ensure any animations are complete
+    setTimeout(() => {
+      router.push('/login');
+    }, 100);
   };
 
   const scrollViewRef = React.useRef();
@@ -341,10 +347,16 @@ const CreateAccount = () => {
 
             {/* DOB Input */}
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>
-                Date of Birth
-                <Text style={styles.required}> *</Text>
-              </Text>
+              <View style={styles.dobHeader}>
+                <Text style={styles.label}>
+                  Date of Birth
+                  <Text style={styles.required}> *</Text>
+                </Text>
+                <View style={styles.dobHelper}>
+                  <MaterialIcons name="info" size={14} color={COLORS.primary} />
+                  <Text style={styles.dobHelperText}>For account recovery</Text>
+                </View>
+              </View>
               <TouchableOpacity 
                 onPress={showDatepicker}
                 disabled={isLoading}
@@ -372,7 +384,9 @@ const CreateAccount = () => {
                   />
                 </View>
               </TouchableOpacity>
-              {errors.dob ? <Text style={styles.errorText}>{errors.dob}</Text> : null}
+              {errors.dob ? (
+                <Text style={styles.errorText}>{errors.dob}</Text>
+              ) : null}
             </View>
 
             {/* Date Picker Modal */}
@@ -549,12 +563,13 @@ const CreateAccount = () => {
         transparent={true}
         animationType="fade"
         statusBarTranslucent={true}
+        onRequestClose={handleSuccessContinue}
       >
         <View style={styles.modalOverlay}>
           {/* Confetti Background */}
           <LottieView
             ref={confettiRef}
-            source={require('../assets/confetti.json')}
+            source={require('../assets/animations/Confetti.json')}
             autoPlay={false}
             loop={false}
             style={styles.confetti}
@@ -570,7 +585,11 @@ const CreateAccount = () => {
             <Text style={styles.successTitle}>🎉 Welcome to BabaHub!</Text>
             
             <Text style={styles.successMessage}>
-              Your account has been created successfully. You can now sign in and start shopping.
+              Your account has been created successfully!{"\n\n"}
+              <Text style={styles.securityReminder}>
+                💡 Remember: Your date of birth will be used to verify your identity 
+                if you ever need to reset your password.
+              </Text>
             </Text>
 
             <TouchableOpacity
@@ -646,6 +665,28 @@ const styles = StyleSheet.create({
   required: {
     color: COLORS.error,
   },
+  // DOB Specific Styles
+  dobHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  dobHelper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.primary + '15',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    gap: 4,
+  },
+  dobHelperText: {
+    fontSize: 11,
+    color: COLORS.primary,
+    fontWeight: '600',
+  },
+  // Input Styles
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -843,6 +884,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 22,
     marginBottom: 32,
+  },
+  securityReminder: {
+    fontSize: 14,
+    color: COLORS.darkLight,
+    fontWeight: '500',
+    fontStyle: 'italic',
   },
   successButton: {
     flexDirection: 'row',

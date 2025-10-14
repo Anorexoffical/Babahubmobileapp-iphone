@@ -1,9 +1,38 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, StatusBar } from 'react-native';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  ScrollView, 
+  TouchableOpacity, 
+  Dimensions, 
+  StatusBar,
+  SafeAreaView,
+  Linking 
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 
 const { width, height } = Dimensions.get('window');
+
+// Enhanced Brand Color Palette
+const COLORS = {
+  primary: '#6366F1',
+  primaryLight: '#8B5CF6',
+  primaryDark: '#4F46E5',
+  secondary: '#EC4899',
+  accent: '#10B981',
+  dark: '#1F2937',
+  darkLight: '#374151',
+  gray: '#6B7280',
+  grayLight: '#9CA3AF',
+  light: '#F3F4F6',
+  background: '#F9FAFB',
+  white: '#FFFFFF',
+  success: '#059669',
+  warning: '#D97706',
+  error: '#DC2626',
+};
 
 const PrivacyPolicyScreen = () => {
   const navigation = useNavigation();
@@ -16,17 +45,32 @@ const PrivacyPolicyScreen = () => {
     }
   };
 
+  const handleEmailPress = () => {
+    Linking.openURL('mailto:babahubsa@gmail.com');
+  };
+
+  const handlePhonePress = () => {
+    Linking.openURL('tel:0845000000');
+  };
+
   return (
     <View style={styles.container}>
-      <StatusBar backgroundColor="#000" barStyle="light-content" />
+      <StatusBar backgroundColor={COLORS.primary} barStyle="light-content" />
       
-      {/* Header */}
+      {/* Premium Header - Same as CustomerSupportScreen */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="white" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Privacy Policy</Text>
-        <View style={styles.headerSpacer} />
+        <View style={styles.headerBackground}>
+          <View style={styles.headerContent}>
+            <TouchableOpacity 
+              style={styles.backButton}
+              onPress={handleBack}
+            >
+              <Ionicons name="arrow-back" size={24} color={COLORS.white} />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Privacy Policy</Text>
+            <View style={styles.placeholder} />
+          </View>
+        </View>
       </View>
 
       <ScrollView 
@@ -34,224 +78,284 @@ const PrivacyPolicyScreen = () => {
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.content}>
-          <Text style={styles.title}>Privacy Policy</Text>
-          <Text style={styles.lastUpdated}>Last Updated: June 25, 2025</Text>
-          
-          <Text style={styles.description}>
-            At Baba Hub, your privacy is of utmost importance to us. This Privacy Policy outlines how we collect, use, disclose, and protect your personal information when you use our services.
-          </Text>
+        {/* Hero Section */}
+        <View style={styles.heroSection}>
+          <View style={styles.iconContainer}>
+            <Ionicons name="shield-checkmark" size={40} color={COLORS.primary} />
+          </View>
+          <Text style={styles.heroTitle}>Privacy Policy</Text>
+          <Text style={styles.heroSubtitle}>Your Privacy Matters to Us</Text>
+          <Text style={styles.lastUpdated}>Last Updated: December 2024</Text>
+        </View>
 
-          {/* Section 1 */}
+        <View style={styles.content}>
+          {/* Introduction */}
+          <View style={styles.introSection}>
+            <Text style={styles.introText}>
+              At <Text style={styles.brandText}>BabaHub</Text>, we are committed to protecting your privacy and ensuring the security of your personal information. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our e-commerce application.
+            </Text>
+          </View>
+
+          {/* Section 1 - Information Collection */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>1. Information We Collect</Text>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionIcon}>
+                <Ionicons name="person-circle" size={20} color={COLORS.primary} />
+              </View>
+              <Text style={styles.sectionTitle}>1. Information We Collect</Text>
+            </View>
+            
+            <View style={styles.subsection}>
+              <Text style={styles.subsectionTitle}>Personal Information for Account Creation:</Text>
+              <View style={styles.bulletItem}>
+                <View style={styles.bulletPoint} />
+                <Text style={styles.bulletText}>
+                  <Text style={styles.highlight}>Full Name</Text> - For order processing and personalization
+                </Text>
+              </View>
+              <View style={styles.bulletItem}>
+                <View style={styles.bulletPoint} />
+                <Text style={styles.bulletText}>
+                  <Text style={styles.highlight}>Email Address</Text> - For account verification and communication
+                </Text>
+              </View>
+              <View style={styles.bulletItem}>
+                <View style={styles.bulletPoint} />
+                <Text style={styles.bulletText}>
+                  <Text style={styles.highlight}>Date of Birth</Text> - For age verification and personalized offers
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.subsection}>
+              <Text style={styles.subsectionTitle}>Checkout Information:</Text>
+              <View style={styles.bulletItem}>
+                <View style={styles.bulletPoint} />
+                <Text style={styles.bulletText}>
+                  <Text style={styles.highlight}>Shipping Address</Text> - For product delivery
+                </Text>
+              </View>
+              <View style={styles.bulletItem}>
+                <View style={styles.bulletPoint} />
+                <Text style={styles.bulletText}>
+                  <Text style={styles.highlight}>Phone Number</Text> - For delivery coordination and updates
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.subsection}>
+              <Text style={styles.subsectionTitle}>Payment Information:</Text>
+              <View style={styles.bulletItem}>
+                <View style={styles.bulletPoint} />
+                <Text style={styles.bulletText}>
+                  <Text style={styles.highlight}>Card Details</Text> - Processed securely through PayFast, <Text style={styles.emphasis}>NOT stored</Text> on our servers
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Section 2 - Data Security */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionIcon}>
+                <Ionicons name="lock-closed" size={20} color={COLORS.primary} />
+              </View>
+              <Text style={styles.sectionTitle}>2. Data Security & Encryption</Text>
+            </View>
+            
             <Text style={styles.sectionText}>
-              We may collect the following types of information:
+              We implement industry-standard security measures to protect your data:
             </Text>
             
-            <Text style={styles.subsectionTitle}>Personal information:</Text>
-            <View style={styles.bulletItem}>
-              <View style={styles.bulletPoint} />
-              <Text style={styles.bulletText}>Name, email address, phone number, and shipping/billing address.</Text>
-            </View>
-            <View style={styles.bulletItem}>
-              <View style={styles.bulletPoint} />
-              <Text style={styles.bulletText}>Payment information (collected securely through third-party payment processors).</Text>
-            </View>
-
-            <Text style={styles.subsectionTitle}>Non-Personal Information:</Text>
-            <View style={styles.bulletItem}>
-              <View style={styles.bulletPoint} />
-              <Text style={styles.bulletText}>Browser type, device information, and operating system.</Text>
-            </View>
-            <View style={styles.bulletItem}>
-              <View style={styles.bulletPoint} />
-              <Text style={styles.bulletText}>Usage data, such as time spent on our app, pages visited, and clicks.</Text>
-            </View>
-
-            <Text style={styles.subsectionTitle}>Cookies and Tracking Technologies:</Text>
-            <View style={styles.bulletItem}>
-              <View style={styles.bulletPoint} />
-              <Text style={styles.bulletText}>Cookies and similar technologies to enhance user experience and gather analytics.</Text>
+            <View style={styles.securityGrid}>
+              <View style={styles.securityItem}>
+                <Ionicons name="shield-checkmark" size={24} color={COLORS.success} />
+                <Text style={styles.securityTitle}>End-to-End Encryption</Text>
+                <Text style={styles.securityText}>All personal data encrypted using AES-256</Text>
+              </View>
+              <View style={styles.securityItem}>
+                <Ionicons name="server" size={24} color={COLORS.primary} />
+                <Text style={styles.securityTitle}>Secure Storage</Text>
+                <Text style={styles.securityText}>Data stored in secure, access-controlled databases</Text>
+              </View>
+              <View style={styles.securityItem}>
+                <Ionicons name="card" size={24} color={COLORS.warning} />
+                <Text style={styles.securityTitle}>Payment Security</Text>
+                <Text style={styles.securityText}>Card details processed externally via PayFast</Text>
+              </View>
+              <View style={styles.securityItem}>
+                <Ionicons name="eye-off" size={24} color={COLORS.error} />
+                <Text style={styles.securityTitle}>No Third-Party Sharing</Text>
+                <Text style={styles.securityText}>We do not sell or share your personal data</Text>
+              </View>
             </View>
           </View>
 
-          {/* Section 2 */}
+          {/* Section 3 - Data Usage */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>2. How We Use Your Information</Text>
-            <Text style={styles.sectionText}>
-              The information we collect is used to:
-            </Text>
-            <View style={styles.bulletItem}>
-              <View style={styles.bulletPoint} />
-              <Text style={styles.bulletText}>Process and fulfill your orders.</Text>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionIcon}>
+                <Ionicons name="business" size={20} color={COLORS.primary} />
+              </View>
+              <Text style={styles.sectionTitle}>3. How We Use Your Information</Text>
             </View>
-            <View style={styles.bulletItem}>
-              <View style={styles.bulletPoint} />
-              <Text style={styles.bulletText}>Provide customer support and respond to inquiries.</Text>
-            </View>
-            <View style={styles.bulletItem}>
-              <View style={styles.bulletPoint} />
-              <Text style={styles.bulletText}>Personalize your shopping experience.</Text>
-            </View>
-            <View style={styles.bulletItem}>
-              <View style={styles.bulletPoint} />
-              <Text style={styles.bulletText}>Send updates, promotions, and relevant notifications.</Text>
-            </View>
-            <View style={styles.bulletItem}>
-              <View style={styles.bulletPoint} />
-              <Text style={styles.bulletText}>Improve our services and troubleshoot issues.</Text>
+            
+            <View style={styles.usageList}>
+              <View style={styles.usageItem}>
+                <Ionicons name="cart" size={18} color={COLORS.primary} />
+                <Text style={styles.usageText}>Order processing and fulfillment</Text>
+              </View>
+              <View style={styles.usageItem}>
+                <Ionicons name="navigate" size={18} color={COLORS.primary} />
+                <Text style={styles.usageText}>Order tracking and delivery updates</Text>
+              </View>
+              <View style={styles.usageItem}>
+                <Ionicons name="chatbubble" size={18} color={COLORS.primary} />
+                <Text style={styles.usageText}>Customer support and communication</Text>
+              </View>
+              <View style={styles.usageItem}>
+                <Ionicons name="notifications" size={18} color={COLORS.primary} />
+                <Text style={styles.usageText}>Order status notifications</Text>
+              </View>
+              <View style={styles.usageItem}>
+                <Ionicons name="trending-up" size={18} color={COLORS.primary} />
+                <Text style={styles.usageText}>Service improvement and analytics</Text>
+              </View>
             </View>
           </View>
 
-          {/* Section 3 */}
+          {/* Section 4 - Third-Party Services */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>3. Sharing Your Information</Text>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionIcon}>
+                <Ionicons name="git-network" size={20} color={COLORS.primary} />
+              </View>
+              <Text style={styles.sectionTitle}>4. Third-Party Services</Text>
+            </View>
+            
             <Text style={styles.sectionText}>
-              We do not sell or rent your personal information. However, we may share information in the following scenarios:
+              We work with trusted partners to provide our services:
             </Text>
-            <View style={styles.bulletItem}>
-              <View style={styles.bulletPoint} />
-              <Text style={styles.bulletText}>With service providers who assist in our operations (payment processors, shipping companies)</Text>
+            
+            <View style={styles.thirdPartyCard}>
+              <View style={styles.partnerItem}>
+                <Ionicons name="card" size={20} color={COLORS.success} />
+                <View style={styles.partnerInfo}>
+                  <Text style={styles.partnerName}>PayFast Payment Gateway</Text>
+                  <Text style={styles.partnerDesc}>Secure payment processing - card details never stored with us</Text>
+                </View>
+              </View>
+              <View style={styles.partnerItem}>
+                <Ionicons name="cube" size={20} color={COLORS.warning} />
+                <View style={styles.partnerInfo}>
+                  <Text style={styles.partnerName}>Shipping Partners</Text>
+                  <Text style={styles.partnerDesc}>Delivery services receive only necessary delivery information</Text>
+                </View>
+              </View>
             </View>
-            <View style={styles.bulletItem}>
-              <View style={styles.bulletPoint} />
-              <Text style={styles.bulletText}>When required by law or to protect our legal rights</Text>
-            </View>
-            <View style={styles.bulletItem}>
-              <View style={styles.bulletPoint} />
-              <Text style={styles.bulletText}>During business transfers like mergers or acquisitions</Text>
-            </View>
+            
+            <Text style={styles.importantNote}>
+              <Ionicons name="warning" size={16} color={COLORS.warning} />
+              <Text style={styles.noteText}> We do NOT share your personal data with advertisers or marketing companies</Text>
+            </Text>
           </View>
 
-          {/* Section 4 */}
+          {/* Section 5 - User Rights */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>4. Data Security</Text>
-            <Text style={styles.sectionText}>
-              We implement robust security measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction. These include:
-            </Text>
-            <View style={styles.bulletItem}>
-              <View style={styles.bulletPoint} />
-              <Text style={styles.bulletText}>Encrypted communications (SSL/TLS)</Text>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionIcon}>
+                <Ionicons name="people" size={20} color={COLORS.primary} />
+              </View>
+              <Text style={styles.sectionTitle}>5. Your Rights & Control</Text>
             </View>
-            <View style={styles.bulletItem}>
-              <View style={styles.bulletPoint} />
-              <Text style={styles.bulletText}>Secure servers with firewalls</Text>
-            </View>
-            <View style={styles.bulletItem}>
-              <View style={styles.bulletPoint} />
-              <Text style={styles.bulletText}>Regular security audits and monitoring</Text>
-            </View>
-            <View style={styles.bulletItem}>
-              <View style={styles.bulletPoint} />
-              <Text style={styles.bulletText}>Limited employee access to sensitive data</Text>
-            </View>
-          </View>
-
-          {/* Section 5 */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>5. Your Rights</Text>
-            <Text style={styles.sectionText}>
-              As a user, you have the right to:
-            </Text>
-            <View style={styles.bulletItem}>
-              <View style={styles.bulletPoint} />
-              <Text style={styles.bulletText}>Access, update, or delete your personal information.</Text>
-            </View>
-            <View style={styles.bulletItem}>
-              <View style={styles.bulletPoint} />
-              <Text style={styles.bulletText}>Opt-out of marketing communications.</Text>
-            </View>
-            <View style={styles.bulletItem}>
-              <View style={styles.bulletPoint} />
-              <Text style={styles.bulletText}>Disable cookies through your browser settings.</Text>
-            </View>
-            <View style={styles.bulletItem}>
-              <View style={styles.bulletPoint} />
-              <Text style={styles.bulletText}>Request a copy of your personal data in a portable format.</Text>
+            
+            <View style={styles.rightsGrid}>
+              <View style={styles.rightItem}>
+                <Ionicons name="eye" size={20} color={COLORS.primary} />
+                <Text style={styles.rightTitle}>Right to Access</Text>
+                <Text style={styles.rightText}>View your personal data</Text>
+              </View>
+              <View style={styles.rightItem}>
+                <Ionicons name="create" size={20} color={COLORS.primary} />
+                <Text style={styles.rightTitle}>Right to Update</Text>
+                <Text style={styles.rightText}>Modify your information</Text>
+              </View>
+              <View style={styles.rightItem}>
+                <Ionicons name="trash" size={20} color={COLORS.primary} />
+                <Text style={styles.rightTitle}>Right to Delete</Text>
+                <Text style={styles.rightText}>Request account deletion</Text>
+              </View>
+              <View style={styles.rightItem}>
+                <Ionicons name="download" size={20} color={COLORS.primary} />
+                <Text style={styles.rightTitle}>Data Portability</Text>
+                <Text style={styles.rightText}>Export your data</Text>
+              </View>
             </View>
           </View>
 
-          {/* Section 6 */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>6. Third-Party Links</Text>
-            <Text style={styles.sectionText}>
-              Our platform may include links to third-party websites. Baba Hub is not responsible for the privacy practices of these external sites, and we encourage you to review their privacy policies.
-            </Text>
-            <View style={styles.bulletItem}>
-              <View style={styles.bulletPoint} />
-              <Text style={styles.bulletText}>Social media platforms integrated with our services</Text>
+          {/* Section 6 - Huawei AppGallery Compliance */}
+          <View style={styles.complianceSection}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionIcon}>
+                <Ionicons name="phone-portrait" size={20} color={COLORS.white} />
+              </View>
+              <Text style={styles.complianceTitle}>Huawei AppGallery Compliance</Text>
             </View>
-            <View style={styles.bulletItem}>
-              <View style={styles.bulletPoint} />
-              <Text style={styles.bulletText}>Payment gateway providers</Text>
-            </View>
-            <View style={styles.bulletItem}>
-              <View style={styles.bulletPoint} />
-              <Text style={styles.bulletText}>Analytics and advertising partners</Text>
-            </View>
-          </View>
-
-          {/* Section 7 */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>7. Children's Privacy</Text>
-            <Text style={styles.sectionText}>
-              Baba Hub does not knowingly collect personal information from individuals under the age of 13. If you believe a child has provided us with their information, please contact us immediately at privacy@babahub.co.
-            </Text>
-            <View style={styles.bulletItem}>
-              <View style={styles.bulletPoint} />
-              <Text style={styles.bulletText}>We comply with COPPA (Children's Online Privacy Protection Act)</Text>
-            </View>
-            <View style={styles.bulletItem}>
-              <View style={styles.bulletPoint} />
-              <Text style={styles.bulletText}>Parental consent required for users under 13</Text>
+            
+            <View style={styles.complianceList}>
+              <View style={styles.complianceItem}>
+                <Ionicons name="checkmark-circle" size={18} color={COLORS.success} />
+                <Text style={styles.complianceText}>Transparent data collection practices</Text>
+              </View>
+              <View style={styles.complianceItem}>
+                <Ionicons name="checkmark-circle" size={18} color={COLORS.success} />
+                <Text style={styles.complianceText}>Secure data storage and transmission</Text>
+              </View>
+              <View style={styles.complianceItem}>
+                <Ionicons name="checkmark-circle" size={18} color={COLORS.success} />
+                <Text style={styles.complianceText}>No unauthorized data sharing</Text>
+              </View>
+              <View style={styles.complianceItem}>
+                <Ionicons name="checkmark-circle" size={18} color={COLORS.success} />
+                <Text style={styles.complianceText}>User consent for data processing</Text>
+              </View>
+              <View style={styles.complianceItem}>
+                <Ionicons name="checkmark-circle" size={18} color={COLORS.success} />
+                <Text style={styles.complianceText}>Compliance with regional privacy laws</Text>
+              </View>
             </View>
           </View>
 
-          {/* Section 8 */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>8. Changes to This Privacy Policy</Text>
-            <Text style={styles.sectionText}>
-              We may update this Privacy Policy from time to time to reflect changes in our practices or legal requirements. Updates will be posted on our website with the effective date.
-            </Text>
-            <View style={styles.bulletItem}>
-              <View style={styles.bulletPoint} />
-              <Text style={styles.bulletText}>Material changes will be notified via email or app notification</Text>
-            </View>
-            <View style={styles.bulletItem}>
-              <View style={styles.bulletPoint} />
-              <Text style={styles.bulletText}>Continued use after changes constitutes acceptance</Text>
-            </View>
-          </View>
-
-          {/* Section 9 */}
+          {/* Contact Section */}
           <View style={styles.contactSection}>
-            <Text style={styles.contactTitle}>9. Contact Us</Text>
+            <Text style={styles.contactTitle}>Contact Us</Text>
             <Text style={styles.contactText}>
-              If you have any questions, concerns, or feedback about this Privacy Policy, please contact us:
+              For privacy-related questions or to exercise your rights:
             </Text>
-            <View style={styles.contactItem}>
-              <Ionicons name="mail-outline" size={20} color="#000" />
-              <Text style={styles.contactDetail}>Email: privacy@babahub.co</Text>
+            
+            <View style={styles.contactMethods}>
+              <TouchableOpacity style={styles.contactItem} onPress={handleEmailPress}>
+                <Ionicons name="mail" size={20} color={COLORS.primary} />
+                <Text style={styles.contactDetail}>babahubsa@gmail.com</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity style={styles.contactItem} onPress={handlePhonePress}>
+                <Ionicons name="call" size={20} color={COLORS.primary} />
+                <Text style={styles.contactDetail}>084 500 0000</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.contactItem}>
+                <Ionicons name="help-circle" size={20} color={COLORS.primary} />
+                <Text style={styles.contactDetail}>In-app Support Center</Text>
+              </TouchableOpacity>
             </View>
-            <View style={styles.contactItem}>
-              <Ionicons name="call-outline" size={20} color="#000" />
-              <Text style={styles.contactDetail}>Phone: +1 (800) 123-4567</Text>
-            </View>
-            <View style={styles.contactItem}>
-              <Ionicons name="location-outline" size={20} color="#000" />
-              <Text style={styles.contactDetail}>Address: 123 Privacy Lane, Data City, DC 12345</Text>
-            </View>
-            <Text style={styles.contactFooter}>
-              We typically respond to inquiries within 2 business days.
-            </Text>
           </View>
 
-          {/* Compliance Note */}
-          <View style={styles.complianceNote}>
-            <Text style={styles.complianceTitle}>Compliance Information</Text>
-            <Text style={styles.complianceText}>
-              This privacy policy complies with Google Play Console requirements and applicable data protection regulations including GDPR, CCPA, and other regional privacy laws.
+          {/* Final Note */}
+          <View style={styles.finalNote}>
+            <Ionicons name="information-circle" size={24} color={COLORS.primary} />
+            <Text style={styles.finalNoteText}>
+              By using BabaHub, you acknowledge that you have read and understood this Privacy Policy. We are committed to continuously improving our privacy practices.
             </Text>
           </View>
         </View>
@@ -263,33 +367,44 @@ const PrivacyPolicyScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.background,
   },
+  // Updated Header Styles to match CustomerSupportScreen
   header: {
-    backgroundColor: '#000',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    backgroundColor: COLORS.primary,
+    borderBottomLeftRadius: 25,
+    borderBottomRightRadius: 25,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 10,
+    overflow: 'hidden',
+  },
+  headerBackground: {
+    backgroundColor: COLORS.primary,
     paddingTop: height * 0.06,
+    paddingBottom: height * 0.03,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: width * 0.05,
-    paddingBottom: height * 0.02,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 4,
   },
   backButton: {
-    padding: 4,
+    padding: 8,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.2)',
   },
   headerTitle: {
-    fontSize: width * 0.05,
-    fontWeight: '700',
-    color: '#fff',
+    fontSize: width * 0.045,
+    fontWeight: '800',
+    color: COLORS.white,
     letterSpacing: 0.5,
   },
-  headerSpacer: {
-    width: 24,
+  placeholder: {
+    width: 40,
   },
   scrollContainer: {
     flex: 1,
@@ -297,138 +412,333 @@ const styles = StyleSheet.create({
   contentContainer: {
     paddingBottom: height * 0.05,
   },
-  content: {
-    padding: width * 0.05,
+  heroSection: {
+    alignItems: 'center',
+    paddingVertical: height * 0.04,
+    paddingHorizontal: width * 0.05,
+    backgroundColor: COLORS.white,
+    marginHorizontal: width * 0.05,
+    marginTop: height * 0.03,
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 6,
   },
-  title: {
+  iconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: COLORS.primary + '15',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  heroTitle: {
     fontSize: width * 0.07,
-    fontWeight: 'bold',
-    color: '#000',
+    fontWeight: '800',
+    color: COLORS.dark,
     marginBottom: 5,
     textAlign: 'center',
   },
-  lastUpdated: {
-    fontSize: width * 0.035,
-    color: '#666',
-    marginBottom: height * 0.03,
+  heroSubtitle: {
+    fontSize: width * 0.04,
+    color: COLORS.gray,
+    marginBottom: 8,
     textAlign: 'center',
+  },
+  lastUpdated: {
+    fontSize: width * 0.032,
+    color: COLORS.grayLight,
     fontStyle: 'italic',
   },
-  description: {
-    fontSize: width * 0.04,
-    color: '#333',
-    marginBottom: height * 0.04,
+  content: {
+    padding: width * 0.05,
+  },
+  introSection: {
+    marginBottom: height * 0.03,
+    padding: width * 0.04,
+    backgroundColor: COLORS.white,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  introText: {
+    fontSize: width * 0.038,
+    color: COLORS.dark,
     lineHeight: 24,
     textAlign: 'center',
+  },
+  brandText: {
+    fontWeight: '700',
+    color: COLORS.primary,
   },
   section: {
     marginBottom: height * 0.03,
     padding: width * 0.04,
-    backgroundColor: '#f8f8f8',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#eee',
+    backgroundColor: COLORS.white,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  sectionIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: COLORS.primary + '15',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
   },
   sectionTitle: {
-    fontSize: width * 0.045,
+    fontSize: width * 0.04,
     fontWeight: '700',
-    color: '#000',
-    marginBottom: height * 0.015,
+    color: COLORS.dark,
+    flex: 1,
   },
   sectionText: {
-    fontSize: width * 0.038,
-    color: '#333',
-    marginBottom: height * 0.01,
+    fontSize: width * 0.036,
+    color: COLORS.darkLight,
     lineHeight: 22,
+    marginBottom: 15,
+  },
+  subsection: {
+    marginBottom: 15,
   },
   subsectionTitle: {
-    fontSize: width * 0.04,
+    fontSize: width * 0.038,
     fontWeight: '600',
-    color: '#000',
-    marginTop: height * 0.015,
-    marginBottom: height * 0.008,
+    color: COLORS.dark,
+    marginBottom: 10,
   },
   bulletItem: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: height * 0.008,
+    marginBottom: 8,
   },
   bulletPoint: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#000',
-    marginRight: width * 0.03,
-    marginTop: height * 0.008,
+    backgroundColor: COLORS.primary,
+    marginRight: 12,
+    marginTop: 8,
   },
   bulletText: {
-    fontSize: width * 0.036,
-    color: '#333',
-    flex: 1,
-    lineHeight: 22,
-  },
-  contactSection: {
-    marginTop: height * 0.03,
-    marginBottom: height * 0.02,
-    padding: width * 0.04,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#ddd',
-  },
-  contactTitle: {
-    fontSize: width * 0.045,
-    fontWeight: '700',
-    color: '#000',
-    marginBottom: height * 0.015,
-  },
-  contactText: {
-    fontSize: width * 0.038,
-    color: '#333',
-    marginBottom: height * 0.015,
-    lineHeight: 22,
-  },
-  contactItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: height * 0.012,
-    paddingVertical: height * 0.01,
-    paddingHorizontal: width * 0.03,
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#eee',
-  },
-  contactDetail: {
-    fontSize: width * 0.038,
-    marginLeft: width * 0.03,
-    color: '#000',
-    fontWeight: '500',
-  },
-  contactFooter: {
     fontSize: width * 0.035,
-    color: '#666',
-    marginTop: height * 0.01,
-    fontStyle: 'italic',
+    color: COLORS.darkLight,
+    flex: 1,
+    lineHeight: 20,
+  },
+  highlight: {
+    fontWeight: '600',
+    color: COLORS.primary,
+  },
+  emphasis: {
+    fontWeight: '700',
+    color: COLORS.error,
+  },
+  securityGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginTop: 10,
+  },
+  securityItem: {
+    width: '48%',
+    backgroundColor: COLORS.background,
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 12,
+    alignItems: 'center',
+  },
+  securityTitle: {
+    fontSize: width * 0.032,
+    fontWeight: '600',
+    color: COLORS.dark,
+    marginTop: 8,
     textAlign: 'center',
   },
-  complianceNote: {
-    marginTop: height * 0.03,
-    padding: width * 0.04,
-    backgroundColor: '#000',
+  securityText: {
+    fontSize: width * 0.03,
+    color: COLORS.gray,
+    textAlign: 'center',
+    marginTop: 4,
+    lineHeight: 16,
+  },
+  usageList: {
+    gap: 10,
+  },
+  usageItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  usageText: {
+    fontSize: width * 0.035,
+    color: COLORS.darkLight,
+    marginLeft: 12,
+    flex: 1,
+  },
+  thirdPartyCard: {
+    backgroundColor: COLORS.background,
     borderRadius: 12,
+    padding: 15,
+    marginVertical: 10,
+  },
+  partnerItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 15,
+  },
+  partnerInfo: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  partnerName: {
+    fontSize: width * 0.035,
+    fontWeight: '600',
+    color: COLORS.dark,
+    marginBottom: 4,
+  },
+  partnerDesc: {
+    fontSize: width * 0.033,
+    color: COLORS.gray,
+    lineHeight: 18,
+  },
+  importantNote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.warning + '15',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 10,
+  },
+  noteText: {
+    fontSize: width * 0.035,
+    color: COLORS.dark,
+    fontWeight: '500',
+    marginLeft: 8,
+    flex: 1,
+  },
+  rightsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  rightItem: {
+    width: '48%',
+    alignItems: 'center',
+    padding: 12,
+    backgroundColor: COLORS.background,
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  rightTitle: {
+    fontSize: width * 0.032,
+    fontWeight: '600',
+    color: COLORS.dark,
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  rightText: {
+    fontSize: width * 0.03,
+    color: COLORS.gray,
+    textAlign: 'center',
+    marginTop: 4,
+  },
+  complianceSection: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 16,
+    padding: width * 0.04,
+    marginBottom: height * 0.03,
   },
   complianceTitle: {
     fontSize: width * 0.04,
     fontWeight: '700',
-    color: '#fff',
-    marginBottom: height * 0.01,
-    textAlign: 'center',
+    color: COLORS.white,
+    flex: 1,
+  },
+  complianceList: {
+    gap: 12,
+    marginTop: 10,
+  },
+  complianceItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   complianceText: {
     fontSize: width * 0.035,
-    color: '#ddd',
-    textAlign: 'center',
+    color: COLORS.white,
+    marginLeft: 12,
+    flex: 1,
+    lineHeight: 20,
+  },
+  contactSection: {
+    backgroundColor: COLORS.white,
+    borderRadius: 16,
+    padding: width * 0.04,
+    marginBottom: height * 0.03,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  contactTitle: {
+    fontSize: width * 0.04,
+    fontWeight: '700',
+    color: COLORS.dark,
+    marginBottom: 10,
+  },
+  contactText: {
+    fontSize: width * 0.036,
+    color: COLORS.darkLight,
+    marginBottom: 15,
+    lineHeight: 22,
+  },
+  contactMethods: {
+    gap: 10,
+  },
+  contactItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    backgroundColor: COLORS.background,
+    borderRadius: 12,
+  },
+  contactDetail: {
+    fontSize: width * 0.035,
+    color: COLORS.primary,
+    fontWeight: '500',
+    marginLeft: 12,
+  },
+  finalNote: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: COLORS.primary + '10',
+    padding: 16,
+    borderRadius: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: COLORS.primary,
+  },
+  finalNoteText: {
+    fontSize: width * 0.035,
+    color: COLORS.dark,
+    marginLeft: 12,
+    flex: 1,
     lineHeight: 20,
   },
 });
