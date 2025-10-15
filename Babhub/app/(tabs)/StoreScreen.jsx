@@ -21,6 +21,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import debounce from 'lodash.debounce';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from '@react-navigation/native';
 
 const { width, height } = Dimensions.get('window');
 
@@ -529,19 +530,16 @@ const TrendingProductCard = ({ item, index }) => {
   );
 };
 
-// ENHANCED Product Item Component with Premium Animations (From Homepage)
+// UPDATED Product Item Component - Heart icon moved to top and NEW badge updated
 const ProductItem = ({ item, onPress, onWishlistToggle, isInWishlist, index }) => {
   const price = item.variants?.[0]?.sizes?.[0]?.price || item.price || 0;
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
   
-  // Animation values (From Homepage)
+  // Animation values
   const scaleValue = useRef(new Animated.Value(1)).current;
   const cardOpacity = useRef(new Animated.Value(0)).current;
   const cardTranslateY = useRef(new Animated.Value(50)).current;
-  const heartScale = useRef(new Animated.Value(1)).current;
-  const imageScale = useRef(new Animated.Value(1)).current;
-  const glowAnim = useRef(new Animated.Value(0)).current;
   
   useEffect(() => {
     // Staggered animation for product cards
@@ -552,7 +550,7 @@ const ProductItem = ({ item, onPress, onWishlistToggle, isInWishlist, index }) =
       Animated.parallel([
         Animated.timing(cardOpacity, {
           toValue: 1,
-          duration: 800,
+          duration: 600,
           easing: Easing.out(Easing.cubic),
           useNativeDriver: true,
         }),
@@ -564,84 +562,29 @@ const ProductItem = ({ item, onPress, onWishlistToggle, isInWishlist, index }) =
         }),
       ])
     ]).start();
-
-    // Glow animation loop
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(glowAnim, {
-          toValue: 1,
-          duration: 2000,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        }),
-        Animated.timing(glowAnim, {
-          toValue: 0,
-          duration: 2000,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
   }, []);
 
   const handlePressIn = () => {
-    Animated.parallel([
-      Animated.spring(scaleValue, {
-        toValue: 0.92,
-        useNativeDriver: true,
-      }),
-      Animated.spring(imageScale, {
-        toValue: 1.08,
-        useNativeDriver: true,
-      })
-    ]).start();
+    Animated.spring(scaleValue, {
+      toValue: 0.95,
+      useNativeDriver: true,
+    }).start();
   };
   
   const handlePressOut = () => {
-    Animated.parallel([
-      Animated.spring(scaleValue, {
-        toValue: 1,
-        friction: 3,
-        useNativeDriver: true,
-      }),
-      Animated.spring(imageScale, {
-        toValue: 1,
-        useNativeDriver: true,
-      })
-    ]).start();
+    Animated.spring(scaleValue, {
+      toValue: 1,
+      friction: 3,
+      useNativeDriver: true,
+    }).start();
   };
 
   const handleWishlistPress = (e) => {
     e.stopPropagation();
-    
-    // Enhanced heart animation
-    Animated.sequence([
-      Animated.timing(heartScale, {
-        toValue: 1.5,
-        duration: 150,
-        useNativeDriver: true,
-      }),
-      Animated.timing(heartScale, {
-        toValue: 0.8,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-      Animated.spring(heartScale, {
-        toValue: 1,
-        friction: 3,
-        useNativeDriver: true,
-      }),
-    ]).start();
-    
     onWishlistToggle(item);
   };
   
   const imageUrl = getImageUrl(item.image);
-  
-  const glowOpacity = glowAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.3, 0.8]
-  });
 
   return (
     <Animated.View 
@@ -661,14 +604,6 @@ const ProductItem = ({ item, onPress, onWishlistToggle, isInWishlist, index }) =
           onPressIn={handlePressIn}
           onPressOut={handlePressOut}
         >
-          {/* Glow Effect */}
-          <Animated.View 
-            style={[
-              styles.cardGlow,
-              { opacity: glowOpacity }
-            ]}
-          />
-          
           <View style={styles.imageContainer}>
             {(!imageLoaded || imageError) && (
               <View style={styles.imagePlaceholder}>
@@ -676,13 +611,12 @@ const ProductItem = ({ item, onPress, onWishlistToggle, isInWishlist, index }) =
               </View>
             )}
             {!imageError && (
-              <Animated.Image
+              <Image
                 source={{ uri: imageUrl }}
                 style={[
                   styles.image, 
                   { 
                     opacity: imageLoaded ? 1 : 0,
-                    transform: [{ scale: imageScale }]
                   }
                 ]}
                 resizeMode="cover"
@@ -694,25 +628,8 @@ const ProductItem = ({ item, onPress, onWishlistToggle, isInWishlist, index }) =
               />
             )}
             
-            {/* New Badge with Animation */}
-            <Animated.View 
-              style={[
-                styles.newBadge,
-                {
-                  transform: [{
-                    scale: cardOpacity.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0.5, 1]
-                    })
-                  }]
-                }
-              ]}
-            >
-              <Text style={styles.newBadgeText}>NEW</Text>
-            </Animated.View>
-
-            {/* Wishlist Button */}
-            <Animated.View style={[styles.heartContainer, { transform: [{ scale: heartScale }] }]}>
+            {/* UPDATED: Heart icon moved to top right */}
+            <View style={styles.heartContainer}>
               <TouchableOpacity
                 style={[styles.heartIcon, isInWishlist && styles.heartIconActive]}
                 onPress={handleWishlistPress}
@@ -723,7 +640,12 @@ const ProductItem = ({ item, onPress, onWishlistToggle, isInWishlist, index }) =
                   color={isInWishlist ? COLORS.error : COLORS.white}
                 />
               </TouchableOpacity>
-            </Animated.View>
+            </View>
+
+            {/* UPDATED: NEW badge with brand-like design */}
+            <View style={styles.newBadge}>
+              <Text style={styles.newBadgeText}>NEW</Text>
+            </View>
           </View>
           
           <View style={styles.cardContent}>
@@ -756,21 +678,9 @@ const ProductItem = ({ item, onPress, onWishlistToggle, isInWishlist, index }) =
                   onPress(item);
                 }}
               >
-                <Animated.View 
-                  style={[
-                    styles.cartIconContainer,
-                    {
-                      transform: [{
-                        scale: scaleValue.interpolate({
-                          inputRange: [0.92, 1],
-                          outputRange: [0.9, 1]
-                        })
-                      }]
-                    }
-                  ]}
-                >
+                <View style={styles.cartIconContainer}>
                   <Ionicons name="bag-handle-outline" size={16} color={COLORS.white} />
-                </Animated.View>
+                </View>
               </TouchableOpacity>
             </View>
           </View>
@@ -780,8 +690,8 @@ const ProductItem = ({ item, onPress, onWishlistToggle, isInWishlist, index }) =
   );
 };
 
-// Sticky Header Component
-const StickyHeader = ({ user, cartItems, wishlist, router, scrollY }) => {
+// UPDATED Sticky Header Component - Bigger Cart Icon
+const StickyHeader = ({ user, cartItems, router, scrollY }) => {
   const headerHeight = 80;
   const headerTranslate = scrollY.interpolate({
     inputRange: [0, headerHeight],
@@ -814,38 +724,57 @@ const StickyHeader = ({ user, cartItems, wishlist, router, scrollY }) => {
         </View>
         
         <View style={styles.stickyIcons}>
+          {/* Big Cart Icon */}
           <TouchableOpacity
-            style={styles.stickyIconButton}
-            onPress={() => router.push('../WishlistScreen')}
-          >
-            <Ionicons
-              name={wishlist.length > 0 ? 'heart' : 'heart-outline'}
-              size={22}
-              color={wishlist.length > 0 ? COLORS.error : COLORS.dark}
-            />
-            {wishlist.length > 0 && (
-              <View style={styles.stickyBadge}>
-                <Text style={styles.stickyBadgeText}>{wishlist.length}</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={styles.stickyIconButton}
+            style={styles.stickyCartButton}
             onPress={() => router.push('../CartScreen')}
           >
-            <Ionicons name="cart-outline" size={22} color={COLORS.dark} />
-            {cartItems > 0 && (
-              <View style={styles.stickyBadge}>
-                <Text style={styles.stickyBadgeText}>{cartItems}</Text>
-              </View>
-            )}
+            <View style={styles.bigCartIconContainer}>
+              <Ionicons name="cart" size={28} color={COLORS.primary} />
+              {cartItems > 0 && (
+                <View style={styles.stickyBadge}>
+                  <Text style={styles.stickyBadgeText}>{cartItems}</Text>
+                </View>
+              )}
+            </View>
           </TouchableOpacity>
         </View>
       </View>
     </Animated.View>
   );
 };
+
+// NEW: Dynamic Category Filter Component
+const CategoryFilter = ({ categories, selectedCategory, onCategorySelect }) => {
+  return (
+    <View style={styles.categoriesContainer}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.categoriesScroll}
+      >
+        {categories.map((category, index) => (
+          <TouchableOpacity
+            key={category}
+            style={[
+              styles.categoryButton,
+              selectedCategory === category && styles.categoryButtonActive
+            ]}
+            onPress={() => onCategorySelect(category)}
+          >
+            <Text style={[
+              styles.categoryText,
+              selectedCategory === category && styles.categoryTextActive
+            ]}>
+              {category}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+    </View>
+  );
+};
+
 const StoreScreen = () => {
   const [searchText, setSearchText] = useState('');
   const [wishlist, setWishlist] = useState([]);
@@ -856,6 +785,7 @@ const StoreScreen = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('All Items');
+  const [categories, setCategories] = useState(['All Items']);
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
   const [currentMiddleBannerIndex, setCurrentMiddleBannerIndex] = useState(0);
   const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
@@ -878,8 +808,73 @@ const StoreScreen = () => {
   const contentOpacity = useRef(new Animated.Value(1)).current;
   const contentTranslateY = useRef(new Animated.Value(0)).current;
 
+  // API base URL
+  const API_BASE_URL = 'https://account.babahub.co';
+
+  // NEW: Extract unique categories from products
+  const extractCategoriesFromProducts = (products) => {
+    const categorySet = new Set(['All Items']);
+    
+    products.forEach(product => {
+      if (product.category) {
+        categorySet.add(product.category);
+      }
+    });
+    
+    return Array.from(categorySet);
+  };
+
+  // NEW: Filter products by category
+  const filterProductsByCategory = (category, productsList = products) => {
+    if (category === 'All Items') {
+      return productsList;
+    }
+    return productsList.filter(product => product.category === category);
+  };
+
+  // Fetch wishlist and cart count from AsyncStorage
+  const fetchWishlistAndCart = async () => {
+    try {
+      // Fetch wishlist
+      const wishlistData = await AsyncStorage.getItem('wishlist');
+      if (wishlistData) {
+        const parsedWishlist = JSON.parse(wishlistData);
+        setWishlist(parsedWishlist);
+        console.log('Wishlist updated:', parsedWishlist.length, 'items');
+      } else {
+        setWishlist([]);
+      }
+
+      // Fetch cart count
+      const cartData = await AsyncStorage.getItem('cart');
+      if (cartData) {
+        const cartItems = JSON.parse(cartData);
+        setCartItems(cartItems.length);
+        console.log('Cart updated:', cartItems.length, 'items');
+      } else {
+        setCartItems(0);
+      }
+    } catch (error) {
+      console.error('Error fetching wishlist or cart:', error);
+    }
+  };
+
+  // Use focus effect to refresh data when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      console.log('StoreScreen focused - refreshing wishlist and cart');
+      fetchWishlistAndCart();
+    }, [])
+  );
+
+  // Initial data fetch
   useEffect(() => {
-    // Enhanced animations on mount
+    fetchWishlistAndCart();
+    fetchProducts();
+  }, []);
+
+  // Enhanced animations on mount
+  useEffect(() => {
     Animated.stagger(200, [
       Animated.parallel([
         Animated.timing(searchOpacity, {
@@ -909,47 +904,7 @@ const StoreScreen = () => {
     ]).start();
   }, []);
 
-  // API base URL
-  const API_BASE_URL = 'https://account.babahub.co';
-
-  // Fetch cart count
-  useEffect(() => {
-    const fetchCartCount = async () => {
-      try {
-        const cartData = await AsyncStorage.getItem('cart');
-        if (cartData) {
-          const cartItems = JSON.parse(cartData);
-          setCartItems(cartItems.length);
-        }
-      } catch (error) {
-        console.error('Error fetching cart count:', error);
-      }
-    };
-
-    fetchCartCount();
-  }, []);
-
-  // Fetch wishlist
-  useEffect(() => {
-    const fetchWishlist = async () => {
-      try {
-        const wishlistData = await AsyncStorage.getItem('wishlist');
-        if (wishlistData) {
-          setWishlist(JSON.parse(wishlistData));
-        }
-      } catch (error) {
-        console.error('Error fetching wishlist:', error);
-      }
-    };
-
-    fetchWishlist();
-  }, []);
-
   // Fetch products from backend API
-  useEffect(() => {
-    fetchProducts();
-  }, []);
-
   const fetchProducts = async () => {
     try {
       setLoading(true);
@@ -964,15 +919,22 @@ const StoreScreen = () => {
       
       setProducts(data);
       setFilteredProducts(data);
+      
+      // NEW: Extract categories from products and update state
+      const extractedCategories = extractCategoriesFromProducts(data);
+      setCategories(extractedCategories);
+      console.log('Categories extracted:', extractedCategories);
+      
     } catch (err) {
       console.error('Error fetching products:', err);
       
-      // Fallback to mock data
+      // Fallback to mock data with categories
       const mockProducts = [
         {
           _id: '1',
           name: 'Premium Cotton T-Shirt',
           brand: 'FashionHub',
+          category: 'Clothing',
           image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&h=500&fit=crop',
           variants: [{ sizes: [{ price: 29.99 }] }],
           price: 29.99
@@ -981,6 +943,7 @@ const StoreScreen = () => {
           _id: '2',
           name: 'Classic Denim Jacket',
           brand: 'UrbanStyle',
+          category: 'Clothing',
           image: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=400&h=500&fit=crop',
           variants: [{ sizes: [{ price: 59.99 }] }],
           price: 59.99
@@ -989,6 +952,7 @@ const StoreScreen = () => {
           _id: '3',
           name: 'Smart Watch Pro',
           brand: 'TechGear',
+          category: 'Electronics',
           image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=500&fit=crop',
           variants: [{ sizes: [{ price: 199.99 }] }],
           price: 199.99
@@ -997,6 +961,7 @@ const StoreScreen = () => {
           _id: '4',
           name: 'Minimalist Sneakers',
           brand: 'EcoWear',
+          category: 'Shoes',
           image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&h=500&fit=crop',
           variants: [{ sizes: [{ price: 79.99 }] }],
           price: 79.99
@@ -1005,6 +970,7 @@ const StoreScreen = () => {
           _id: '5',
           name: 'Designer Handbag',
           brand: 'LuxuryBrand',
+          category: 'Accessories',
           image: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=400&h=500&fit=crop',
           variants: [{ sizes: [{ price: 299.99 }] }],
           price: 299.99
@@ -1013,6 +979,7 @@ const StoreScreen = () => {
           _id: '6',
           name: 'Wireless Headphones',
           brand: 'TechGear',
+          category: 'Electronics',
           image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=500&fit=crop',
           variants: [{ sizes: [{ price: 149.99 }] }],
           price: 149.99
@@ -1021,6 +988,7 @@ const StoreScreen = () => {
           _id: '7',
           name: 'Sports Running Shoes',
           brand: 'ActiveWear',
+          category: 'Shoes',
           image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&h=500&fit=crop',
           variants: [{ sizes: [{ price: 89.99 }] }],
           price: 89.99
@@ -1029,6 +997,7 @@ const StoreScreen = () => {
           _id: '8',
           name: 'Designer Watch',
           brand: 'LuxuryBrand',
+          category: 'Accessories',
           image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=500&fit=crop',
           variants: [{ sizes: [{ price: 349.99 }] }],
           price: 349.99
@@ -1036,10 +1005,23 @@ const StoreScreen = () => {
       ];
       setProducts(mockProducts);
       setFilteredProducts(mockProducts);
+      
+      // NEW: Extract categories from mock data
+      const extractedCategories = extractCategoriesFromProducts(mockProducts);
+      setCategories(extractedCategories);
+      console.log('Categories from mock data:', extractedCategories);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
+  };
+
+  // NEW: Handle category selection
+  const handleCategorySelect = (category) => {
+    setSelectedCategory(category);
+    const filtered = filterProductsByCategory(category);
+    setFilteredProducts(filtered);
+    console.log(`Category selected: ${category}, Products: ${filtered.length}`);
   };
 
   // Auto-rotate middle banners
@@ -1056,7 +1038,9 @@ const StoreScreen = () => {
   // Search functionality - FIXED LOGIC
   const performSearch = (text) => {
     if (text.trim() === '') {
-      setFilteredProducts(products);
+      // When search is cleared, show products for selected category
+      const filtered = filterProductsByCategory(selectedCategory);
+      setFilteredProducts(filtered);
       setSearchResults([]);
       setIsSearchActive(false);
       // Animate content back in
@@ -1076,7 +1060,8 @@ const StoreScreen = () => {
     } else {
       const filtered = products.filter(product =>
         product.name?.toLowerCase().includes(text.toLowerCase()) ||
-        product.brand?.toLowerCase().includes(text.toLowerCase())
+        product.brand?.toLowerCase().includes(text.toLowerCase()) ||
+        product.category?.toLowerCase().includes(text.toLowerCase())
       );
       
       console.log('Search results:', filtered.length);
@@ -1101,7 +1086,7 @@ const StoreScreen = () => {
     debounce((text) => {
       performSearch(text);
     }, 300),
-    [products]
+    [products, selectedCategory]
   );
 
   // Handle search text changes
@@ -1114,7 +1099,9 @@ const StoreScreen = () => {
       setShowSearchSuggestions(false);
       setIsSearchActive(false);
       setSearchResults([]);
-      setFilteredProducts(products);
+      // When search is cleared, show products for selected category
+      const filtered = filterProductsByCategory(selectedCategory);
+      setFilteredProducts(filtered);
       // Reset animations when search is cleared
       Animated.parallel([
         Animated.timing(contentOpacity, {
@@ -1147,6 +1134,7 @@ const StoreScreen = () => {
   const onRefresh = () => {
     setRefreshing(true);
     fetchProducts();
+    fetchWishlistAndCart(); // Also refresh wishlist and cart on pull-to-refresh
   };
 
   const toggleWishlist = async (product) => {
@@ -1174,9 +1162,14 @@ const StoreScreen = () => {
       }
       
       await AsyncStorage.setItem('wishlist', JSON.stringify(currentWishlist));
+      
+      // Update local state immediately for better UX
       setWishlist(currentWishlist);
+      
+      console.log('Wishlist updated:', currentWishlist.length, 'items');
     } catch (error) {
       console.error('Wishlist update failed', error);
+      Alert.alert('Error', 'Failed to update wishlist');
     }
   };
 
@@ -1218,7 +1211,9 @@ const StoreScreen = () => {
     setShowSearchSuggestions(false);
     setIsSearchActive(false);
     setSearchResults([]);
-    setFilteredProducts(products);
+    // When search is cleared, show products for selected category
+    const filtered = filterProductsByCategory(selectedCategory);
+    setFilteredProducts(filtered);
     searchInputRef.current?.focus();
   };
 
@@ -1276,8 +1271,6 @@ const StoreScreen = () => {
     </Animated.View>
   );
 
-  const categories = ['All Items', 'Clothing', 'Electronics', 'Home', 'Sports', 'Accessories', 'Beauty', 'Books'];
-
   if (loading) {
     return (
       <SafeAreaView style={styles.safeArea}>
@@ -1291,11 +1284,10 @@ const StoreScreen = () => {
 
   return (
     <View style={styles.scrollContainer}>
-      {/* Sticky Header */}
+      {/* UPDATED Sticky Header - Bigger Cart Icon */}
       <StickyHeader 
         user={{ name: 'Store' }}
         cartItems={cartItems}
-        wishlist={wishlist}
         router={router}
         scrollY={scrollY}
       />
@@ -1327,31 +1319,19 @@ const StoreScreen = () => {
               </View>
             </View>
             <View style={styles.headerIcons}>
+              {/* Big Cart Icon in Main Header */}
               <TouchableOpacity
-                style={styles.iconButton}
-                onPress={() => router.push('../WishlistScreen')}
-              >
-                <Ionicons
-                  name={wishlist.length > 0 ? 'heart' : 'heart-outline'}
-                  size={24}
-                  color={wishlist.length > 0 ? COLORS.error : COLORS.dark}
-                />
-                {wishlist.length > 0 && (
-                  <View style={styles.badge}>
-                    <Text style={styles.badgeText}>{wishlist.length}</Text>
-                  </View>
-                )}
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.iconButton}
+                style={styles.bigHeaderCartButton}
                 onPress={() => router.push('../CartScreen')}
               >
-                <Ionicons name="cart-outline" size={24} color={COLORS.dark} />
-                {cartItems > 0 && (
-                  <View style={styles.badge}>
-                    <Text style={styles.badgeText}>{cartItems}</Text>
-                  </View>
-                )}
+                <View style={styles.bigHeaderCartContainer}>
+                  <Ionicons name="cart" size={28} color={COLORS.dark} />
+                  {cartItems > 0 && (
+                    <View style={styles.badge}>
+                      <Text style={styles.badgeText}>{cartItems}</Text>
+                    </View>
+                  )}
+                </View>
               </TouchableOpacity>
             </View>
           </View>
@@ -1407,6 +1387,13 @@ const StoreScreen = () => {
               searchResults={searchResults}
             />
           </View>
+
+          {/* NEW: Dynamic Category Filter Buttons */}
+          <CategoryFilter 
+            categories={categories}
+            selectedCategory={selectedCategory}
+            onCategorySelect={handleCategorySelect}
+          />
 
           {/* Main Content */}
           <View style={styles.mainContent}>
@@ -1467,31 +1454,6 @@ const StoreScreen = () => {
                   transform: [{ translateY: contentTranslateY }]
                 }}
               >
-                {/* Animated Categories */}
-                <Animated.View style={[styles.categoriesContainer, { opacity: categoriesOpacity }]}>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.categoriesScroll}
-                  >
-                    {categories.map((cat, i) => (
-                      <TouchableOpacity
-                        key={cat}
-                        style={[
-                          styles.categoryButton,
-                          selectedCategory === cat && styles.categoryButtonActive
-                        ]}
-                        onPress={() => setSelectedCategory(cat)}
-                      >
-                        <Text style={[
-                          styles.categoryText,
-                          selectedCategory === cat && styles.categoryTextActive
-                        ]}>{cat}</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </ScrollView>
-                </Animated.View>
-
                 {/* Featured Brands Section */}
                 <View style={styles.section}>
                   <View style={styles.sectionHeader}>
@@ -1514,7 +1476,9 @@ const StoreScreen = () => {
                 {/* First Set of Product Cards */}
                 <View style={styles.section}>
                   <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionTitle}>Popular Products</Text>
+                    <Text style={styles.sectionTitle}>
+                      {selectedCategory === 'All Items' ? 'Popular Products' : selectedCategory}
+                    </Text>
                     <Text style={styles.seeAll}>{Math.min(filteredProducts.length, 4)} items</Text>
                   </View>
                   
@@ -1531,7 +1495,15 @@ const StoreScreen = () => {
                       maxToRenderPerBatch={4}
                       windowSize={5}
                     />
-                  ) : null}
+                  ) : (
+                    <View style={styles.emptyState}>
+                      <Ionicons name="grid-outline" size={50} color={COLORS.grayLight} />
+                      <Text style={styles.emptyStateText}>No products found</Text>
+                      <Text style={styles.emptyStateSubtext}>
+                        {`No products available in ${selectedCategory} category`}
+                      </Text>
+                    </View>
+                  )}
                 </View>
 
                 {/* Summer Collection Banner - In the middle */}
@@ -1662,24 +1634,6 @@ const StoreScreen = () => {
                   </View>
                 </View>
 
-                {/* New User Offer Banner */}
-                <View style={styles.middleBannerContainer}>
-                  <MiddleBanner item={middleBanners[2]} />
-                  <View style={styles.middleBannerPagination}>
-                    {middleBanners.map((_, index) => (
-                      <View
-                        key={index}
-                        style={[
-                          styles.middlePaginationDot,
-                          {
-                            backgroundColor: index === 2 ? COLORS.primary : COLORS.grayLight,
-                          },
-                        ]}
-                      />
-                    ))}
-                  </View>
-                </View>
-
                 {/* Final Set of Product Cards */}
                 <View style={styles.section}>
                   <View style={styles.sectionHeader}>
@@ -1732,9 +1686,8 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    padding: 20,
-    paddingBottom: 30,
-    paddingTop: 10,
+    backgroundColor: COLORS.background,
+    paddingBottom: 20,
   },
   centerContainer: {
     flex: 1,
@@ -1742,47 +1695,137 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: COLORS.background,
   },
-  // Search Wrapper
-  searchWrapper: {
-    marginBottom: 20,
-    zIndex: 100,
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: COLORS.gray,
   },
-  // Search Suggestions
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: Platform.OS === 'ios' ? 60 : 40,
+    paddingBottom: 16,
+    backgroundColor: COLORS.background,
+  },
+  profileContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  welcomeContainer: {
+    marginLeft: 12,
+  },
+  welcome: {
+    fontSize: 14,
+    color: COLORS.gray,
+  },
+  username: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: COLORS.dark,
+  },
+  headerIcons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  bigHeaderCartButton: {
+    padding: 8,
+    marginLeft: 8,
+  },
+  bigHeaderCartContainer: {
+    position: 'relative',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  badge: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    backgroundColor: COLORS.error,
+    borderRadius: 12,
+    minWidth: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: COLORS.background,
+  },
+  badgeText: {
+    color: COLORS.white,
+    fontSize: 11,
+    fontWeight: 'bold',
+  },
+  searchWrapper: {
+    position: 'relative',
+    zIndex: 1000,
+  },
+  searchContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 8,
+  },
+  searchInnerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.white,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    shadowColor: COLORS.primary,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(99, 102, 241, 0.1)',
+  },
+  searchIconContainer: {
+    marginRight: 12,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: COLORS.dark,
+    padding: 0,
+  },
+  searchClearButton: {
+    padding: 4,
+  },
   searchSuggestionsContainer: {
     position: 'absolute',
     top: '100%',
-    left: 0,
-    right: 0,
+    left: 20,
+    right: 20,
     backgroundColor: COLORS.white,
     borderRadius: 16,
     marginTop: 8,
-    ...Platform.select({
-      ios: {
-        shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 6,
-      },
-    }),
+    shadowColor: COLORS.dark,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+    zIndex: 1001,
     maxHeight: 400,
   },
   searchSuggestionsContent: {
     padding: 16,
   },
   resultsCountContainer: {
-    backgroundColor: COLORS.primaryLight + '20',
-    padding: 12,
-    borderRadius: 12,
-    marginBottom: 16,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.light,
+    marginBottom: 12,
   },
   resultsCountText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.primary,
-    textAlign: 'center',
+    color: COLORS.gray,
+    fontWeight: '500',
   },
   suggestionSection: {
     marginBottom: 16,
@@ -1796,13 +1839,15 @@ const styles = StyleSheet.create({
   suggestionItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 4,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.light,
   },
   suggestionText: {
-    fontSize: 14,
+    fontSize: 15,
     color: COLORS.dark,
     marginLeft: 12,
+    flex: 1,
   },
   popularSearchesContainer: {
     flexDirection: 'row',
@@ -1812,20 +1857,20 @@ const styles = StyleSheet.create({
   popularSearchChip: {
     backgroundColor: COLORS.light,
     paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
   },
   popularSearchText: {
-    fontSize: 12,
-    color: COLORS.primary,
+    fontSize: 13,
+    color: COLORS.dark,
     fontWeight: '500',
   },
   noResultsContainer: {
     alignItems: 'center',
-    padding: 20,
+    paddingVertical: 32,
   },
   noResultsText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: COLORS.dark,
     marginTop: 12,
@@ -1835,28 +1880,27 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.gray,
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: 4,
   },
   noResultsTip: {
     fontSize: 12,
     color: COLORS.grayLight,
     textAlign: 'center',
-    fontStyle: 'italic',
   },
-  // Main Content
   mainContent: {
     flex: 1,
   },
   searchResultsSection: {
-    marginTop: 10,
+    paddingHorizontal: 20,
+  },
+  loadingState: {
+    alignItems: 'center',
+    paddingVertical: 40,
   },
   noSearchResults: {
     alignItems: 'center',
-    justifyContent: 'center',
-    padding: 40,
-    backgroundColor: COLORS.white,
-    borderRadius: 16,
-    marginTop: 20,
+    paddingVertical: 60,
+    paddingHorizontal: 20,
   },
   noSearchResultsText: {
     fontSize: 20,
@@ -1866,48 +1910,559 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   noSearchResultsSubtext: {
-    fontSize: 16,
+    fontSize: 15,
     color: COLORS.gray,
     textAlign: 'center',
     marginBottom: 8,
   },
   noSearchResultsTip: {
-    fontSize: 14,
+    fontSize: 13,
     color: COLORS.grayLight,
     textAlign: 'center',
-    marginBottom: 20,
-    fontStyle: 'italic',
+    marginBottom: 24,
   },
-  // Sticky Header Styles
-  stickyHeader: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 80,
+  tryAgainButton: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  tryAgainText: {
+    color: COLORS.white,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  categoriesContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 24,
+  },
+  categoriesScroll: {
+    paddingRight: 20,
+  },
+  categoryButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
     backgroundColor: COLORS.white,
-    zIndex: 1000,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(99, 102, 241, 0.1)',
+    borderRadius: 12,
+    marginRight: 12,
+    shadowColor: COLORS.dark,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  categoryButtonActive: {
+    backgroundColor: COLORS.primary,
+  },
+  categoryText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: COLORS.gray,
+  },
+  categoryTextActive: {
+    color: COLORS.white,
+  },
+  section: {
+    marginBottom: 32,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: COLORS.dark,
+  },
+  seeAllButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  seeAll: {
+    fontSize: 14,
+    color: COLORS.primary,
+    fontWeight: '500',
+  },
+  brandList: {
+    paddingHorizontal: 20,
+    gap: 16,
+  },
+  brandCard: {
+    width: 140,
+    marginRight: 16,
+  },
+  brandCardInner: {
+    backgroundColor: COLORS.white,
+    borderRadius: 16,
+    padding: 12,
+    shadowColor: COLORS.dark,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  brandImageContainer: {
+    position: 'relative',
+    width: '100%',
+    height: 100,
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginBottom: 12,
+  },
+  brandImage: {
+    width: '100%',
+    height: '100%',
+  },
+  brandDiscount: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: COLORS.secondary,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  brandDiscountText: {
+    color: COLORS.white,
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  brandName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.dark,
+    marginBottom: 4,
+  },
+  brandProducts: {
+    fontSize: 12,
+    color: COLORS.gray,
+  },
+  list: {
+    paddingHorizontal: 20,
+  },
+  columnWrapper: {
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  // UPDATED Product Card Styles - Heart icon moved to top and NEW badge updated
+  cardContainer: {
+    width: '48%',
+    marginBottom: 16,
+  },
+  card: {
+    backgroundColor: COLORS.cardBackground,
+    borderRadius: 20,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(99, 102, 241, 0.08)',
     ...Platform.select({
       ios: {
         shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 2 },
+        shadowOffset: { width: 0, height: 6 },
         shadowOpacity: 0.1,
-        shadowRadius: 8,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
+  },
+  imageContainer: {
+    position: 'relative',
+    width: '100%',
+    height: 180,
+    backgroundColor: COLORS.light,
+  },
+  imagePlaceholder: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.light,
+  },
+  image: {
+    width: '100%',
+    height: '100%',
+  },
+  // UPDATED: Heart container moved to top right
+  heartContainer: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+  },
+  heartIcon: {
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    borderRadius: 20,
+    padding: 8,
+    ...Platform.select({
+      ios: {
+        shadowColor: COLORS.dark,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 3,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
+  },
+  heartIconActive: {
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+  },
+  // UPDATED: NEW badge with brand-like design
+  newBadge: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 50,
+    alignSelf: 'flex-start',
+  },
+  newBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: COLORS.white,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  cardContent: {
+    padding: 16,
+    backgroundColor: COLORS.cardBackground,
+  },
+  title: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: COLORS.dark,
+    marginBottom: 6,
+    height: 20,
+    lineHeight: 20,
+  },
+  brandContainer: {
+    marginBottom: 8,
+    backgroundColor: 'rgba(99, 102, 241, 0.08)',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
+  },
+  brandText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: COLORS.primary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  ratingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  stars: {
+    flexDirection: 'row',
+    gap: 2,
+  },
+  ratingText: {
+    fontSize: 11,
+    color: COLORS.gray,
+    fontWeight: '600',
+  },
+  priceContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  price: {
+    fontSize: 17,
+    fontWeight: 'bold',
+    color: COLORS.primary,
+  },
+  cartButton: {
+    backgroundColor: COLORS.primary,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: COLORS.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 6,
       },
       android: {
         elevation: 4,
       },
     }),
   },
-  stickyHeaderContent: {
+  cartIconContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  bannerContainer: {
+    height: 200,
+    marginHorizontal: 20,
+    borderRadius: 16,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  bannerItem: {
+    width: width - 40,
+    height: 200,
+    borderRadius: 16,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  bannerImage: {
+    width: '100%',
+    height: '100%',
+  },
+  bannerOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+  },
+  bannerContent: {
+    position: 'absolute',
+    bottom: 20,
+    left: 20,
+    right: 20,
+  },
+  bannerBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  bannerBadgeText: {
+    color: COLORS.white,
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  bannerTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: COLORS.white,
+    marginBottom: 8,
+  },
+  bannerSubtitle: {
+    fontSize: 16,
+    color: COLORS.white,
+    marginBottom: 16,
+  },
+  bannerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    backgroundColor: COLORS.white,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  bannerButtonText: {
+    color: COLORS.primary,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  bannerPagination: {
+    position: 'absolute',
+    bottom: 16,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  paginationDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginHorizontal: 4,
+  },
+  trendingList: {
+    paddingHorizontal: 20,
+    gap: 16,
+  },
+  trendingCard: {
+    width: 280,
+    marginRight: 16,
+  },
+  trendingCardInner: {
+    backgroundColor: COLORS.white,
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: COLORS.dark,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  trendingImage: {
+    width: '100%',
+    height: 160,
+  },
+  trendingBadge: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.secondary,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    gap: 4,
+  },
+  trendingBadgeText: {
+    color: COLORS.white,
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  trendingContent: {
+    padding: 16,
+  },
+  trendingBrand: {
+    fontSize: 12,
+    color: COLORS.gray,
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  trendingName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.dark,
+    marginBottom: 12,
+    lineHeight: 20,
+  },
+  trendingPriceContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  trendingPrice: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: COLORS.primary,
+  },
+  trendingCartButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: COLORS.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  middleBannerContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 32,
+  },
+  middleBanner: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    position: 'relative',
+    minHeight: 100,
+  },
+  middleBannerGradient: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  middleBannerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 20,
+  },
+  middleBannerIcon: {
+    marginRight: 16,
+  },
+  middleBannerText: {
     flex: 1,
+  },
+  middleBannerTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: COLORS.white,
+    marginBottom: 4,
+  },
+  middleBannerSubtitle: {
+    fontSize: 14,
+    color: COLORS.white,
+    opacity: 0.9,
+  },
+  middleBannerCode: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 6,
+  },
+  middleBannerCodeText: {
+    color: COLORS.white,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  middleBannerPagination: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 12,
+    gap: 6,
+  },
+  middlePaginationDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 60,
+    paddingHorizontal: 20,
+  },
+  emptyStateText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: COLORS.dark,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptyStateSubtext: {
+    fontSize: 14,
+    color: COLORS.gray,
+    textAlign: 'center',
+  },
+  stickyHeader: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 80,
+    backgroundColor: COLORS.background,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.light,
+    zIndex: 1000,
+    paddingTop: Platform.OS === 'ios' ? 40 : 20,
+  },
+  stickyHeaderContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    marginTop: Platform.OS === 'ios' ? 40 : 20,
+    flex: 1,
   },
   stickyProfile: {
     flexDirection: 'row',
@@ -1928,736 +2483,39 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   stickyUsername: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
     color: COLORS.dark,
   },
   stickyIcons: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
   },
-  stickyIconButton: {
+  stickyCartButton: {
+    padding: 8,
+  },
+  bigCartIconContainer: {
     position: 'relative',
-    width: 44,
-    height: 44,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: COLORS.light,
-    borderRadius: 12,
   },
   stickyBadge: {
     position: 'absolute',
-    right: -2,
-    top: -2,
+    top: -4,
+    right: -4,
     backgroundColor: COLORS.error,
-    borderRadius: 10,
-    width: 18,
-    height: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: COLORS.white,
-  },
-  stickyBadgeText: {
-    color: COLORS.white,
-    fontSize: 10,
-    fontWeight: 'bold',
-  },
-  // Main Header
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  profileContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  welcomeContainer: {
-    flexDirection: 'column',
-  },
-  headerIcons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  iconButton: {
-    position: 'relative',
-    width: 48,
-    height: 48,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: COLORS.white,
-    borderRadius: 14,
-    ...Platform.select({
-      ios: {
-        shadowColor: COLORS.dark,
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.1,
-        shadowRadius: 6,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
-  },
-  badge: {
-    position: 'absolute',
-    right: -2,
-    top: -2,
-    backgroundColor: COLORS.error,
-    borderRadius: 10,
-    width: 20,
+    borderRadius: 12,
+    minWidth: 20,
     height: 20,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
     borderColor: COLORS.background,
   },
-  badgeText: {
+  stickyBadgeText: {
     color: COLORS.white,
-    fontSize: 10,
-    fontWeight: 'bold',
-  },
-  welcome: {
-    fontSize: 14,
-    color: COLORS.gray,
-    fontWeight: '500',
-  },
-  username: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: COLORS.dark,
-  },
-  // Enhanced Search Bar
-  searchContainer: {
-    marginBottom: 0,
-  },
-  searchInnerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.white,
-    borderRadius: 16,
-    borderWidth: 2,
-    borderColor: 'rgba(99, 102, 241, 0.1)',
-    height: 56,
-    ...Platform.select({
-      ios: {
-        shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
-  },
-  searchIconContainer: {
-    padding: 16,
-    backgroundColor: 'rgba(99, 102, 241, 0.05)',
-    borderTopLeftRadius: 14,
-    borderBottomLeftRadius: 14,
-  },
-  searchInput: {
-    flex: 1,
-    paddingVertical: 16,
-    fontSize: 16,
-    fontWeight: '500',
-    color: COLORS.dark,
-    height: '100%',
-  },
-  searchClearButton: {
-    padding: 8,
-    marginRight: 8,
-  },
-  // Categories
-  categoriesContainer: {
-    marginBottom: 20,
-  },
-  categoriesScroll: {
-    paddingBottom: 12,
-  },
-  categoryButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    backgroundColor: COLORS.white,
-    borderRadius: 25,
-    marginRight: 10,
-    borderWidth: 1.5,
-    borderColor: 'rgba(99, 102, 241, 0.1)',
-    ...Platform.select({
-      ios: {
-        shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 1,
-      },
-    }),
-  },
-  categoryButtonActive: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
-  },
-  categoryText: {
-    color: COLORS.gray,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  categoryTextActive: {
-    color: COLORS.white,
-  },
-  // Banner Styles
-  bannerContainer: {
-    height: 200,
-    marginBottom: 0,
-    borderRadius: 20,
-    overflow: 'hidden',
-    position: 'relative',
-    ...Platform.select({
-      ios: {
-        shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.2,
-        shadowRadius: 16,
-      },
-      android: {
-        elevation: 8,
-      },
-    }),
-  },
-  bannerItem: {
-    width: width - 40,
-    position: 'relative',
-  },
-  bannerImage: {
-    width: width - 40,
-    height: 200,
-  },
-  bannerOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.3)',
-  },
-  bannerContent: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: 20,
-  },
-  bannerBadge: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-    marginBottom: 12,
-  },
-  bannerBadgeText: {
-    color: COLORS.white,
-    fontSize: 12,
-    fontWeight: '800',
-  },
-  bannerTitle: {
-    color: COLORS.white,
-    fontSize: 22,
-    fontWeight: 'bold',
-    marginBottom: 6,
-    textShadowColor: 'rgba(0, 0, 0, 0.5)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 4,
-  },
-  bannerSubtitle: {
-    color: COLORS.white,
-    fontSize: 14,
-    marginBottom: 16,
-    opacity: 0.95,
-    fontWeight: '500',
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
-  },
-  bannerButton: {
-    backgroundColor: COLORS.white,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 20,
-    alignSelf: 'flex-start',
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  bannerButtonText: {
-    color: COLORS.primary,
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  bannerPagination: {
-    position: 'absolute',
-    bottom: 16,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 8,
-  },
-  paginationDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  // NEW: Middle Banner Styles
-  middleBannerContainer: {
-    marginBottom: 24,
-    position: 'relative',
-  },
-  middleBanner: {
-    height: 120,
-    borderRadius: 20,
-    overflow: 'hidden',
-    position: 'relative',
-    ...Platform.select({
-      ios: {
-        shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.2,
-        shadowRadius: 12,
-      },
-      android: {
-        elevation: 6,
-      },
-    }),
-  },
-  middleBannerGradient: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-  middleBannerContent: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 20,
-  },
-  middleBannerIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  middleBannerText: {
-    flex: 1,
-  },
-  middleBannerTitle: {
-    color: COLORS.white,
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  middleBannerSubtitle: {
-    color: COLORS.white,
-    fontSize: 14,
-    opacity: 0.9,
-  },
-  middleBannerCode: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    gap: 8,
-  },
-  middleBannerCodeText: {
-    color: COLORS.white,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  middleBannerPagination: {
-    position: 'absolute',
-    bottom: 12,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 6,
-  },
-  middlePaginationDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  // NEW: Trending Products Styles
-  trendingList: {
-    paddingVertical: 5,
-  },
-  trendingCard: {
-    marginRight: 16,
-    width: width * 0.7,
-  },
-  trendingCardInner: {
-    backgroundColor: COLORS.white,
-    borderRadius: 16,
-    overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: COLORS.dark,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
-  },
-  trendingImage: {
-    width: '100%',
-    height: 150,
-  },
-  trendingBadge: {
-    position: 'absolute',
-    top: 12,
-    left: 12,
-    backgroundColor: COLORS.secondary,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    gap: 4,
-  },
-  trendingBadgeText: {
-    color: COLORS.white,
-    fontSize: 10,
-    fontWeight: '800',
-  },
-  trendingContent: {
-    padding: 12,
-  },
-  trendingBrand: {
-    fontSize: 12,
-    color: COLORS.primary,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  trendingName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.dark,
-    marginBottom: 8,
-    height: 20,
-  },
-  trendingPriceContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  trendingPrice: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: COLORS.primary,
-  },
-  trendingCartButton: {
-    backgroundColor: COLORS.primary,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  // Sections
-  section: {
-    marginBottom: 25,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-    marginTop: 8,
-  },
-  sectionTitle: {
-    color: COLORS.dark,
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  seeAllButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  seeAll: {
-    color: COLORS.primary,
-    fontSize: 14,
-    fontWeight: '500',
-    marginRight: 4,
-  },
-  // Brand Cards
-  brandList: {
-    paddingVertical: 5,
-  },
-  brandCard: {
-    marginRight: 12,
-  },
-  brandCardInner: {
-    backgroundColor: COLORS.white,
-    padding: 15,
-    borderRadius: 16,
-    alignItems: 'center',
-    width: width * 0.36,
-    ...Platform.select({
-      ios: {
-        shadowColor: COLORS.dark,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
-  },
-  brandImageContainer: {
-    width: 70,
-    height: 70,
-    backgroundColor: COLORS.light,
-    borderRadius: 35,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  brandImage: {
-    width: '100%',
-    height: '100%',
-  },
-  brandDiscount: {
-    position: 'absolute',
-    top: -5,
-    right: -5,
-    backgroundColor: COLORS.secondary,
-    borderRadius: 10,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-  },
-  brandDiscountText: {
-    color: COLORS.white,
-    fontSize: 10,
-    fontWeight: 'bold',
-  },
-  brandName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.dark,
-    marginBottom: 4,
-    textAlign: 'center',
-    maxWidth: '100%',
-  },
-  brandProducts: {
-    fontSize: 12,
-    color: COLORS.gray,
-    textAlign: 'center',
-  },
-  // ENHANCED Product Cards (From Homepage)
-  cardContainer: {
-    width: '48%',
-    marginBottom: 16,
-  },
-  card: {
-    width: '100%',
-    backgroundColor: COLORS.cardBackground,
-    borderRadius: 16,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(99, 102, 241, 0.08)',
-    ...Platform.select({
-      ios: {
-        shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.1,
-        shadowRadius: 12,
-      },
-      android: {
-        elevation: 6,
-      },
-    }),
-  },
-  cardGlow: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: COLORS.primaryLight,
-    borderRadius: 16,
-    zIndex: -1,
-  },
-  imageContainer: {
-    position: 'relative',
-    height: 180,
-    overflow: 'hidden',
-    backgroundColor: COLORS.light,
-  },
-  image: {
-    width: '100%',
-    height: '100%',
-  },
-  imagePlaceholder: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: COLORS.light,
-  },
-  newBadge: {
-    position: 'absolute',
-    top: 12,
-    left: 12,
-    backgroundColor: COLORS.primary,
-    borderRadius: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-  },
-  newBadgeText: {
-    color: COLORS.white,
-    fontSize: 10,
-    fontWeight: '800',
-  },
-  heartContainer: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-  },
-  heartIcon: {
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
-    borderRadius: 20,
-    padding: 8,
-  },
-  heartIconActive: {
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-  },
-  cardContent: {
-    padding: 14,
-    backgroundColor: COLORS.cardBackground,
-  },
-  title: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.dark,
-    marginBottom: 4,
-    height: 20,
-  },
-  brandContainer: {
-    marginBottom: 4,
-  },
-  brandText: {
-    fontSize: 12,
-    color: COLORS.primary,
-    fontWeight: '500',
-  },
-  ratingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  stars: {
-    flexDirection: 'row',
-    marginRight: 6,
-  },
-  ratingText: {
     fontSize: 11,
-    color: COLORS.gray,
-  },
-  priceContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  price: {
-    fontSize: 16,
     fontWeight: 'bold',
-    color: COLORS.primary,
-  },
-  cartButton: {
-    backgroundColor: COLORS.primary,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  cartIconContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  columnWrapper: {
-    justifyContent: 'space-between',
-  },
-  list: {
-    paddingBottom: 16,
-  },
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 40,
-    backgroundColor: COLORS.white,
-    borderRadius: 16,
-    marginTop: 10,
-  },
-  emptyStateText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: COLORS.dark,
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  emptyStateSubtext: {
-    fontSize: 14,
-    color: COLORS.gray,
-    textAlign: 'center',
-    marginBottom: 16,
-  },
-  tryAgainButton: {
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 25,
-  },
-  tryAgainText: {
-    color: COLORS.white,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  loadingState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 40,
-    backgroundColor: COLORS.white,
-    borderRadius: 16,
-    marginTop: 10,
-  },
-  loadingText: {
-    fontSize: 16,
-    color: COLORS.gray,
-    marginTop: 16,
   },
 });
 

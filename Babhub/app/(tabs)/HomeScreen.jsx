@@ -1,33 +1,33 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
-  Image,
-  TouchableOpacity,
+  TextInput,
   FlatList,
   StyleSheet,
-  Dimensions,
+  TouchableOpacity,
+  Image,
   ScrollView,
-  Platform,
+  Dimensions,
   ActivityIndicator,
-  Animated,
-  Easing,
   RefreshControl,
-  TextInput,
-  Modal,
-  Alert
+  SafeAreaView,
+  Platform,
+  Alert,
+  Animated,
+  Easing
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import Toast from 'react-native-toast-message';
+import debounce from 'lodash.debounce';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
-import { Audio } from 'expo-av';
-import * as Speech from 'expo-speech';
+import Toast from 'react-native-toast-message';
 
 const { width, height } = Dimensions.get('window');
 
-// Premium color palette
+// Consistent color palette from store page
 const COLORS = {
   primary: '#6366F1',
   primaryLight: '#8B5CF6',
@@ -49,6 +49,99 @@ const COLORS = {
   cardBackground: '#FFFFFF',
 };
 
+// Home banners data
+const homeBanners = [
+  {
+    id: '1',
+    image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80',
+    title: 'Welcome to Our Store',
+    subtitle: 'Discover amazing products just for you',
+    type: 'welcome'
+  },
+  {
+    id: '2',
+    image: 'https://images.unsplash.com/photo-1558769132-cb25c5d1f9cc?ixlib=rb-4.0.3&auto=format&fit=crop&w=2064&q=80',
+    title: 'Trending Now',
+    subtitle: 'Shop what everyone is loving',
+    type: 'trending'
+  },
+  {
+    id: '3',
+    image: 'https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80',
+    title: 'Special Offers',
+    subtitle: 'Exclusive deals waiting for you',
+    type: 'offers'
+  }
+];
+
+// Featured categories for home
+const featuredCategories = [
+  {
+    name: 'Electronics',
+    products: 156,
+    image: 'https://images.unsplash.com/photo-1468436139062-f60a71c5c892?w=400&h=400&fit=crop&crop=center',
+    icon: 'phone-portrait'
+  },
+  {
+    name: 'Fashion',
+    products: 289,
+    image: 'https://images.unsplash.com/photo-1566206091558-7f218b696731?w=400&h=400&fit=crop&crop=center',
+    icon: 'shirt'
+  },
+  {
+    name: 'Home',
+    products: 134,
+    image: 'https://images.unsplash.com/photo-1556228453-efd6c1ff04f6?w=400&h=400&fit=crop&crop=center',
+    icon: 'home'
+  },
+  {
+    name: 'Beauty',
+    products: 98,
+    image: 'https://images.unsplash.com/photo-1560343090-f0409e92791a?w=400&h=400&fit=crop&crop=center',
+    icon: 'sparkles'
+  },
+  {
+    name: 'Sports',
+    products: 76,
+    image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=400&fit=crop&crop=center',
+    icon: 'basketball'
+  },
+];
+
+// Quick access items
+const quickAccess = [
+  { id: '1', title: 'Flash Sale', icon: 'flash', color: '#FF6B6B' },
+  { id: '2', title: 'New Arrivals', icon: 'sparkles', color: '#4FACFE' },
+  { id: '3', title: 'Best Sellers', icon: 'trophy', color: '#A8FF78' },
+  { id: '4', title: 'Deals', icon: 'pricetag', color: '#FF8E53' },
+];
+
+// Search suggestions for home
+const searchSuggestions = [
+  'Smartphones',
+  'Laptops',
+  'Headphones',
+  'Watches',
+  'Shoes',
+  'T-Shirts',
+  'Home Decor',
+  'Beauty Products',
+  'Sports Gear',
+  'Books'
+];
+
+// Popular searches for home
+const popularSearches = [
+  'iPhone 15',
+  'MacBook Pro',
+  'Wireless Earbuds',
+  'Running Shoes',
+  'Summer Dresses',
+  'Home Theater',
+  'Skincare',
+  'Fitness Trackers'
+];
+
 // Function to correctly get full image URL for product images
 const getImageUrl = (imagePath) => {
   if (!imagePath) return '';
@@ -58,165 +151,124 @@ const getImageUrl = (imagePath) => {
   return `https://account.babahub.co${normalizedPath}`;
 };
 
-const banners = [
-  {
-    id: '1',
-    image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80',
-    title: 'New Collection',
-    subtitle: 'Fresh styles just arrived',
-    type: 'gradient',
-    gradient: ['#6366F1', '#8B5CF6']
-  },
-  {
-    id: '2', 
-    image: 'https://images.unsplash.com/photo-1558769132-cb25c5d1f9cc?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2064&q=80',
-    title: 'Trending Now',
-    subtitle: 'Shop the latest trends',
-    type: 'video',
-    videoThumbnail: 'https://images.unsplash.com/photo-1558769132-cb25c5d1f9cc?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2064&q=80'
-  },
-  {
-    id: '3',
-    image: 'https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80',
-    title: 'Exclusive Deals',
-    subtitle: 'Limited time offers',
-    type: '3d',
-    effect: 'parallax'
-  },
-];
-
-// Middle banner data
-const middleBanner = {
-  id: 'middle',
-  image: 'https://images.unsplash.com/photo-1607082350899-7e105aa886ae?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80',
-  title: 'Summer Sale',
-  subtitle: 'Up to 50% off on selected items',
-  buttonText: 'Shop Now',
-  type: 'animated'
-};
-
-// Voice Search Component
-const VoiceSearchModal = ({ visible, onClose, onResult }) => {
-  const [isListening, setIsListening] = useState(false);
-  const [transcript, setTranscript] = useState('');
-  const pulseAnim = useRef(new Animated.Value(1)).current;
+// Search Suggestions Component (Same as StoreScreen)
+const SearchSuggestions = ({ suggestions, popularSearches, onSuggestionPress, searchText, visible, searchResults }) => {
+  const opacityAnim = useRef(new Animated.Value(0)).current;
+  const translateYAnim = useRef(new Animated.Value(-20)).current;
 
   useEffect(() => {
-    if (isListening) {
-      startPulseAnimation();
-      simulateVoiceInput();
-    } else {
-      pulseAnim.setValue(1);
-    }
-  }, [isListening]);
-
-  const startPulseAnimation = () => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, {
-          toValue: 1.2,
-          duration: 1000,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulseAnim, {
+    if (visible && searchText.length > 0) {
+      Animated.parallel([
+        Animated.timing(opacityAnim, {
           toValue: 1,
-          duration: 1000,
-          easing: Easing.inOut(Easing.ease),
+          duration: 300,
           useNativeDriver: true,
         }),
-      ])
-    ).start();
-  };
-
-  const simulateVoiceInput = async () => {
-    try {
-      // Simulate voice recognition
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      setTranscript('Show me running shoes');
-      
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      onResult('running shoes');
-      onClose();
-    } catch (error) {
-      console.error('Voice recognition error:', error);
+        Animated.spring(translateYAnim, {
+          toValue: 0,
+          tension: 60,
+          friction: 8,
+          useNativeDriver: true,
+        })
+      ]).start();
+    } else {
+      Animated.parallel([
+        Animated.timing(opacityAnim, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(translateYAnim, {
+          toValue: -20,
+          duration: 200,
+          useNativeDriver: true,
+        })
+      ]).start();
     }
-  };
+  }, [visible, searchText]);
 
-  const startListening = () => {
-    setIsListening(true);
-    setTranscript('');
-  };
+  if (!visible || searchText.length === 0) return null;
 
-  const stopListening = () => {
-    setIsListening(false);
-    Speech.stop();
-  };
+  const filteredSuggestions = suggestions.filter(suggestion =>
+    suggestion.toLowerCase().includes(searchText.toLowerCase())
+  );
+
+  const hasSearchResults = searchResults && searchResults.length > 0;
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={onClose}
+    <Animated.View 
+      style={[
+        styles.searchSuggestionsContainer,
+        {
+          opacity: opacityAnim,
+          transform: [{ translateY: translateYAnim }]
+        }
+      ]}
     >
-      <View style={styles.voiceModalOverlay}>
-        <View style={styles.voiceModalContent}>
-          <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-            <Ionicons name="close" size={24} color={COLORS.dark} />
-          </TouchableOpacity>
-
-          <Animated.View 
-            style={[
-              styles.voiceCircle,
-              {
-                transform: [{ scale: pulseAnim }],
-                backgroundColor: isListening ? COLORS.primary : COLORS.grayLight
-              }
-            ]}
-          >
-            <Ionicons 
-              name="mic" 
-              size={40} 
-              color={COLORS.white} 
-            />
-          </Animated.View>
-
-          <Text style={styles.voiceTitle}>
-            {isListening ? 'Listening...' : 'Tap to Start Voice Search'}
-          </Text>
-
-          {transcript ? (
-            <Text style={styles.transcriptText}>"{transcript}"</Text>
-          ) : (
-            <Text style={styles.voiceSubtitle}>
-              Speak clearly to search for products
+      <View style={styles.searchSuggestionsContent}>
+        {hasSearchResults && (
+          <View style={styles.resultsCountContainer}>
+            <Text style={styles.resultsCountText}>
+              Found {searchResults.length} products for "{searchText}"
             </Text>
-          )}
+          </View>
+        )}
 
-          <TouchableOpacity
-            style={[
-              styles.voiceActionButton,
-              isListening && styles.voiceActionButtonActive
-            ]}
-            onPress={isListening ? stopListening : startListening}
-          >
-            <Text style={styles.voiceActionText}>
-              {isListening ? 'Stop Listening' : 'Start Voice Search'}
+        {filteredSuggestions.length > 0 && (
+          <View style={styles.suggestionSection}>
+            <Text style={styles.suggestionSectionTitle}>Quick Suggestions</Text>
+            {filteredSuggestions.slice(0, 5).map((suggestion, index) => (
+              <TouchableOpacity
+                key={suggestion}
+                style={styles.suggestionItem}
+                onPress={() => onSuggestionPress(suggestion)}
+              >
+                <Ionicons name="search-outline" size={16} color={COLORS.gray} />
+                <Text style={styles.suggestionText}>{suggestion}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
+        {!hasSearchResults && (
+          <View style={styles.suggestionSection}>
+            <Text style={styles.suggestionSectionTitle}>Popular Searches</Text>
+            <View style={styles.popularSearchesContainer}>
+              {popularSearches.map((search, index) => (
+                <TouchableOpacity
+                  key={search}
+                  style={styles.popularSearchChip}
+                  onPress={() => onSuggestionPress(search)}
+                >
+                  <Text style={styles.popularSearchText}>{search}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {searchText.length > 2 && !hasSearchResults && (
+          <View style={styles.noResultsContainer}>
+            <Ionicons name="search-outline" size={40} color={COLORS.grayLight} />
+            <Text style={styles.noResultsText}>No products found</Text>
+            <Text style={styles.noResultsSubtext}>
+              We couldn't find any products matching "{searchText}"
             </Text>
-          </TouchableOpacity>
-        </View>
+            <Text style={styles.noResultsTip}>
+              Try searching with different keywords or browse our categories
+            </Text>
+          </View>
+        )}
       </View>
-    </Modal>
+    </Animated.View>
   );
 };
 
-// Enhanced Banner Item with advanced animations
-const BannerItem = ({ item, router, index, currentIndex }) => {
+// Banner Item Component (Same as StoreScreen)
+const BannerItem = ({ item, index, currentIndex }) => {
   const translateX = useRef(new Animated.Value(width)).current;
   const opacity = useRef(new Animated.Value(0)).current;
   const scale = useRef(new Animated.Value(0.9)).current;
-  const parallaxAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (index === currentIndex) {
@@ -245,9 +297,13 @@ const BannerItem = ({ item, router, index, currentIndex }) => {
     }
   }, [currentIndex]);
 
-  const handleParallax = (event) => {
-    const { x } = event.nativeEvent.contentOffset;
-    parallaxAnim.setValue(x * 0.3);
+  const getBadgeColor = (type) => {
+    switch (type) {
+      case 'welcome': return COLORS.primary;
+      case 'trending': return COLORS.secondary;
+      case 'offers': return COLORS.accent;
+      default: return COLORS.primary;
+    }
   };
 
   return (
@@ -260,245 +316,68 @@ const BannerItem = ({ item, router, index, currentIndex }) => {
         }
       ]}
     >
-      <Animated.Image 
-        source={{ uri: item.image }} 
-        style={[
-          styles.bannerImage,
-          {
-            transform: [{
-              translateX: parallaxAnim.interpolate({
-                inputRange: [-width, width],
-                outputRange: [-30, 30]
-              })
-            }]
-          }
-        ]} 
-      />
+      <Image source={{ uri: item.image }} style={styles.bannerImage} />
       
-      {item.type === 'gradient' && (
-        <Animated.View 
-          style={[
-            styles.bannerGradient,
-            {
-              opacity: opacity.interpolate({
-                inputRange: [0, 1],
-                outputRange: [0, 0.6]
-              })
-            }
-          ]}
-        />
-      )}
+      <View style={styles.bannerOverlay} />
       
       <View style={styles.bannerContent}>
-        <Animated.Text 
-          style={[
-            styles.bannerTitle,
-            {
-              transform: [{
-                translateY: opacity.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [50, 0]
-                })
-              }],
-              opacity: opacity.interpolate({
-                inputRange: [0, 0.5, 1],
-                outputRange: [0, 0.5, 1]
-              })
-            }
-          ]}
-        >
-          {item.title}
-        </Animated.Text>
-        
-        <Animated.Text 
-          style={[
-            styles.bannerSubtitle,
-            {
-              transform: [{
-                translateY: opacity.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [30, 0]
-                })
-              }],
-              opacity: opacity.interpolate({
-                inputRange: [0, 0.7, 1],
-                outputRange: [0, 0.3, 1]
-              })
-            }
-          ]}
-        >
-          {item.subtitle}
-        </Animated.Text>
-        
-        <Animated.View
-          style={{
-            transform: [{
-              translateY: opacity.interpolate({
-                inputRange: [0, 1],
-                outputRange: [40, 0]
-              })
-            }],
-            opacity: opacity.interpolate({
-              inputRange: [0, 0.8, 1],
-              outputRange: [0, 0.2, 1]
-            })
-          }}
-        >
-          <TouchableOpacity
-            style={styles.bannerButton}
-            onPress={() => router.push('StoreScreen')}
-          >
-            <Text style={styles.bannerButtonText}>Discover</Text>
-            <Ionicons name="arrow-forward" size={16} color={COLORS.white} style={{ marginLeft: 8 }} />
-          </TouchableOpacity>
-        </Animated.View>
-      </View>
-
-      {/* Banner Type Indicator */}
-      <View style={styles.bannerTypeIndicator}>
-        <View style={[
-          styles.typeBadge,
-          { backgroundColor: 
-            item.type === 'gradient' ? COLORS.primary :
-            item.type === 'video' ? COLORS.secondary :
-            COLORS.accent
-          }
-        ]}>
-          <Text style={styles.typeBadgeText}>
-            {item.type === 'gradient' ? 'NEW' : 
-             item.type === 'video' ? 'VIDEO' : '3D'}
+        <View style={[styles.bannerBadge, { backgroundColor: getBadgeColor(item.type) }]}>
+          <Text style={styles.bannerBadgeText}>
+            {item.type === 'welcome' ? 'WELCOME' : item.type === 'trending' ? 'TRENDING' : 'OFFERS'}
           </Text>
         </View>
+        
+        <Text style={styles.bannerTitle}>{item.title}</Text>
+        <Text style={styles.bannerSubtitle}>{item.subtitle}</Text>
+        
+        <TouchableOpacity style={styles.bannerButton}>
+          <Text style={styles.bannerButtonText}>Explore Now</Text>
+          <Ionicons name="arrow-forward" size={16} color={COLORS.white} style={{ marginLeft: 8 }} />
+        </TouchableOpacity>
       </View>
     </Animated.View>
   );
 };
 
-// Animated Middle Banner Component
-const MiddleBanner = ({ banner, router }) => {
-  const scaleValue = useRef(new Animated.Value(1)).current;
-  const opacityValue = useRef(new Animated.Value(0)).current;
-  const translateYValue = useRef(new Animated.Value(50)).current;
-  const rotateValue = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(opacityValue, {
-        toValue: 1,
-        duration: 1000,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      Animated.spring(translateYValue, {
-        toValue: 0,
-        tension: 50,
-        friction: 7,
-        useNativeDriver: true,
-      }),
-      Animated.loop(
-        Animated.timing(rotateValue, {
-          toValue: 1,
-          duration: 20000,
-          easing: Easing.linear,
-          useNativeDriver: true,
-        })
-      )
-    ]).start();
-  }, []);
-
-  const handlePressIn = () => {
-    Animated.spring(scaleValue, {
-      toValue: 0.95,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  const handlePressOut = () => {
-    Animated.spring(scaleValue, {
-      toValue: 1,
-      friction: 3,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  const rotate = rotateValue.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg']
-  });
-
+// Category Card Component
+const CategoryCard = ({ item, onPress }) => {
   return (
-    <Animated.View 
-      style={[
-        styles.middleBannerContainer,
-        {
-          opacity: opacityValue,
-          transform: [
-            { translateY: translateYValue }, 
-            { scale: scaleValue }
-          ]
-        }
-      ]}
-    >
-      <TouchableOpacity
-        onPress={() => router.push('StoreScreen')}
-        activeOpacity={0.9}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-      >
-        <Image source={{ uri: banner.image }} style={styles.middleBannerImage} />
-        
-        {/* Animated Floating Elements */}
-        <Animated.View 
-          style={[
-            styles.floatingElement1,
-            { transform: [{ rotate }] }
-          ]}
-        >
-          <Ionicons name="sparkles" size={20} color={COLORS.white} />
-        </Animated.View>
-        
-        <Animated.View 
-          style={[
-            styles.floatingElement2,
-            { transform: [{ rotate: rotateValue.interpolate({
-              inputRange: [0, 1],
-              outputRange: ['0deg', '-360deg']
-            }) }] }
-          ]}
-        >
-          <Ionicons name="flash" size={16} color={COLORS.white} />
-        </Animated.View>
-
-        <View style={styles.middleBannerOverlay} />
-        <View style={styles.middleBannerContent}>
-          <Text style={styles.middleBannerTitle}>{banner.title}</Text>
-          <Text style={styles.middleBannerSubtitle}>{banner.subtitle}</Text>
-          <TouchableOpacity style={styles.middleBannerButton}>
-            <Text style={styles.middleBannerButtonText}>{banner.buttonText}</Text>
-            <Ionicons name="arrow-forward" size={16} color={COLORS.white} style={{ marginLeft: 6 }} />
-          </TouchableOpacity>
+    <TouchableOpacity style={styles.categoryCard} onPress={onPress}>
+      <View style={styles.categoryImageContainer}>
+        <Image source={{ uri: item.image }} style={styles.categoryImage} />
+        <View style={styles.categoryIconContainer}>
+          <Ionicons name={item.icon} size={20} color={COLORS.white} />
         </View>
-      </TouchableOpacity>
-    </Animated.View>
+      </View>
+      <Text style={styles.categoryName}>{item.name}</Text>
+      <Text style={styles.categoryProducts}>{item.products} products</Text>
+    </TouchableOpacity>
   );
 };
 
-// Enhanced Product Item Component
+// Quick Access Item Component
+const QuickAccessItem = ({ item, onPress }) => {
+  return (
+    <TouchableOpacity style={styles.quickAccessItem} onPress={onPress}>
+      <View style={[styles.quickAccessIcon, { backgroundColor: item.color }]}>
+        <Ionicons name={item.icon} size={24} color={COLORS.white} />
+      </View>
+      <Text style={styles.quickAccessText}>{item.title}</Text>
+    </TouchableOpacity>
+  );
+};
+
+// Product Item Component (Same as StoreScreen)
 const ProductItem = ({ item, onPress, onWishlistToggle, isInWishlist, index }) => {
-  const price = item.variants?.[0]?.sizes?.[0]?.price || 0;
+  const price = item.variants?.[0]?.sizes?.[0]?.price || item.price || 0;
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
   
-  // Animation values
   const scaleValue = useRef(new Animated.Value(1)).current;
   const cardOpacity = useRef(new Animated.Value(0)).current;
   const cardTranslateY = useRef(new Animated.Value(50)).current;
-  const heartScale = useRef(new Animated.Value(1)).current;
-  const imageScale = useRef(new Animated.Value(1)).current;
-  const glowAnim = useRef(new Animated.Value(0)).current;
   
   useEffect(() => {
-    // Staggered animation for product cards
     const delay = index * 150;
     
     Animated.sequence([
@@ -506,7 +385,7 @@ const ProductItem = ({ item, onPress, onWishlistToggle, isInWishlist, index }) =
       Animated.parallel([
         Animated.timing(cardOpacity, {
           toValue: 1,
-          duration: 800,
+          duration: 600,
           easing: Easing.out(Easing.cubic),
           useNativeDriver: true,
         }),
@@ -518,84 +397,29 @@ const ProductItem = ({ item, onPress, onWishlistToggle, isInWishlist, index }) =
         }),
       ])
     ]).start();
-
-    // Glow animation loop
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(glowAnim, {
-          toValue: 1,
-          duration: 2000,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        }),
-        Animated.timing(glowAnim, {
-          toValue: 0,
-          duration: 2000,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
   }, []);
 
   const handlePressIn = () => {
-    Animated.parallel([
-      Animated.spring(scaleValue, {
-        toValue: 0.92,
-        useNativeDriver: true,
-      }),
-      Animated.spring(imageScale, {
-        toValue: 1.08,
-        useNativeDriver: true,
-      })
-    ]).start();
+    Animated.spring(scaleValue, {
+      toValue: 0.95,
+      useNativeDriver: true,
+    }).start();
   };
   
   const handlePressOut = () => {
-    Animated.parallel([
-      Animated.spring(scaleValue, {
-        toValue: 1,
-        friction: 3,
-        useNativeDriver: true,
-      }),
-      Animated.spring(imageScale, {
-        toValue: 1,
-        useNativeDriver: true,
-      })
-    ]).start();
+    Animated.spring(scaleValue, {
+      toValue: 1,
+      friction: 3,
+      useNativeDriver: true,
+    }).start();
   };
 
   const handleWishlistPress = (e) => {
     e.stopPropagation();
-    
-    // Enhanced heart animation
-    Animated.sequence([
-      Animated.timing(heartScale, {
-        toValue: 1.5,
-        duration: 150,
-        useNativeDriver: true,
-      }),
-      Animated.timing(heartScale, {
-        toValue: 0.8,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-      Animated.spring(heartScale, {
-        toValue: 1,
-        friction: 3,
-        useNativeDriver: true,
-      }),
-    ]).start();
-    
     onWishlistToggle(item);
   };
   
   const imageUrl = getImageUrl(item.image);
-  
-  const glowOpacity = glowAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.3, 0.8]
-  });
 
   return (
     <Animated.View 
@@ -615,14 +439,6 @@ const ProductItem = ({ item, onPress, onWishlistToggle, isInWishlist, index }) =
           onPressIn={handlePressIn}
           onPressOut={handlePressOut}
         >
-          {/* Glow Effect */}
-          <Animated.View 
-            style={[
-              styles.cardGlow,
-              { opacity: glowOpacity }
-            ]}
-          />
-          
           <View style={styles.imageContainer}>
             {(!imageLoaded || imageError) && (
               <View style={styles.imagePlaceholder}>
@@ -630,13 +446,12 @@ const ProductItem = ({ item, onPress, onWishlistToggle, isInWishlist, index }) =
               </View>
             )}
             {!imageError && (
-              <Animated.Image
+              <Image
                 source={{ uri: imageUrl }}
                 style={[
                   styles.image, 
                   { 
                     opacity: imageLoaded ? 1 : 0,
-                    transform: [{ scale: imageScale }]
                   }
                 ]}
                 resizeMode="cover"
@@ -648,25 +463,7 @@ const ProductItem = ({ item, onPress, onWishlistToggle, isInWishlist, index }) =
               />
             )}
             
-            {/* New Badge with Animation */}
-            <Animated.View 
-              style={[
-                styles.newBadge,
-                {
-                  transform: [{
-                    scale: cardOpacity.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0.5, 1]
-                    })
-                  }]
-                }
-              ]}
-            >
-              <Text style={styles.newBadgeText}>NEW</Text>
-            </Animated.View>
-
-            {/* Wishlist Button */}
-            <Animated.View style={[styles.heartContainer, { transform: [{ scale: heartScale }] }]}>
+            <View style={styles.heartContainer}>
               <TouchableOpacity
                 style={[styles.heartIcon, isInWishlist && styles.heartIconActive]}
                 onPress={handleWishlistPress}
@@ -677,7 +474,11 @@ const ProductItem = ({ item, onPress, onWishlistToggle, isInWishlist, index }) =
                   color={isInWishlist ? COLORS.error : COLORS.white}
                 />
               </TouchableOpacity>
-            </Animated.View>
+            </View>
+
+            <View style={styles.newBadge}>
+              <Text style={styles.newBadgeText}>NEW</Text>
+            </View>
           </View>
           
           <View style={styles.cardContent}>
@@ -710,21 +511,9 @@ const ProductItem = ({ item, onPress, onWishlistToggle, isInWishlist, index }) =
                   onPress(item);
                 }}
               >
-                <Animated.View 
-                  style={[
-                    styles.cartIconContainer,
-                    {
-                      transform: [{
-                        scale: scaleValue.interpolate({
-                          inputRange: [0.92, 1],
-                          outputRange: [0.9, 1]
-                        })
-                      }]
-                    }
-                  ]}
-                >
+                <View style={styles.cartIconContainer}>
                   <Ionicons name="bag-handle-outline" size={16} color={COLORS.white} />
-                </Animated.View>
+                </View>
               </TouchableOpacity>
             </View>
           </View>
@@ -734,8 +523,8 @@ const ProductItem = ({ item, onPress, onWishlistToggle, isInWishlist, index }) =
   );
 };
 
-// Sticky Header Component
-const StickyHeader = ({ user, cartItems, wishlist, router, scrollY }) => {
+// Sticky Header Component (Same as StoreScreen)
+const StickyHeader = ({ user, cartItems, router, scrollY }) => {
   const headerHeight = 80;
   const headerTranslate = scrollY.interpolate({
     inputRange: [0, headerHeight],
@@ -759,45 +548,27 @@ const StickyHeader = ({ user, cartItems, wishlist, router, scrollY }) => {
     ]}>
       <View style={styles.stickyHeaderContent}>
         <View style={styles.stickyProfile}>
-          {user?.profileImage ? (
-            <Image source={{ uri: user.profileImage }} style={styles.stickyProfileImage} />
-          ) : (
-            <View style={styles.stickyProfileInitials}>
-              <Text style={styles.stickyProfileInitialsText}>
-                {user?.name ? user.name.charAt(0).toUpperCase() : 'G'}
-              </Text>
-            </View>
-          )}
-          <Text style={styles.stickyUsername}>{user?.name || "Guest"}</Text>
+          <View style={styles.stickyProfileInitials}>
+            <Text style={styles.stickyProfileInitialsText}>
+              {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
+            </Text>
+          </View>
+          <Text style={styles.stickyUsername}>Home</Text>
         </View>
         
         <View style={styles.stickyIcons}>
           <TouchableOpacity
-            style={styles.stickyIconButton}
-            onPress={() => router.push('WishlistScreen')}
+            style={styles.stickyCartButton}
+            onPress={() => router.push('../CartScreen')}
           >
-            <Ionicons
-              name={wishlist.length > 0 ? 'heart' : 'heart-outline'}
-              size={22}
-              color={wishlist.length > 0 ? COLORS.error : COLORS.dark}
-            />
-            {wishlist.length > 0 && (
-              <View style={styles.stickyBadge}>
-                <Text style={styles.stickyBadgeText}>{wishlist.length}</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={styles.stickyIconButton}
-            onPress={() => router.push('CartScreen')}
-          >
-            <Ionicons name="bag-outline" size={22} color={COLORS.dark} />
-            {cartItems > 0 && (
-              <View style={styles.stickyBadge}>
-                <Text style={styles.stickyBadgeText}>{cartItems}</Text>
-              </View>
-            )}
+            <View style={styles.bigCartIconContainer}>
+              <Ionicons name="cart" size={28} color={COLORS.primary} />
+              {cartItems > 0 && (
+                <View style={styles.stickyBadge}>
+                  <Text style={styles.stickyBadgeText}>{cartItems}</Text>
+                </View>
+              )}
+            </View>
           </TouchableOpacity>
         </View>
       </View>
@@ -805,128 +576,142 @@ const StickyHeader = ({ user, cartItems, wishlist, router, scrollY }) => {
   );
 };
 
-const HomeScreen = () => {
-  const { user } = useAuth();
-  const [cartItems, setCartItems] = useState(0);
-  const [wishlist, setWishlist] = useState([]);
-  const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
-  const [products, setProducts] = useState([]);
-  const [filteredProducts, setFilteredProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState('All Items');
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [showVoiceModal, setShowVoiceModal] = useState(false);
-  const [isSearchFocused, setIsSearchFocused] = useState(false);
-  
-  const router = useRouter();
-  const bannerRef = useRef(null);
-  const scrollY = useRef(new Animated.Value(0)).current;
-  const scrollViewRef = useRef(null);
-  const searchInputRef = useRef(null);
-
-  // Animation values
-  const searchOpacity = useRef(new Animated.Value(0)).current;
-  const categoriesOpacity = useRef(new Animated.Value(0)).current;
-  const searchTranslateY = useRef(new Animated.Value(30)).current;
-  const searchScale = useRef(new Animated.Value(0.95)).current;
+// Special Offer Banner Component
+const SpecialOfferBanner = () => {
+  const scaleValue = useRef(new Animated.Value(1)).current;
+  const opacityValue = useRef(new Animated.Value(0)).current;
+  const translateYValue = useRef(new Animated.Value(50)).current;
 
   useEffect(() => {
-    // Enhanced animations on mount
-    Animated.stagger(200, [
-      Animated.parallel([
-        Animated.timing(searchOpacity, {
-          toValue: 1,
-          duration: 800,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }),
-        Animated.spring(searchTranslateY, {
-          toValue: 0,
-          tension: 60,
-          friction: 8,
-          useNativeDriver: true,
-        }),
-        Animated.spring(searchScale, {
-          toValue: 1,
-          tension: 60,
-          friction: 8,
-          useNativeDriver: true,
-        })
-      ]),
-      Animated.timing(categoriesOpacity, {
+    Animated.parallel([
+      Animated.timing(opacityValue, {
         toValue: 1,
-        duration: 600,
+        duration: 800,
+        easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
+      Animated.spring(translateYValue, {
+        toValue: 0,
+        tension: 60,
+        friction: 8,
+        useNativeDriver: true,
+      })
     ]).start();
   }, []);
 
-  // Focus animation for search
-  useEffect(() => {
-    if (isSearchFocused) {
-      Animated.spring(searchScale, {
-        toValue: 1.02,
-        useNativeDriver: true,
-      }).start();
-    } else {
-      Animated.spring(searchScale, {
-        toValue: 1,
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [isSearchFocused]);
+  const handlePressIn = () => {
+    Animated.spring(scaleValue, {
+      toValue: 0.95,
+      useNativeDriver: true,
+    }).start();
+  };
 
-  useEffect(() => {
-    const fetchCartCount = async () => {
-      try {
-        const cartData = await AsyncStorage.getItem('cart');
-        if (cartData) {
-          const cartItems = JSON.parse(cartData);
-          setCartItems(cartItems.length);
+  const handlePressOut = () => {
+    Animated.spring(scaleValue, {
+      toValue: 1,
+      friction: 3,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  return (
+    <Animated.View 
+      style={[
+        styles.specialOfferBanner,
+        {
+          opacity: opacityValue,
+          transform: [
+            { translateY: translateYValue }, 
+            { scale: scaleValue }
+          ]
         }
-      } catch (error) {
-        console.error('Error fetching cart count:', error);
-      }
-    };
+      ]}
+    >
+      <TouchableOpacity
+        style={styles.specialOfferContent}
+        activeOpacity={0.9}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+      >
+        <View style={styles.specialOfferTextContainer}>
+          <Text style={styles.specialOfferTitle}>Special Offer! 🎉</Text>
+          <Text style={styles.specialOfferSubtitle}>Get 20% off on your first order with code: WELCOME20</Text>
+        </View>
+        <View style={styles.specialOfferButton}>
+          <Text style={styles.specialOfferButtonText}>Claim Now</Text>
+          <Ionicons name="arrow-forward" size={16} color={COLORS.primary} style={{ marginLeft: 6 }} />
+        </View>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+};
 
-    fetchCartCount();
-  }, []);
+const HomeScreen = () => {
+  const { user } = useAuth();
+  const [searchText, setSearchText] = useState('');
+  const [wishlist, setWishlist] = useState([]);
+  const [cartItems, setCartItems] = useState(0);
+  const [products, setProducts] = useState([]);
+  const [filteredProducts, setFilteredProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
+  const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
+  const [isSearchActive, setIsSearchActive] = useState(false);
+  const [searchResults, setSearchResults] = useState([]);
+  
+  const router = useRouter();
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const bannerRef = useRef(null);
+  const searchInputRef = useRef(null);
 
-  useEffect(() => {
-    const fetchWishlist = async () => {
-      try {
-        const wishlistData = await AsyncStorage.getItem('wishlist');
-        if (wishlistData) {
-          setWishlist(JSON.parse(wishlistData));
-        }
-      } catch (error) {
-        console.error('Error fetching wishlist:', error);
-      }
-    };
+  // API base URL
+  const API_BASE_URL = 'https://account.babahub.co';
 
-    fetchWishlist();
-  }, []);
-
-  useEffect(() => {
-    fetchProducts(1, true);
-  }, []);
-
-  const fetchProducts = async (pageNum = 1, reset = false) => {
+  // Fetch wishlist and cart count from AsyncStorage
+  const fetchWishlistAndCart = async () => {
     try {
-      if (reset && !refreshing) {
-        setLoading(true);
-      } else if (!reset) {
-        setLoadingMore(true);
+      const wishlistData = await AsyncStorage.getItem('wishlist');
+      if (wishlistData) {
+        const parsedWishlist = JSON.parse(wishlistData);
+        setWishlist(parsedWishlist);
+      } else {
+        setWishlist([]);
       }
+
+      const cartData = await AsyncStorage.getItem('cart');
+      if (cartData) {
+        const cartItems = JSON.parse(cartData);
+        setCartItems(cartItems.length);
+      } else {
+        setCartItems(0);
+      }
+    } catch (error) {
+      console.error('Error fetching wishlist or cart:', error);
+    }
+  };
+
+  // Use focus effect to refresh data when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      console.log('HomeScreen focused - refreshing wishlist and cart');
+      fetchWishlistAndCart();
+    }, [])
+  );
+
+  // Initial data fetch
+  useEffect(() => {
+    fetchWishlistAndCart();
+    fetchProducts();
+  }, []);
+
+  // Fetch products from backend API
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
       
-      const limit = 8;
-      const response = await fetch(
-        `https://account.babahub.co/api/products/featured?page=${pageNum}&limit=${limit}`
-      );
+      const response = await fetch(`${API_BASE_URL}/api/products/featured`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -934,117 +719,164 @@ const HomeScreen = () => {
       
       const data = await response.json();
       
-      if (reset) {
-        setProducts(data.products || data);
-        setFilteredProducts(data.products || data);
-      } else {
-        setProducts(prev => [...prev, ...(data.products || data)]);
-        setFilteredProducts(prev => [...prev, ...(data.products || data)]);
-      }
+      setProducts(data.products || data);
+      setFilteredProducts(data.products || data);
       
-      if (data.products && data.products.length < limit) {
-        setHasMore(false);
-      } else if (Array.isArray(data) && data.length < limit) {
-        setHasMore(false);
-      } else {
-        setHasMore(true);
-      }
+    } catch (err) {
+      console.error('Error fetching products:', err);
       
-      setPage(pageNum);
-    } catch (error) {
-      console.error('Error fetching products:', error);
-      
-      if (reset) {
-        const mockProducts = [
-          {
-            _id: '1',
-            name: 'Modern Leather Jacket',
-            brand: 'Fashion Co',
-            image: '/uploads/products/1755327400526.jpg',
-            variants: [{ sizes: [{ price: 299.99 }] }]
-          },
-          {
-            _id: '2',
-            name: 'Designer Handbag',
-            brand: 'Style Accessories',
-            image: '/uploads/products/1756720696531.jpg',
-            variants: [{ sizes: [{ price: 199.99 }] }]
-          },
-          {
-            _id: '3',
-            name: 'Classic Watch',
-            brand: 'Timepiece Co',
-            image: '/uploads/products/1756720696532.jpg',
-            variants: [{ sizes: [{ price: 399.99 }] }]
-          },
-          {
-            _id: '4',
-            name: 'Comfort Sweater',
-            brand: 'Cozy Wear',
-            image: '/uploads/products/1756720696533.jpg',
-            variants: [{ sizes: [{ price: 149.99 }] }]
-          },
-          {
-            _id: '5',
-            name: 'Running Shoes',
-            brand: 'Active Gear',
-            image: '/uploads/products/1756720696534.jpg',
-            variants: [{ sizes: [{ price: 129.99 }] }]
-          },
-          {
-            _id: '6',
-            name: 'Sunglasses',
-            brand: 'Sun Style',
-            image: '/uploads/products/1756720696535.jpg',
-            variants: [{ sizes: [{ price: 89.99 }] }]
-          }
-        ];
-        setProducts(mockProducts);
-        setFilteredProducts(mockProducts);
-        setHasMore(false);
-      }
+      // Fallback to mock data
+      const mockProducts = [
+        {
+          _id: '1',
+          name: 'Premium Cotton T-Shirt',
+          brand: 'FashionHub',
+          category: 'Clothing',
+          image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&h=500&fit=crop',
+          variants: [{ sizes: [{ price: 29.99 }] }],
+          price: 29.99
+        },
+        {
+          _id: '2',
+          name: 'Wireless Bluetooth Headphones',
+          brand: 'TechGear',
+          category: 'Electronics',
+          image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=500&fit=crop',
+          variants: [{ sizes: [{ price: 149.99 }] }],
+          price: 149.99
+        },
+        {
+          _id: '3',
+          name: 'Smart Watch Pro',
+          brand: 'TechGear',
+          category: 'Electronics',
+          image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=500&fit=crop',
+          variants: [{ sizes: [{ price: 199.99 }] }],
+          price: 199.99
+        },
+        {
+          _id: '4',
+          name: 'Minimalist Sneakers',
+          brand: 'EcoWear',
+          category: 'Shoes',
+          image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&h=500&fit=crop',
+          variants: [{ sizes: [{ price: 79.99 }] }],
+          price: 79.99
+        },
+        {
+          _id: '5',
+          name: 'Designer Handbag',
+          brand: 'LuxuryBrand',
+          category: 'Accessories',
+          image: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=400&h=500&fit=crop',
+          variants: [{ sizes: [{ price: 299.99 }] }],
+          price: 299.99
+        },
+        {
+          _id: '6',
+          name: 'Running Shoes',
+          brand: 'ActiveWear',
+          category: 'Shoes',
+          image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&h=500&fit=crop',
+          variants: [{ sizes: [{ price: 89.99 }] }],
+          price: 89.99
+        },
+        {
+          _id: '7',
+          name: 'Gaming Laptop',
+          brand: 'TechGear',
+          category: 'Electronics',
+          image: 'https://images.unsplash.com/photo-1603302576837-37561b2e2302?w=400&h=500&fit=crop',
+          variants: [{ sizes: [{ price: 1299.99 }] }],
+          price: 1299.99
+        },
+        {
+          _id: '8',
+          name: 'Designer Sunglasses',
+          brand: 'LuxuryBrand',
+          category: 'Accessories',
+          image: 'https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=400&h=500&fit=crop',
+          variants: [{ sizes: [{ price: 199.99 }] }],
+          price: 199.99
+        },
+      ];
+      setProducts(mockProducts);
+      setFilteredProducts(mockProducts);
     } finally {
       setLoading(false);
-      setLoadingMore(false);
       setRefreshing(false);
     }
   };
 
-  const onRefresh = React.useCallback(() => {
-    setRefreshing(true);
-    fetchProducts(1, true);
-  }, []);
-
-  const loadMoreProducts = () => {
-    if (!loadingMore && hasMore) {
-      fetchProducts(page + 1);
+  // Search functionality
+  const performSearch = (text) => {
+    if (text.trim() === '') {
+      setFilteredProducts(products);
+      setSearchResults([]);
+      setIsSearchActive(false);
+    } else {
+      const filtered = products.filter(product =>
+        product.name?.toLowerCase().includes(text.toLowerCase()) ||
+        product.brand?.toLowerCase().includes(text.toLowerCase()) ||
+        product.category?.toLowerCase().includes(text.toLowerCase())
+      );
+      
+      setSearchResults(filtered);
+      setIsSearchActive(true);
+      
+      if (filtered.length > 0) {
+        setFilteredProducts(filtered);
+      } else {
+        setFilteredProducts([]);
+      }
     }
+    setSearchLoading(false);
   };
 
-  const onViewRef = useRef(({ changed }) => {
-    if (changed && changed[0]?.index !== undefined) {
-      setCurrentBannerIndex(changed[0].index);
+  const debouncedSearch = useCallback(
+    debounce((text) => {
+      performSearch(text);
+    }, 300),
+    [products]
+  );
+
+  // Handle search text changes
+  useEffect(() => {
+    if (searchText.trim() !== '') {
+      setSearchLoading(true);
+      setShowSearchSuggestions(true);
+      setIsSearchActive(true);
+    } else {
+      setShowSearchSuggestions(false);
+      setIsSearchActive(false);
+      setSearchResults([]);
+      setFilteredProducts(products);
     }
-  });
+    debouncedSearch(searchText);
+  }, [searchText, debouncedSearch]);
 
-  const viewConfigRef = useRef({ viewAreaCoveragePercentThreshold: 50 });
+  // Handle search submission
+  const handleSearchSubmit = () => {
+    setShowSearchSuggestions(false);
+    performSearch(searchText);
+    searchInputRef.current?.blur();
+  };
 
-  const handleProductPress = (product) => {
-    router.push({
-      pathname: 'ProductDetailPage',
-      params: { id: product._id },
-    });
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchProducts();
+    fetchWishlistAndCart();
   };
 
   const toggleWishlist = async (product) => {
     try {
-      const price = product.variants?.[0]?.sizes?.[0]?.price || 0;
+      const price = product.variants?.[0]?.sizes?.[0]?.price || product.price || 0;
       
       const wishlistItem = {
         id: product._id,
         title: product.name,
         brand: product.brand,
-        image: product.image,
+        image: getImageUrl(product.image),
         price: price
       };
 
@@ -1059,7 +891,6 @@ const HomeScreen = () => {
           type: 'info',
           text1: 'Removed from Wishlist',
           text2: `${wishlistItem.title} removed`,
-          visibilityTime: 2000,
         });
       } else {
         currentWishlist.push(wishlistItem);
@@ -1067,7 +898,6 @@ const HomeScreen = () => {
           type: 'success',
           text1: 'Added to Wishlist',
           text2: `${wishlistItem.title} added`,
-          visibilityTime: 2000,
         });
       }
       
@@ -1079,7 +909,6 @@ const HomeScreen = () => {
         type: 'error',
         text1: 'Error',
         text2: 'Failed to update wishlist',
-        visibilityTime: 2000,
       });
     }
   };
@@ -1088,24 +917,62 @@ const HomeScreen = () => {
     return wishlist.some(item => item.id === productId);
   };
 
-  const handleVoiceResult = (result) => {
-    setSearchQuery(result);
-    setShowVoiceModal(false);
-    // Navigate to search screen with voice result
+  const handleProductPress = (product) => {
     router.push({
-      pathname: 'SearchScreen',
-      params: { query: result }
+      pathname: '../ProductDetailPage',
+      params: { id: product._id },
     });
   };
 
-  const handleSearch = () => {
-    if (searchQuery.trim()) {
-      router.push({
-        pathname: 'SearchScreen',
-        params: { query: searchQuery }
-      });
+  const handleCategoryPress = (category) => {
+    router.push({
+      pathname: '../StoreScreen',
+      params: { category: category.name }
+    });
+  };
+
+  const handleQuickAccessPress = (item) => {
+    router.push({
+      pathname: '../StoreScreen',
+      params: { filter: item.title }
+    });
+  };
+
+  const handleSuggestionPress = (suggestion) => {
+    setSearchText(suggestion);
+    searchInputRef.current?.focus();
+    setShowSearchSuggestions(false);
+    performSearch(suggestion);
+  };
+
+  const handleSearchFocus = () => {
+    if (searchText.length > 0) {
+      setShowSearchSuggestions(true);
     }
   };
+
+  const handleSearchBlur = () => {
+    setTimeout(() => {
+      setShowSearchSuggestions(false);
+    }, 200);
+  };
+
+  const clearSearch = () => {
+    setSearchText('');
+    setShowSearchSuggestions(false);
+    setIsSearchActive(false);
+    setSearchResults([]);
+    setFilteredProducts(products);
+    searchInputRef.current?.focus();
+  };
+
+  const onViewRef = useRef(({ changed }) => {
+    if (changed && changed[0]?.index !== undefined) {
+      setCurrentBannerIndex(changed[0].index);
+    }
+  });
+
+  const viewConfigRef = useRef({ viewAreaCoveragePercentThreshold: 50 });
 
   const renderProductItem = ({ item, index }) => {
     const productInWishlist = isInWishlist(item._id);
@@ -1121,51 +988,20 @@ const HomeScreen = () => {
     );
   };
 
-  const renderFooter = () => {
-    if (!loadingMore) return null;
-    
-    return (
-      <View style={styles.footerLoader}>
-        <ActivityIndicator size="small" color={COLORS.primary} />
-        <Text style={styles.footerText}>Loading more products...</Text>
-      </View>
-    );
-  };
-
-  const renderShowMoreButton = () => {
-    if (loadingMore) return null;
-    
-    return (
-      <TouchableOpacity 
-        style={styles.showMoreButton}
-        onPress={hasMore ? loadMoreProducts : () => router.push('StoreScreen')}
-      >
-        <Text style={styles.showMoreText}>
-          {hasMore ? 'Load More' : 'View All Products'}
-        </Text>
-        <Ionicons 
-          name={hasMore ? "chevron-down" : "arrow-forward"} 
-          size={20} 
-          color={COLORS.primary} 
-        />
-      </TouchableOpacity>
-    );
-  };
-
-  const categories = ['All Items', 'New', 'Popular', 'Trending', 'Bestsellers', 'Featured'];
+  // Split products for before and after special offer
+  const firstHalfProducts = filteredProducts.slice(0, 4);
+  const secondHalfProducts = filteredProducts.slice(4);
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
-        <Text style={styles.loadingText}>Loading products...</Text>
-      </View>
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.centerContainer}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={styles.loadingText}>Loading home...</Text>
+        </View>
+      </SafeAreaView>
     );
   }
-
-  // Split products for before and after middle banner
-  const firstHalfProducts = filteredProducts.slice(0, 4);
-  const secondHalfProducts = filteredProducts.slice(4);
 
   return (
     <View style={styles.scrollContainer}>
@@ -1173,20 +1009,12 @@ const HomeScreen = () => {
       <StickyHeader 
         user={user}
         cartItems={cartItems}
-        wishlist={wishlist}
         router={router}
         scrollY={scrollY}
       />
 
-      {/* Voice Search Modal */}
-      <VoiceSearchModal
-        visible={showVoiceModal}
-        onClose={() => setShowVoiceModal(false)}
-        onResult={handleVoiceResult}
-      />
-
       <Animated.ScrollView 
-        ref={scrollViewRef}
+        style={styles.scrollContainer}
         showsVerticalScrollIndicator={false}
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
@@ -1194,38 +1022,18 @@ const HomeScreen = () => {
         )}
         scrollEventThrottle={16}
         refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
+          <RefreshControl 
+            refreshing={refreshing} 
             onRefresh={onRefresh}
             colors={[COLORS.primary]}
             tintColor={COLORS.primary}
-            progressBackgroundColor={COLORS.white}
           />
         }
-        contentContainerStyle={styles.scrollContent}
       >
         <View style={styles.container}>
           {/* Main Header */}
           <View style={styles.header}>
             <View style={styles.profileContainer}>
-              <TouchableOpacity
-                onPress={() => router.push(user?.isLoggedIn ? 'ProfileScreen' : 'ProfileScreen')}
-              >
-                <View style={styles.profileImageContainer}>
-                  {user?.profileImage ? (
-                    <Image
-                      source={{ uri: user.profileImage }}
-                      style={styles.profileImage}
-                    />
-                  ) : (
-                    <View style={styles.profileInitialsContainer}>
-                      <Text style={styles.profileInitials}>
-                        {user?.name ? user.name.charAt(0).toUpperCase() : 'G'}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-              </TouchableOpacity>
               <View style={styles.welcomeContainer}>
                 <Text style={styles.welcome}>Welcome back,</Text>
                 <Text style={styles.username}>{user?.name || "Guest"}! 👋</Text>
@@ -1233,46 +1041,24 @@ const HomeScreen = () => {
             </View>
             <View style={styles.headerIcons}>
               <TouchableOpacity
-                style={styles.iconButton}
-                onPress={() => router.push('WishlistScreen')}
+                style={styles.bigHeaderCartButton}
+                onPress={() => router.push('../CartScreen')}
               >
-                <Ionicons
-                  name={wishlist.length > 0 ? 'heart' : 'heart-outline'}
-                  size={24}
-                  color={wishlist.length > 0 ? COLORS.error : COLORS.dark}
-                />
-                {wishlist.length > 0 && (
-                  <View style={styles.badge}>
-                    <Text style={styles.badgeText}>{wishlist.length}</Text>
-                  </View>
-                )}
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.iconButton}
-                onPress={() => router.push('CartScreen')}
-              >
-                <Ionicons name="bag-outline" size={24} color={COLORS.dark} />
-                {cartItems > 0 && (
-                  <View style={styles.badge}>
-                    <Text style={styles.badgeText}>{cartItems}</Text>
-                  </View>
-                )}
+                <View style={styles.bigHeaderCartContainer}>
+                  <Ionicons name="cart" size={28} color={COLORS.dark} />
+                  {cartItems > 0 && (
+                    <View style={styles.badge}>
+                      <Text style={styles.badgeText}>{cartItems}</Text>
+                    </View>
+                  )}
+                </View>
               </TouchableOpacity>
             </View>
           </View>
-          
-          {/* Enhanced Search Bar with Voice - FIXED VISIBILITY */}
-          <View style={styles.searchSection}>
-            <Animated.View style={[
-              styles.searchContainer,
-              {
-                opacity: searchOpacity,
-                transform: [
-                  { translateY: searchTranslateY },
-                  { scale: searchScale }
-                ]
-              }
-            ]}>
+
+          {/* Search Bar with Suggestions */}
+          <View style={styles.searchWrapper}>
+            <View style={styles.searchContainer}>
               <View style={styles.searchInnerContainer}>
                 <View style={styles.searchIconContainer}>
                   <Ionicons name="search" size={20} color={COLORS.primary} />
@@ -1281,147 +1067,209 @@ const HomeScreen = () => {
                 <TextInput
                   ref={searchInputRef}
                   style={styles.searchInput}
-                  placeholder="Search for products, brands..."
+                  placeholder="Search products, brands, categories..."
                   placeholderTextColor={COLORS.gray}
-                  value={searchQuery}
-                  onChangeText={setSearchQuery}
-                  onFocus={() => setIsSearchFocused(true)}
-                  onBlur={() => setIsSearchFocused(false)}
-                  onSubmitEditing={handleSearch}
+                  value={searchText}
+                  onChangeText={setSearchText}
+                  onFocus={handleSearchFocus}
+                  onBlur={handleSearchBlur}
                   returnKeyType="search"
+                  onSubmitEditing={handleSearchSubmit}
                 />
                 
-                {searchQuery ? (
+                {searchText ? (
                   <TouchableOpacity 
                     style={styles.searchClearButton}
-                    onPress={() => setSearchQuery('')}
+                    onPress={clearSearch}
                   >
                     <Ionicons name="close-circle" size={18} color={COLORS.gray} />
                   </TouchableOpacity>
                 ) : null}
-                
-                <TouchableOpacity 
-                  style={styles.searchMicContainer}
-                  onPress={() => setShowVoiceModal(true)}
-                >
-                  <Ionicons name="mic-outline" size={18} color={COLORS.primary} />
-                </TouchableOpacity>
               </View>
-            </Animated.View>
-          </View>
-
-          {/* Animated Categories - FIXED VISIBILITY */}
-          <View style={styles.categoriesSection}>
-            <Animated.View style={[styles.categoriesContainer, { opacity: categoriesOpacity }]}>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.categoriesScroll}
-              >
-                {categories.map((cat, i) => (
-                  <TouchableOpacity
-                    key={cat}
-                    style={[
-                      styles.categoryButton,
-                      selectedCategory === cat && styles.categoryButtonActive
-                    ]}
-                    onPress={() => setSelectedCategory(cat)}
-                  >
-                    <Text style={[
-                      styles.categoryText,
-                      selectedCategory === cat && styles.categoryTextActive
-                    ]}>{cat}</Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </Animated.View>
-          </View>
-
-          {/* Enhanced Main Banner */}
-          <View style={styles.bannerContainer}>
-            <FlatList
-              ref={bannerRef}
-              data={banners}
-              horizontal
-              pagingEnabled
-              showsHorizontalScrollIndicator={false}
-              renderItem={({ item, index }) => (
-                <BannerItem 
-                  item={item} 
-                  router={router} 
-                  index={index}
-                  currentIndex={currentBannerIndex}
-                />
-              )}
-              keyExtractor={(item) => item.id}
-              onViewableItemsChanged={onViewRef.current}
-              viewabilityConfig={viewConfigRef.current}
-            />
-            <View style={styles.bannerPagination}>
-              {banners.map((_, index) => (
-                <Animated.View
-                  key={index}
-                  style={[
-                    styles.paginationDot,
-                    {
-                      backgroundColor: currentBannerIndex === index ? COLORS.white : 'rgba(255,255,255,0.6)',
-                      transform: [{
-                        scale: currentBannerIndex === index ? 1.3 : 1
-                      }]
-                    },
-                  ]}
-                />
-              ))}
             </View>
+
+            {/* Search Suggestions Dropdown */}
+            <SearchSuggestions
+              suggestions={searchSuggestions}
+              popularSearches={popularSearches}
+              onSuggestionPress={handleSuggestionPress}
+              searchText={searchText}
+              visible={showSearchSuggestions}
+              searchResults={searchResults}
+            />
           </View>
 
-          {/* Section Header */}
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>New Arrivals</Text>
-            <Text style={styles.sectionSubtitle}>Fresh products just for you</Text>
+          {/* Main Content */}
+          <View style={styles.mainContent}>
+            {/* Show search results when search is active */}
+            {isSearchActive && searchText.length > 0 ? (
+              <View style={styles.searchResultsSection}>
+                {searchLoading ? (
+                  <View style={styles.loadingState}>
+                    <ActivityIndicator size="large" color={COLORS.primary} />
+                    <Text style={styles.loadingText}>Searching...</Text>
+                  </View>
+                ) : searchResults.length > 0 ? (
+                  <>
+                    <View style={styles.sectionHeader}>
+                      <Text style={styles.sectionTitle}>
+                        Search Results ({searchResults.length})
+                      </Text>
+                      <Text style={styles.seeAll}>"{searchText}"</Text>
+                    </View>
+                    
+                    <FlatList
+                      data={searchResults}
+                      renderItem={renderProductItem}
+                      keyExtractor={(item) => item._id}
+                      numColumns={2}
+                      scrollEnabled={false}
+                      columnWrapperStyle={styles.columnWrapper}
+                      contentContainerStyle={styles.list}
+                    />
+                  </>
+                ) : (
+                  <View style={styles.noSearchResults}>
+                    <Ionicons name="search-outline" size={80} color={COLORS.grayLight} />
+                    <Text style={styles.noSearchResultsText}>No products found</Text>
+                    <Text style={styles.noSearchResultsSubtext}>
+                      We couldn't find any products matching "{searchText}"
+                    </Text>
+                    <TouchableOpacity 
+                      style={styles.tryAgainButton}
+                      onPress={clearSearch}
+                    >
+                      <Text style={styles.tryAgainText}>Clear Search</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+            ) : (
+              /* Show regular home content when not searching */
+              <View>
+                {/* Main Banner */}
+                <View style={styles.bannerContainer}>
+                  <FlatList
+                    ref={bannerRef}
+                    data={homeBanners}
+                    horizontal
+                    pagingEnabled
+                    showsHorizontalScrollIndicator={false}
+                    renderItem={({ item, index }) => (
+                      <BannerItem 
+                        item={item} 
+                        index={index}
+                        currentIndex={currentBannerIndex}
+                      />
+                    )}
+                    keyExtractor={(item) => item.id}
+                    onViewableItemsChanged={onViewRef.current}
+                    viewabilityConfig={viewConfigRef.current}
+                  />
+                  <View style={styles.bannerPagination}>
+                    {homeBanners.map((_, index) => (
+                      <View
+                        key={index}
+                        style={[
+                          styles.paginationDot,
+                          {
+                            backgroundColor: currentBannerIndex === index ? COLORS.white : 'rgba(255,255,255,0.6)',
+                          },
+                        ]}
+                      />
+                    ))}
+                  </View>
+                </View>
+
+                {/* Quick Access Section */}
+                <View style={styles.section}>
+                  <View style={styles.sectionHeader}>
+                    <Text style={styles.sectionTitle}>Quick Access</Text>
+                  </View>
+                  <View style={styles.quickAccessContainer}>
+                    {quickAccess.map((item) => (
+                      <QuickAccessItem 
+                        key={item.id} 
+                        item={item} 
+                        onPress={() => handleQuickAccessPress(item)}
+                      />
+                    ))}
+                  </View>
+                </View>
+
+                {/* Featured Categories */}
+                <View style={styles.section}>
+                  <View style={styles.sectionHeader}>
+                    <Text style={styles.sectionTitle}>Shop by Category</Text>
+                    <TouchableOpacity style={styles.seeAllButton}>
+                      <Text style={styles.seeAll}>See All</Text>
+                      <Ionicons name="chevron-forward" size={16} color={COLORS.primary} />
+                    </TouchableOpacity>
+                  </View>
+                  <FlatList
+                    data={featuredCategories}
+                    renderItem={({ item }) => (
+                      <CategoryCard 
+                        item={item} 
+                        onPress={() => handleCategoryPress(item)}
+                      />
+                    )}
+                    keyExtractor={(item) => item.name}
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.categoriesList}
+                  />
+                </View>
+
+                {/* Featured Products */}
+                <View style={styles.section}>
+                  <View style={styles.sectionHeader}>
+                    <Text style={styles.sectionTitle}>Featured Products</Text>
+                    <Text style={styles.seeAll}>{filteredProducts.length} items</Text>
+                  </View>
+                  
+                  {filteredProducts.length > 0 ? (
+                    <>
+                      {/* First Half of Products */}
+                      <FlatList
+                        data={firstHalfProducts}
+                        renderItem={renderProductItem}
+                        keyExtractor={(item) => item._id}
+                        numColumns={2}
+                        scrollEnabled={false}
+                        columnWrapperStyle={styles.columnWrapper}
+                        contentContainerStyle={styles.list}
+                      />
+
+                      {/* Special Offer Banner in the Middle */}
+                      <SpecialOfferBanner />
+
+                      {/* Second Half of Products */}
+                      {secondHalfProducts.length > 0 && (
+                        <FlatList
+                          data={secondHalfProducts}
+                          renderItem={renderProductItem}
+                          keyExtractor={(item) => item._id}
+                          numColumns={2}
+                          scrollEnabled={false}
+                          columnWrapperStyle={styles.columnWrapper}
+                          contentContainerStyle={styles.list}
+                        />
+                      )}
+                    </>
+                  ) : (
+                    <View style={styles.emptyState}>
+                      <Ionicons name="grid-outline" size={50} color={COLORS.grayLight} />
+                      <Text style={styles.emptyStateText}>No products found</Text>
+                      <Text style={styles.emptyStateSubtext}>
+                        Check back soon for new arrivals
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+            )}
           </View>
-
-          {/* First Half of Products */}
-          {firstHalfProducts.length > 0 ? (
-            <FlatList
-              data={firstHalfProducts}
-              renderItem={renderProductItem}
-              keyExtractor={(item) => item._id}
-              numColumns={2}
-              scrollEnabled={false}
-              columnWrapperStyle={styles.columnWrapper}
-              contentContainerStyle={styles.list}
-              initialNumToRender={4}
-              maxToRenderPerBatch={4}
-              windowSize={5}
-            />
-          ) : (
-            <View style={styles.noProductsContainer}>
-              <Ionicons name="cube-outline" size={60} color={COLORS.grayLight} />
-              <Text style={styles.noProductsText}>No products available</Text>
-              <Text style={styles.noProductsSubtext}>Check back soon for new arrivals</Text>
-            </View>
-          )}
-
-          {/* Beautiful Middle Banner */}
-          <MiddleBanner banner={middleBanner} router={router} />
-
-          {/* Second Half of Products */}
-          {secondHalfProducts.length > 0 && (
-            <FlatList
-              data={secondHalfProducts}
-              renderItem={renderProductItem}
-              keyExtractor={(item) => item._id}
-              numColumns={2}
-              scrollEnabled={false}
-              columnWrapperStyle={styles.columnWrapper}
-              contentContainerStyle={styles.list}
-              ListFooterComponent={renderFooter}
-            />
-          )}
-
-          {/* Enhanced Show More Button */}
-          {renderShowMoreButton()}
         </View>
       </Animated.ScrollView>
       <Toast />
@@ -1429,21 +1277,22 @@ const HomeScreen = () => {
   );
 };
 
+// Styles
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
   scrollContainer: {
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  scrollContent: {
-    flexGrow: 1,
-  },
   container: {
     flex: 1,
-    padding: 20,
-    paddingBottom: 30,
-    paddingTop: 10,
+    backgroundColor: COLORS.background,
+    paddingBottom: 20,
   },
-  loadingContainer: {
+  centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
@@ -1451,287 +1300,54 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 16,
+    fontSize: 16,
     color: COLORS.gray,
-    fontSize: 16,
-    fontWeight: '500',
   },
-  noProductsContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 60,
-  },
-  noProductsText: {
-    marginTop: 16,
-    color: COLORS.gray,
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  noProductsSubtext: {
-    marginTop: 8,
-    color: COLORS.grayLight,
-    fontSize: 14,
-  },
-  // Voice Search Modal Styles
-  voiceModalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  voiceModalContent: {
-    backgroundColor: COLORS.white,
-    borderRadius: 20,
-    padding: 30,
-    alignItems: 'center',
-    width: '80%',
-    ...Platform.select({
-      ios: {
-        shadowColor: COLORS.dark,
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.3,
-        shadowRadius: 20,
-      },
-      android: {
-        elevation: 10,
-      },
-    }),
-  },
-  closeButton: {
-    position: 'absolute',
-    top: 15,
-    right: 15,
-    zIndex: 1,
-  },
-  voiceCircle: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  voiceTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: COLORS.dark,
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-  voiceSubtitle: {
-    fontSize: 14,
-    color: COLORS.gray,
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  transcriptText: {
-    fontSize: 16,
-    color: COLORS.primary,
-    fontWeight: '600',
-    textAlign: 'center',
-    marginBottom: 20,
-    fontStyle: 'italic',
-  },
-  voiceActionButton: {
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 25,
-  },
-  voiceActionButtonActive: {
-    backgroundColor: COLORS.error,
-  },
-  voiceActionText: {
-    color: COLORS.white,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  // Sticky Header Styles
-  stickyHeader: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 80,
-    backgroundColor: COLORS.white,
-    zIndex: 1000,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(99, 102, 241, 0.1)',
-    ...Platform.select({
-      ios: {
-        shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
-  },
-  stickyHeaderContent: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    marginTop: Platform.OS === 'ios' ? 40 : 20,
-  },
-  stickyProfile: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  stickyProfileImage: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    marginRight: 12,
-  },
-  stickyProfileInitials: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: COLORS.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  stickyProfileInitialsText: {
-    color: COLORS.white,
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  stickyUsername: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: COLORS.dark,
-  },
-  stickyIcons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  stickyIconButton: {
-    position: 'relative',
-    width: 44,
-    height: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: COLORS.background,
-    borderRadius: 12,
-  },
-  stickyBadge: {
-    position: 'absolute',
-    right: -2,
-    top: -2,
-    backgroundColor: COLORS.error,
-    borderRadius: 8,
-    width: 16,
-    height: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: COLORS.white,
-  },
-  stickyBadgeText: {
-    color: COLORS.white,
-    fontSize: 9,
-    fontWeight: 'bold',
-  },
-  // Main Header
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    paddingHorizontal: 20,
+    paddingTop: Platform.OS === 'ios' ? 60 : 40,
+    paddingBottom: 16,
+    backgroundColor: COLORS.background,
   },
   profileContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  profileImageContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    marginRight: 16,
-    overflow: 'hidden',
-    backgroundColor: COLORS.white,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: COLORS.primaryLight,
-    ...Platform.select({
-      ios: {
-        shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.15,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
-  },
-  profileImage: {
-    width: '100%',
-    height: '100%',
-  },
-  profileInitialsContainer: {
-    width: '100%',
-    height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: COLORS.primary,
-  },
-  profileInitials: {
-    color: COLORS.white,
-    fontSize: 22,
-    fontWeight: 'bold',
-  },
   welcomeContainer: {
-    flexDirection: 'column',
+    marginLeft: 12,
   },
   welcome: {
     fontSize: 14,
     color: COLORS.gray,
-    fontWeight: '500',
   },
   username: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
     color: COLORS.dark,
   },
   headerIcons: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
   },
-  iconButton: {
+  bigHeaderCartButton: {
+    padding: 8,
+    marginLeft: 8,
+  },
+  bigHeaderCartContainer: {
     position: 'relative',
-    width: 48,
-    height: 48,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: COLORS.white,
-    borderRadius: 14,
-    ...Platform.select({
-      ios: {
-        shadowColor: COLORS.dark,
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.1,
-        shadowRadius: 6,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
   },
   badge: {
     position: 'absolute',
-    right: -2,
     top: -2,
+    right: -2,
     backgroundColor: COLORS.error,
-    borderRadius: 10,
-    width: 20,
+    borderRadius: 12,
+    minWidth: 20,
     height: 20,
     justifyContent: 'center',
     alignItems: 'center',
@@ -1740,355 +1356,326 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     color: COLORS.white,
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: 'bold',
   },
-  // Search Section - FIXED
-  searchSection: {
+  searchWrapper: {
+    position: 'relative',
+    zIndex: 1000,
     marginBottom: 16,
   },
   searchContainer: {
-    width: '100%',
+    paddingHorizontal: 20,
   },
   searchInnerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.white,
     borderRadius: 16,
-    borderWidth: 2,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    shadowColor: COLORS.primary,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 8,
+    borderWidth: 1,
     borderColor: 'rgba(99, 102, 241, 0.1)',
-    height: 56,
-    ...Platform.select({
-      ios: {
-        shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
   },
   searchIconContainer: {
-    padding: 16,
-    backgroundColor: 'rgba(99, 102, 241, 0.05)',
-    borderTopLeftRadius: 14,
-    borderBottomLeftRadius: 14,
+    marginRight: 12,
   },
   searchInput: {
     flex: 1,
-    paddingVertical: 16,
     fontSize: 16,
-    fontWeight: '500',
     color: COLORS.dark,
-    height: '100%',
+    padding: 0,
   },
   searchClearButton: {
-    padding: 8,
-    marginRight: 8,
+    padding: 4,
   },
-  searchMicContainer: {
-    padding: 16,
-    borderLeftWidth: 1,
-    borderLeftColor: 'rgba(99, 102, 241, 0.1)',
-  },
-  // Categories Section - FIXED
-  categoriesSection: {
-    marginBottom: 20,
-  },
-  categoriesContainer: {
-    height: 50,
-  },
-  categoriesScroll: {
-    paddingVertical: 8,
-  },
-  categoryButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+  searchSuggestionsContainer: {
+    position: 'absolute',
+    top: '100%',
+    left: 20,
+    right: 20,
     backgroundColor: COLORS.white,
-    borderRadius: 25,
-    marginRight: 10,
-    borderWidth: 1.5,
-    borderColor: 'rgba(99, 102, 241, 0.1)',
-    ...Platform.select({
-      ios: {
-        shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 1,
-      },
-    }),
+    borderRadius: 16,
+    marginTop: 8,
+    shadowColor: COLORS.dark,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+    zIndex: 1001,
+    maxHeight: 400,
   },
-  categoryButtonActive: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
+  searchSuggestionsContent: {
+    padding: 16,
   },
-  categoryText: {
+  resultsCountContainer: {
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.light,
+    marginBottom: 12,
+  },
+  resultsCountText: {
+    fontSize: 14,
     color: COLORS.gray,
+    fontWeight: '500',
+  },
+  suggestionSection: {
+    marginBottom: 16,
+  },
+  suggestionSectionTitle: {
     fontSize: 14,
     fontWeight: '600',
+    color: COLORS.dark,
+    marginBottom: 8,
   },
-  categoryTextActive: {
-    color: COLORS.white,
+  suggestionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.light,
   },
-  // Enhanced Banner Styles
-  bannerContainer: {
-    height: 220,
-    marginBottom: 32,
+  suggestionText: {
+    fontSize: 15,
+    color: COLORS.dark,
+    marginLeft: 12,
+    flex: 1,
+  },
+  popularSearchesContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  popularSearchChip: {
+    backgroundColor: COLORS.light,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     borderRadius: 20,
-    overflow: 'hidden',
+  },
+  popularSearchText: {
+    fontSize: 13,
+    color: COLORS.dark,
+    fontWeight: '500',
+  },
+  noResultsContainer: {
+    alignItems: 'center',
+    paddingVertical: 32,
+  },
+  noResultsText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: COLORS.dark,
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  noResultsSubtext: {
+    fontSize: 14,
+    color: COLORS.gray,
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  noResultsTip: {
+    fontSize: 12,
+    color: COLORS.grayLight,
+    textAlign: 'center',
+  },
+  mainContent: {
+    flex: 1,
+  },
+  searchResultsSection: {
+    paddingHorizontal: 20,
+  },
+  loadingState: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  noSearchResults: {
+    alignItems: 'center',
+    paddingVertical: 60,
+    paddingHorizontal: 20,
+  },
+  noSearchResultsText: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: COLORS.dark,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  noSearchResultsSubtext: {
+    fontSize: 15,
+    color: COLORS.gray,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  tryAgainButton: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  tryAgainText: {
+    color: COLORS.white,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  section: {
+    marginBottom: 32,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: COLORS.dark,
+  },
+  seeAllButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  seeAll: {
+    fontSize: 14,
+    color: COLORS.primary,
+    fontWeight: '500',
+  },
+  // Quick Access Styles
+  quickAccessContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+  },
+  quickAccessItem: {
+    alignItems: 'center',
+    width: '23%',
+  },
+  quickAccessIcon: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  quickAccessText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.dark,
+    textAlign: 'center',
+  },
+  // Category Card Styles
+  categoriesList: {
+    paddingHorizontal: 20,
+    gap: 16,
+  },
+  categoryCard: {
+    width: 140,
+    marginRight: 16,
+  },
+  categoryImageContainer: {
     position: 'relative',
+    width: '100%',
+    height: 100,
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginBottom: 12,
+  },
+  categoryImage: {
+    width: '100%',
+    height: '100%',
+  },
+  categoryIconContainer: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    borderRadius: 20,
+    padding: 6,
+  },
+  categoryName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.dark,
+    marginBottom: 4,
+  },
+  categoryProducts: {
+    fontSize: 12,
+    color: COLORS.gray,
+  },
+  // Special Offer Banner Styles
+  specialOfferBanner: {
+    backgroundColor: COLORS.primary,
+    marginHorizontal: 20,
+    marginVertical: 20,
+    borderRadius: 16,
+    overflow: 'hidden',
     ...Platform.select({
       ios: {
         shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 8 },
+        shadowOffset: { width: 0, height: 6 },
         shadowOpacity: 0.2,
-        shadowRadius: 16,
+        shadowRadius: 12,
       },
       android: {
         elevation: 8,
       },
     }),
   },
-  bannerItem: {
-    width: width - 40,
-    position: 'relative',
-  },
-  bannerImage: {
-    width: width - 40,
-    height: 220,
-  },
-  bannerGradient: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    top: 0,
-    backgroundColor: 'rgba(0,0,0,0.3)',
-  },
-  bannerContent: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: 24,
-  },
-  bannerTitle: {
-    color: COLORS.white,
-    fontSize: 26,
-    fontWeight: 'bold',
-    marginBottom: 6,
-    textShadowColor: 'rgba(0, 0, 0, 0.5)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 4,
-  },
-  bannerSubtitle: {
-    color: COLORS.white,
-    fontSize: 16,
-    marginBottom: 20,
-    opacity: 0.95,
-    fontWeight: '500',
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
-  },
-  bannerButton: {
-    backgroundColor: COLORS.white,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 25,
-    alignSelf: 'flex-start',
+  specialOfferContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: COLORS.dark,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
+    justifyContent: 'space-between',
+    padding: 20,
   },
-  bannerButtonText: {
-    color: COLORS.primary,
-    fontSize: 15,
-    fontWeight: '700',
+  specialOfferTextContainer: {
+    flex: 1,
+    marginRight: 16,
   },
-  bannerPagination: {
-    position: 'absolute',
-    bottom: 16,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 8,
-  },
-  paginationDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    transition: 'all 0.3s ease',
-  },
-  bannerTypeIndicator: {
-    position: 'absolute',
-    top: 16,
-    right: 16,
-  },
-  typeBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    ...Platform.select({
-      ios: {
-        shadowColor: COLORS.dark,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.3,
-        shadowRadius: 3,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
-  },
-  typeBadgeText: {
-    color: COLORS.white,
-    fontSize: 10,
-    fontWeight: '800',
-  },
-  sectionHeader: {
-    marginBottom: 20,
-    marginTop: 8,
-  },
-  sectionTitle: {
-    color: COLORS.dark,
-    fontSize: 24,
+  specialOfferTitle: {
+    fontSize: 18,
     fontWeight: 'bold',
+    color: COLORS.white,
     marginBottom: 4,
   },
-  sectionSubtitle: {
-    color: COLORS.gray,
-    fontSize: 15,
-    fontWeight: '500',
-  },
-  // Middle Banner Styles
-  middleBannerContainer: {
-    height: 160,
-    marginVertical: 24,
-    borderRadius: 20,
-    overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.15,
-        shadowRadius: 12,
-      },
-      android: {
-        elevation: 6,
-      },
-    }),
-  },
-  middleBannerImage: {
-    width: '100%',
-    height: 160,
-  },
-  middleBannerOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(99, 102, 241, 0.3)',
-  },
-  middleBannerContent: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    padding: 24,
-  },
-  middleBannerTitle: {
+  specialOfferSubtitle: {
+    fontSize: 14,
     color: COLORS.white,
-    fontSize: 22,
-    fontWeight: 'bold',
-    marginBottom: 6,
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
+    opacity: 0.9,
+    lineHeight: 18,
   },
-  middleBannerSubtitle: {
-    color: COLORS.white,
-    fontSize: 15,
-    marginBottom: 16,
-    fontWeight: '500',
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
-  },
-  middleBannerButton: {
+  specialOfferButton: {
     backgroundColor: COLORS.white,
+    paddingHorizontal: 16,
     paddingVertical: 10,
-    paddingHorizontal: 20,
     borderRadius: 20,
-    alignSelf: 'flex-start',
     flexDirection: 'row',
     alignItems: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: COLORS.dark,
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.2,
-        shadowRadius: 6,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
   },
-  middleBannerButtonText: {
+  specialOfferButtonText: {
     color: COLORS.primary,
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '600',
   },
-  floatingElement1: {
-    position: 'absolute',
-    top: 20,
-    right: 20,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  floatingElement2: {
-    position: 'absolute',
-    bottom: 20,
-    left: 20,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  // Enhanced Product Card Styles
+  // Product Card Styles
   cardContainer: {
     width: '48%',
-    marginBottom: 20,
+    marginBottom: 16,
   },
   card: {
-    width: '100%',
     backgroundColor: COLORS.cardBackground,
     borderRadius: 20,
     overflow: 'hidden',
@@ -2106,66 +1693,26 @@ const styles = StyleSheet.create({
       },
     }),
   },
-  cardGlow: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: COLORS.primaryLight,
-    borderRadius: 20,
-    zIndex: -1,
-  },
   imageContainer: {
     position: 'relative',
+    width: '100%',
     height: 180,
-    overflow: 'hidden',
+    backgroundColor: COLORS.light,
+  },
+  imagePlaceholder: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
     backgroundColor: COLORS.light,
   },
   image: {
     width: '100%',
     height: '100%',
-    transition: 'transform 0.3s ease',
-  },
-  imagePlaceholder: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: COLORS.light,
-  },
-  newBadge: {
-    position: 'absolute',
-    top: 12,
-    left: 12,
-    backgroundColor: COLORS.primary,
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    ...Platform.select({
-      ios: {
-        shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.3,
-        shadowRadius: 3,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
-  },
-  newBadgeText: {
-    color: COLORS.white,
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.5,
   },
   heartContainer: {
     position: 'absolute',
-    bottom: 12,
+    top: 12,
     right: 12,
   },
   heartIcon: {
@@ -2186,6 +1733,23 @@ const styles = StyleSheet.create({
   },
   heartIconActive: {
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
+  },
+  newBadge: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 50,
+    alignSelf: 'flex-start',
+  },
+  newBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: COLORS.white,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   cardContent: {
     padding: 16,
@@ -2262,52 +1826,182 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  columnWrapper: {
-    justifyContent: 'space-between',
+  bannerContainer: {
+    height: 200,
+    marginHorizontal: 20,
+    borderRadius: 16,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  bannerItem: {
+    width: width - 40,
+    height: 200,
+    borderRadius: 16,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  bannerImage: {
+    width: '100%',
+    height: '100%',
+  },
+  bannerOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+  },
+  bannerContent: {
+    position: 'absolute',
+    bottom: 20,
+    left: 20,
+    right: 20,
+  },
+  bannerBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  bannerBadgeText: {
+    color: COLORS.white,
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  bannerTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: COLORS.white,
+    marginBottom: 8,
+  },
+  bannerSubtitle: {
+    fontSize: 16,
+    color: COLORS.white,
+    marginBottom: 16,
+  },
+  bannerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    backgroundColor: COLORS.white,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  bannerButtonText: {
+    color: COLORS.primary,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  bannerPagination: {
+    position: 'absolute',
+    bottom: 16,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  paginationDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginHorizontal: 4,
   },
   list: {
-    paddingBottom: 20,
+    paddingHorizontal: 20,
   },
-  showMoreButton: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+  columnWrapper: {
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  emptyState: {
     alignItems: 'center',
-    backgroundColor: COLORS.white,
-    paddingVertical: 16,
-    borderRadius: 16,
-    marginTop: 10,
-    marginBottom: 30,
-    borderWidth: 2,
-    borderColor: 'rgba(99, 102, 241, 0.1)',
-    ...Platform.select({
-      ios: {
-        shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.1,
-        shadowRadius: 6,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
+    paddingVertical: 60,
+    paddingHorizontal: 20,
   },
-  showMoreText: {
-    color: COLORS.primary,
-    fontSize: 16,
-    fontWeight: '700',
-    marginRight: 8,
+  emptyStateText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: COLORS.dark,
+    marginTop: 16,
+    marginBottom: 8,
   },
-  footerLoader: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  footerText: {
-    marginLeft: 12,
-    color: COLORS.gray,
+  emptyStateSubtext: {
     fontSize: 14,
-    fontWeight: '500',
+    color: COLORS.gray,
+    textAlign: 'center',
+  },
+  stickyHeader: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 80,
+    backgroundColor: COLORS.background,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.light,
+    zIndex: 1000,
+    paddingTop: Platform.OS === 'ios' ? 40 : 20,
+  },
+  stickyHeaderContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    flex: 1,
+  },
+  stickyProfile: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  stickyProfileInitials: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: COLORS.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  stickyProfileInitialsText: {
+    color: COLORS.white,
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  stickyUsername: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: COLORS.dark,
+  },
+  stickyIcons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  stickyCartButton: {
+    padding: 8,
+  },
+  bigCartIconContainer: {
+    position: 'relative',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  stickyBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: COLORS.error,
+    borderRadius: 12,
+    minWidth: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: COLORS.background,
+  },
+  stickyBadgeText: {
+    color: COLORS.white,
+    fontSize: 11,
+    fontWeight: 'bold',
   },
 });
+
 export default HomeScreen;

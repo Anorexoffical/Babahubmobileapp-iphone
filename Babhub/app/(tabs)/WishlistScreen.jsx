@@ -288,6 +288,11 @@ const WishlistScreen = () => {
       const updatedWishlist = wishlistItems.filter(item => item.id !== productId);
       setWishlistItems(updatedWishlist);
       await AsyncStorage.setItem('wishlist', JSON.stringify(updatedWishlist));
+      
+      console.log('Item removed from wishlist:', productTitle);
+      
+      // No need to navigate back - the wishlist will update automatically
+      // and the StoreScreen will sync when user navigates back
     } catch (error) {
       console.error('Failed to remove from wishlist', error);
     }
