@@ -43,6 +43,7 @@ function RouteProtection({ children }) {
         'ProfileDetailsScreen',
         'OrderSuccessScreen',
         'PaymentScreen',
+        'PaymentCancelledScreen',
       ];
 
       // Define public routes
@@ -138,6 +139,7 @@ export default function RootLayout() {
           <Stack.Screen name="ProductDetailPage" />
           <Stack.Screen name="ProfileDetailsScreen" />
           <Stack.Screen name="OrderSuccessScreen"  />
+          <Stack.Screen name="PaymentCancelledScreen" />
           <Stack.Screen name="PaymentScreen" options={{ gestureEnabled: false }} />
 
           {/* 404 page - must be last */}

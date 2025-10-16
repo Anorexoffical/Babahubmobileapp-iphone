@@ -12,7 +12,8 @@ import {
   Modal,
   Animated,
   TouchableWithoutFeedback,
-  Linking
+  Linking,
+  BackHandler
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -82,12 +83,23 @@ const MyOrder = () => {
     fetchOrders();
   }, [user]);
 
+  // Handle back button and hardware back press
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      handleBack();
+      return true; // Prevent default back behavior
+    });
+
+    return () => backHandler.remove();
+  }, []);
+
+  // FIXED: Proper navigation to ProfileScreen that feels like going back
   const handleBack = () => {
-    if (router.canGoBack()) {
-      router.back();
-    } else {
-      router.replace('/ProfileScreen');
-    }
+    // Navigate to ProfileScreen with proper animation that feels like going back
+    router.navigate({
+      pathname: '/(tabs)/ProfileScreen',
+      params: { fromMyOrders: true }
+    });
   };
 
   const showOrderDetails = (order) => {
@@ -557,7 +569,7 @@ const MyOrder = () => {
           </Text>
           <TouchableOpacity 
             style={styles.shopButton}
-            onPress={() => router.replace('/(tabs)/HomeScreen')}
+            onPress={() => router.navigate('/(tabs)/HomeScreen')}
           >
             <Ionicons name="storefront-outline" size={20} color={COLORS.white} />
             <Text style={styles.shopButtonText}>Start Shopping</Text>

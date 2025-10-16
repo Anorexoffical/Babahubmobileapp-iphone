@@ -912,6 +912,7 @@ const styles = StyleSheet.create({
     zIndex: 1000,
     backgroundColor: COLORS.white,
     borderRadius: 25,
+
     padding: 12,
     ...Platform.select({
       ios: {
@@ -1022,6 +1023,7 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     fontSize: 16,
     fontWeight: '600',
+        borderRadius: 140,
   },
   modalSecondaryButtonText: {
     color: COLORS.dark,

@@ -1,3 +1,17 @@
+const checkInternetConnection = () => {
+  return new Promise((resolve) => {
+    const timeout = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Timeout')), 5000)
+    );
+
+    const request = fetch('https://www.google.com', { method: 'HEAD' });
+
+    Promise.race([request, timeout])
+      .then(() => resolve(true))
+      .catch(() => resolve(false));
+  });
+};
+
 import React, { useState, useEffect, useRef } from 'react';
 import {
   StyleSheet,
@@ -12,7 +26,8 @@ import {
   SafeAreaView,
   Animated,
   Platform,
-  Dimensions
+  Dimensions,
+  Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -20,7 +35,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const { width, height } = Dimensions.get('window');
 
-// Consistent color palette
+// Premium brand color palette
 const COLORS = {
   primary: '#6366F1',
   primaryLight: '#8B5CF6',
@@ -36,12 +51,147 @@ const COLORS = {
   light: '#F3F4F6',
   background: '#F9FAFB',
   white: '#FFFFFF',
-  success: '#059669',
-  warning: '#D97706',
-  error: '#DC2626',
+  black: '#000000',
+  success: '#10B981',
+  warning: '#F59E0B',
+  error: '#EF4444',
+  errorLight: '#FEE2E2',
 };
 
 const BASE_URL = 'https://account.babahub.co';
+
+// Premium Brand-Aligned Popup Modal Component
+const CustomPopup = ({ visible, title, message, type = 'info', onClose, showCloseButton = true }) => {
+  const fadeAnim = useState(new Animated.Value(0))[0];
+  const scaleAnim = useState(new Animated.Value(0.9))[0];
+  const slideAnim = useState(new Animated.Value(20))[0];
+
+  useEffect(() => {
+    if (visible) {
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          tension: 70,
+          friction: 8,
+          useNativeDriver: true,
+        }),
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        })
+      ]).start();
+    } else {
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [visible]);
+
+  const getIconAndColor = () => {
+    switch (type) {
+      case 'success':
+        return { 
+          icon: 'checkmark-circle', 
+          color: COLORS.success,
+          bgColor: COLORS.white,
+          borderColor: COLORS.success,
+          iconColor: COLORS.success
+        };
+      case 'warning':
+        return { 
+          icon: 'warning', 
+          color: COLORS.warning,
+          bgColor: COLORS.white,
+          borderColor: COLORS.ashwhite,
+          iconColor: COLORS.warning
+        };
+      case 'info':
+        return { 
+          icon: 'information-circle', 
+          color: COLORS.primary,
+          bgColor: COLORS.white,
+          borderColor: COLORS.primary,
+          iconColor: COLORS.primary
+        };
+      default:
+        return { 
+          icon: 'alert-circle', 
+          color: COLORS.error,
+          bgColor: COLORS.white,
+          borderColor: COLORS.white,
+          iconColor: COLORS.error
+        };
+    }
+  };
+
+  const { icon, color, bgColor, borderColor, iconColor } = getIconAndColor();
+
+  if (!visible) return null;
+
+  return (
+    <Modal
+      transparent
+      visible={visible}
+      animationType="none"
+      onRequestClose={onClose}
+    >
+      <View style={styles.popupOverlay}>
+        <TouchableOpacity 
+          style={styles.popupBackdrop}
+          activeOpacity={1}
+          onPress={onClose}
+        />
+        <Animated.View 
+          style={[
+            styles.popupContainer,
+            {
+              opacity: fadeAnim,
+              transform: [
+                { scale: scaleAnim },
+                { translateY: slideAnim }
+              ],
+              backgroundColor: bgColor,
+              borderWidth: 2,
+              borderColor: borderColor
+            }
+          ]}
+        >
+          <View style={styles.popupContent}>
+            <View style={styles.popupIconContainer}>
+              <View style={[styles.popupIconCircle, { backgroundColor: color }]}>
+                <Ionicons name={icon} size={22} color={COLORS.white} />
+              </View>
+            </View>
+            
+            <View style={styles.popupTextContainer}>
+              <Text style={styles.popupTitle}>{title}</Text>
+              <Text style={styles.popupMessage}>{message}</Text>
+            </View>
+          </View>
+          
+          <View style={styles.popupActions}>
+            <TouchableOpacity 
+              style={[styles.popupButton, { backgroundColor: color }]}
+              onPress={onClose}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.popupButtonText}>Continue</Text>
+              <Ionicons name="chevron-forward" size={16} color={COLORS.white} />
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
+      </View>
+    </Modal>
+  );
+};
 
 // Premium Product Image Component
 const ProductImage = ({ imageUrl, style }) => {
@@ -90,6 +240,15 @@ const Checkout = () => {
   const [phone, setPhone] = useState('');
   const [errors, setErrors] = useState({});
 
+  // Popup state
+  const [popupVisible, setPopupVisible] = useState(false);
+  const [popupTitle, setPopupTitle] = useState('');
+  const [popupMessage, setPopupMessage] = useState('');
+  const [popupType, setPopupType] = useState('info');
+
+  // Internet connection state
+  const [isConnected, setIsConnected] = useState(true);
+
   // Animation values
   const fadeAnim = useState(new Animated.Value(0))[0];
   const slideAnim = useState(new Animated.Value(30))[0];
@@ -100,6 +259,35 @@ const Checkout = () => {
   const nameInputRef = useRef(null);
   const phoneInputRef = useRef(null);
   const addressInputRef = useRef(null);
+
+  // Check internet connection periodically
+  useEffect(() => {
+    const checkConnection = async () => {
+      const connected = await checkInternetConnection();
+      setIsConnected(connected);
+    };
+
+    // Check immediately
+    checkConnection();
+
+    // Check every 10 seconds
+    const interval = setInterval(checkConnection, 10000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Show custom popup
+  const showPopup = (title, message, type = 'info') => {
+    setPopupTitle(title);
+    setPopupMessage(message);
+    setPopupType(type);
+    setPopupVisible(true);
+  };
+
+  // Hide custom popup
+  const hidePopup = () => {
+    setPopupVisible(false);
+  };
 
   // Load cart items and user data
   useEffect(() => {
@@ -113,12 +301,26 @@ const Checkout = () => {
           
           // If cart is empty, automatically go back
           if (cartData.length === 0) {
-            router.back();
+            showPopup(
+              'Empty Cart', 
+              'Your cart is empty. Please add items to proceed with checkout.',
+              'warning'
+            );
+            setTimeout(() => {
+              router.back();
+            }, 2000);
             return;
           }
         } else {
           // If no cart found, go back
-          router.back();
+          showPopup(
+            'No Items Found', 
+            'No cart items found. Please add items to proceed.',
+            'warning'
+          );
+          setTimeout(() => {
+            router.back();
+          }, 2000);
           return;
         }
 
@@ -175,6 +377,11 @@ const Checkout = () => {
         ]).start();
       } catch (error) {
         console.error('Error loading data:', error);
+        showPopup(
+          'Loading Error',
+          'There was an error loading your cart information. Please try again.',
+          'error'
+        );
       }
     };
     
@@ -223,11 +430,11 @@ const Checkout = () => {
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length > 0) {
-      // Show simple alert without banner
-      Alert.alert(
+      // Show custom popup instead of default alert
+      showPopup(
         'Missing Information',
-        'Please fill in all required fields to continue.',
-        [{ text: 'OK', style: 'default' }]
+        'Please fill in all required fields to continue with your order. All fields marked with * are required.',
+        'warning'
       );
       scrollToFirstError();
       return;
@@ -271,12 +478,23 @@ const Checkout = () => {
       const data = await response.json();
       if (data.paymentUrl) {
         await AsyncStorage.setItem("latestPaymentUrl", data.paymentUrl);
+        
+        // Navigate directly to payment screen without showing popup
         router.push("PaymentScreen");
+        
       } else {
-        Alert.alert("Payment Error", "Payment initiation failed. Please try again.");
+        showPopup(
+          'Payment Error',
+          'Payment initiation failed. Please check your information and try again. If the problem persists, contact our support team.',
+          'error'
+        );
       }
     } catch (error) {
-      Alert.alert('Connection Error', 'There was an error processing your order. Please check your connection and try again.');
+      showPopup(
+        'Connection Error',
+        'There was an error processing your order. Please check your internet connection and try again. If the problem continues, please contact support.',
+        'error'
+      );
       console.error('Checkout error:', error);
     } finally {
       setLoading(false);
@@ -289,14 +507,29 @@ const Checkout = () => {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={COLORS.primary} />
-          <Text style={styles.loadingText}>Redirecting...</Text>
+          <Text style={styles.loadingText}>Loading your cart...</Text>
         </View>
+        <CustomPopup
+          visible={popupVisible}
+          title={popupTitle}
+          message={popupMessage}
+          type={popupType}
+          onClose={hidePopup}
+        />
       </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      {/* Internet Connection Status Bar */}
+      {!isConnected && (
+        <View style={styles.offlineContainer}>
+          <Ionicons name="wifi-outline" size={16} color={COLORS.white} />
+          <Text style={styles.offlineText}>No internet connection</Text>
+        </View>
+      )}
+
       <Animated.ScrollView 
         ref={scrollViewRef}
         style={[
@@ -309,14 +542,14 @@ const Checkout = () => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {/* Premium Header */}
+        {/* Header - Consistent with CartScreen */}
         <View style={styles.header}>
           <TouchableOpacity 
             style={styles.backButton}
             onPress={() => router.back()}
           >
             <View style={styles.backButtonInner}>
-              <Ionicons name="chevron-back" size={24} color={COLORS.dark} />
+              <Ionicons name="chevron-back" size={20} color={COLORS.primary} />
             </View>
           </TouchableOpacity>
           <View style={styles.headerCenter}>
@@ -331,14 +564,14 @@ const Checkout = () => {
         {/* User Info Section */}
         <View style={styles.userInfoSection}>
           <View style={styles.userInfoHeader}>
-            <Ionicons name="person-circle-outline" size={24} color={COLORS.primary} />
+            <Ionicons name="person-circle-outline" size={20} color={COLORS.primary} />
             <Text style={styles.userInfoTitle}>Account Information</Text>
           </View>
           <View style={styles.userEmailContainer}>
-            <Ionicons name="mail-outline" size={16} color={COLORS.gray} />
+            <Ionicons name="mail-outline" size={14} color={COLORS.gray} />
             <Text style={styles.userEmail}>{user?.email || "Not logged in"}</Text>
             <View style={styles.verifiedBadge}>
-              <Ionicons name="checkmark-circle" size={14} color={COLORS.success} />
+              <Ionicons name="checkmark-circle" size={12} color={COLORS.success} />
               <Text style={styles.verifiedText}>Verified</Text>
             </View>
           </View>
@@ -347,7 +580,7 @@ const Checkout = () => {
         {/* Contact Information Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Ionicons name="location-outline" size={20} color={COLORS.primary} />
+            <Ionicons name="location-outline" size={18} color={COLORS.primary} />
             <Text style={styles.sectionTitle}>Shipping Information</Text>
           </View>
           
@@ -433,10 +666,10 @@ const Checkout = () => {
         {/* Order Summary Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Ionicons name="bag-outline" size={20} color={COLORS.primary} />
+            <Ionicons name="bag-outline" size={18} color={COLORS.primary} />
             <Text style={styles.sectionTitle}>Order Summary</Text>
             <View style={styles.totalBadge}>
-              <Text style={styles.totalBadgeText}>${calculateTotal().toFixed(2)}</Text>
+              <Text style={styles.totalBadgeText}>R {calculateTotal().toFixed(2)}</Text>
             </View>
           </View>
 
@@ -466,10 +699,10 @@ const Checkout = () => {
 
                   <View style={styles.orderItemBottom}>
                     <Text style={styles.orderItemPrice}>
-                      ${item.price.toFixed(2)} each
+                      R {item.price.toFixed(2)} each
                     </Text>
                     <Text style={styles.orderItemTotal}>
-                      ${(item.price * item.quantity).toFixed(2)}
+                      R {(item.price * item.quantity).toFixed(2)}
                     </Text>
                   </View>
                 </View>
@@ -482,7 +715,7 @@ const Checkout = () => {
             <View style={styles.summaryGrid}>
               <View style={styles.summaryRow}>
                 <Text style={styles.summaryLabel}>Subtotal</Text>
-                <Text style={styles.summaryValue}>${calculateSubtotal().toFixed(2)}</Text>
+                <Text style={styles.summaryValue}>R {calculateSubtotal().toFixed(2)}</Text>
               </View>
 
               <View style={styles.summaryRow}>
@@ -491,20 +724,20 @@ const Checkout = () => {
                   styles.summaryValue,
                   calculateShipping() === 0 && styles.freeShipping
                 ]}>
-                  {calculateShipping() === 0 ? 'FREE' : `$${calculateShipping().toFixed(2)}`}
+                  {calculateShipping() === 0 ? 'FREE' : `R ${calculateShipping().toFixed(2)}`}
                 </Text>
               </View>
 
               <View style={styles.summaryRow}>
                 <Text style={styles.summaryLabel}>Tax</Text>
-                <Text style={styles.summaryValue}>${calculateTax().toFixed(2)}</Text>
+                <Text style={styles.summaryValue}>R {calculateTax().toFixed(2)}</Text>
               </View>
 
               <View style={styles.summaryDivider} />
 
               <View style={styles.totalRow}>
                 <Text style={styles.totalLabel}>Total</Text>
-                <Text style={styles.totalAmount}>${calculateTotal().toFixed(2)}</Text>
+                <Text style={styles.totalAmount}>R {calculateTotal().toFixed(2)}</Text>
               </View>
             </View>
           </View>
@@ -513,7 +746,7 @@ const Checkout = () => {
         {/* Security & Payment Note */}
         <View style={styles.securityNote}>
           <View style={styles.securityHeader}>
-            <Ionicons name="shield-checkmark" size={20} color={COLORS.success} />
+            <Ionicons name="shield-checkmark" size={18} color={COLORS.success} />
             <Text style={styles.securityTitle}>Secure Payment</Text>
           </View>
           <Text style={styles.securityText}>
@@ -527,9 +760,9 @@ const Checkout = () => {
         {calculateSubtotal() < 50 && (
           <View style={styles.shippingProgress}>
             <View style={styles.progressHeader}>
-              <Ionicons name="rocket" size={16} color={COLORS.primary} />
+              <Ionicons name="rocket" size={14} color={COLORS.primary} />
               <Text style={styles.progressText}>
-                Add ${(50 - calculateSubtotal()).toFixed(2)} for free shipping
+                Add R {(50 - calculateSubtotal()).toFixed(2)} for free shipping
               </Text>
             </View>
             <View style={styles.progressBar}>
@@ -544,12 +777,12 @@ const Checkout = () => {
         )}
       </Animated.ScrollView>
 
-      {/* Premium Checkout Footer */}
+      {/* Premium Checkout Footer - Fixed Pay Button */}
       <View style={styles.footer}>
         <View style={styles.footerBackground}>
           <View style={styles.footerContent}>
             <View style={styles.footerSummary}>
-              <Text style={styles.footerTotal}>${calculateTotal().toFixed(2)}</Text>
+              <Text style={styles.footerTotal}>R {calculateTotal().toFixed(2)}</Text>
               <Text style={styles.footerItems}>{cartItems.length} items</Text>
             </View>
             <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
@@ -562,7 +795,7 @@ const Checkout = () => {
                   <ActivityIndicator size="small" color={COLORS.white} />
                 ) : (
                   <>
-                    <Ionicons name="lock-closed" size={18} color={COLORS.white} />
+                    <Ionicons name="lock-closed" size={16} color={COLORS.white} />
                     <Text style={styles.checkoutText}>Pay Now</Text>
                   </>
                 )}
@@ -571,6 +804,15 @@ const Checkout = () => {
           </View>
         </View>
       </View>
+
+      {/* Custom Popup Modal */}
+      <CustomPopup
+        visible={popupVisible}
+        title={popupTitle}
+        message={popupMessage}
+        type={popupType}
+        onClose={hidePopup}
+      />
     </SafeAreaView>
   );
 };
@@ -578,10 +820,11 @@ const Checkout = () => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.white,
   },
   container: {
     flex: 1,
+    backgroundColor: COLORS.white,
   },
   scrollContent: {
     flexGrow: 1,
@@ -591,33 +834,139 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: COLORS.white,
   },
   loadingText: {
     marginTop: 12,
-    fontSize: 16,
+    fontSize: 14,
     color: COLORS.gray,
   },
-  // Premium Header
+  // Offline Status Bar
+  offlineContainer: {
+    backgroundColor: COLORS.error,
+    padding: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  offlineText: {
+    color: COLORS.white,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  // Premium Popup Styles - Updated with brand colors
+  popupOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  popupBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+  },
+  popupContainer: {
+    backgroundColor: COLORS.white,
+    borderRadius: 16,
+    width: '100%',
+    maxWidth: 340,
+    shadowColor: COLORS.black,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 15,
+    overflow: 'hidden',
+  },
+  popupContent: {
+    flexDirection: 'row',
+    padding: 24,
+    paddingBottom: 16,
+  },
+  popupIconContainer: {
+    marginRight: 16,
+  },
+  popupIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  popupTextContainer: {
+    flex: 1,
+  },
+  popupTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.black,
+    marginBottom: 8,
+    lineHeight: 22,
+  },
+  popupMessage: {
+    fontSize: 14,
+    color: COLORS.dark,
+    lineHeight: 20,
+  },
+  popupActions: {
+    padding: 16,
+    paddingTop: 8,
+  },
+  popupButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 14,
+    borderRadius: 10,
+    gap: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  popupButtonText: {
+    color: COLORS.white,
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  // Header - Consistent with CartScreen
   header: {
+    backgroundColor: COLORS.white,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: COLORS.white,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.light,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    paddingTop: Platform.OS === 'ios' ? 50 : 30,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 5,
+    marginBottom: 8,
   },
   backButton: {
-    padding: 4,
+    padding: 6,
   },
   backButtonInner: {
-    width: 40,
-    height: 40,
+    width: 36,
+    height: 36,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: COLORS.light,
-    borderRadius: 12,
+    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+    borderRadius: 10,
   },
   headerCenter: {
     alignItems: 'center',
@@ -630,31 +979,22 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   headerSubtitle: {
-    fontSize: 14,
+    fontSize: 13,
     color: COLORS.gray,
     fontWeight: '500',
   },
   headerRight: {
-    width: 40,
+    width: 36,
   },
   // User Info Section
   userInfoSection: {
     backgroundColor: COLORS.white,
     marginHorizontal: 16,
     marginTop: 12,
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 16,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.08,
-        shadowRadius: 12,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
+    borderWidth: 1,
+    borderColor: COLORS.light,
   },
   userInfoHeader: {
     flexDirection: 'row',
@@ -672,7 +1012,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: COLORS.primary + '08',
     padding: 12,
-    borderRadius: 12,
+    borderRadius: 8,
     gap: 8,
   },
   userEmail: {
@@ -687,7 +1027,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.success + '15',
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: 6,
     gap: 4,
   },
   verifiedText: {
@@ -700,36 +1040,27 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     marginHorizontal: 16,
     marginTop: 12,
-    borderRadius: 16,
-    padding: 20,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.08,
-        shadowRadius: 12,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: COLORS.light,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
     gap: 8,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
     color: COLORS.dark,
   },
   totalBadge: {
     backgroundColor: COLORS.primary,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
     marginLeft: 'auto',
   },
   totalBadgeText: {
@@ -739,7 +1070,7 @@ const styles = StyleSheet.create({
   },
   // Two Column Form Layout
   twoColumnGrid: {
-    gap: 16,
+    gap: 12,
   },
   formRow: {
     flexDirection: 'row',
@@ -762,19 +1093,19 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   input: {
-    height: 48,
+    height: 44,
     borderWidth: 1.5,
     borderColor: COLORS.light,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    fontSize: 15,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    fontSize: 14,
     color: COLORS.dark,
     backgroundColor: COLORS.white,
   },
   textArea: {
     height: 80,
     textAlignVertical: 'top',
-    paddingTop: 12,
+    paddingTop: 10,
   },
   inputError: {
     borderColor: COLORS.error,
@@ -793,15 +1124,15 @@ const styles = StyleSheet.create({
   },
   // Order Items - Compact Design
   orderItemsContainer: {
-    gap: 12,
-    marginBottom: 20,
+    gap: 10,
+    marginBottom: 16,
   },
   orderItem: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
     backgroundColor: COLORS.background,
-    borderRadius: 12,
+    borderRadius: 10,
   },
   orderItemImage: {
     width: 50,
@@ -845,9 +1176,9 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   colorDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   variantText: {
     fontSize: 11,
@@ -872,11 +1203,11 @@ const styles = StyleSheet.create({
   // Order Summary
   summaryCard: {
     backgroundColor: COLORS.background,
-    borderRadius: 12,
+    borderRadius: 10,
     padding: 16,
   },
   summaryGrid: {
-    gap: 10,
+    gap: 8,
   },
   summaryRow: {
     flexDirection: 'row',
@@ -900,7 +1231,7 @@ const styles = StyleSheet.create({
   summaryDivider: {
     height: 1,
     backgroundColor: COLORS.light,
-    marginVertical: 12,
+    marginVertical: 8,
   },
   totalRow: {
     flexDirection: 'row',
@@ -908,13 +1239,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   totalLabel: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
     color: COLORS.dark,
   },
   totalAmount: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 18,
+    fontWeight: '800',
     color: COLORS.primary,
   },
   // Security Note
@@ -922,8 +1253,8 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.success + '08',
     marginHorizontal: 16,
     marginTop: 12,
-    padding: 16,
-    borderRadius: 12,
+    padding: 14,
+    borderRadius: 10,
     borderLeftWidth: 3,
     borderLeftColor: COLORS.success,
   },
@@ -934,7 +1265,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   securityTitle: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '700',
     color: COLORS.success,
   },
@@ -947,29 +1278,20 @@ const styles = StyleSheet.create({
   shippingProgress: {
     marginHorizontal: 16,
     marginTop: 12,
-    padding: 16,
+    padding: 12,
     backgroundColor: COLORS.white,
-    borderRadius: 12,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 6,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: COLORS.light,
   },
   progressHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 10,
+    gap: 6,
+    marginBottom: 8,
   },
   progressText: {
-    fontSize: 13,
+    fontSize: 12,
     color: COLORS.dark,
     fontWeight: '500',
   },
@@ -984,28 +1306,21 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     borderRadius: 2,
   },
-  // Premium Footer
+  // Premium Footer - Fixed Pay Button
   footer: {
-    paddingTop: 16,
+    paddingTop: 12,
   },
   footerBackground: {
     backgroundColor: COLORS.white,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: Platform.OS === 'ios' ? 34 : 20,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: -4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 12,
-      },
-      android: {
-        elevation: 8,
-      },
-    }),
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: Platform.OS === 'ios' ? 30 : 20,
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderColor: COLORS.light,
   },
   footerContent: {
     flexDirection: 'row',
@@ -1017,7 +1332,7 @@ const styles = StyleSheet.create({
   },
   footerTotal: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: '800',
     color: COLORS.primary,
     marginBottom: 2,
   },
@@ -1030,12 +1345,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: COLORS.primary,
     paddingHorizontal: 20,
-    paddingVertical: 14,
+    paddingVertical: 12,
     borderRadius: 12,
     gap: 6,
     flex: 1,
     marginLeft: 12,
     justifyContent: 'center',
+    minWidth: 120, // Ensure button has proper width
   },
   checkoutButtonDisabled: {
     backgroundColor: COLORS.grayLight,

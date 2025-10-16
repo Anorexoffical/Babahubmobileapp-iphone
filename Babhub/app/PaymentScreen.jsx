@@ -50,6 +50,10 @@ const PaymentScreen = () => {
   const webViewRef = useRef(null);
   const router = useRouter();
 
+  // Track redirection to prevent multiple redirects
+  const redirectInitiated = useRef(false);
+  const paymentStatusDetected = useRef(false);
+
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(20)).current;
@@ -143,6 +147,8 @@ const PaymentScreen = () => {
   useEffect(() => {
     setHasError(false);
     setProgress(0);
+    redirectInitiated.current = false;
+    paymentStatusDetected.current = false;
   }, [paymentUrl]);
 
   // Animate progress bar
@@ -154,7 +160,70 @@ const PaymentScreen = () => {
     }).start();
   }, [progress]);
 
-  // Enhanced navigation state handler
+  // Handle payment status redirection
+  const handlePaymentSuccess = () => {
+    if (redirectInitiated.current) return;
+    
+    console.log("SUCCESS DETECTED - Immediate redirect to OrderSuccessScreen");
+    redirectInitiated.current = true;
+    paymentStatusDetected.current = true;
+    setLoading(false);
+    
+    // Clear payment URL immediately
+    AsyncStorage.removeItem("latestPaymentUrl");
+    
+    // IMMEDIATE redirect without delay
+    router.replace({
+      pathname: '/OrderSuccessScreen',
+      params: { 
+        paymentStatus: 'success',
+        timestamp: Date.now()
+      }
+    });
+  };
+
+  const handlePaymentCancelled = () => {
+    if (redirectInitiated.current) return;
+    
+    console.log("CANCELLATION DETECTED - Redirecting to PaymentCancelledScreen");
+    redirectInitiated.current = true;
+    paymentStatusDetected.current = true;
+    setLoading(false);
+    
+    // Clear payment URL immediately
+    AsyncStorage.removeItem("latestPaymentUrl");
+    
+    // Redirect to dedicated cancellation page
+    router.replace({
+      pathname: './PaymentCancelledScreen',
+      params: { 
+        timestamp: Date.now()
+      }
+    });
+  };
+
+  const handlePaymentFailed = () => {
+    if (redirectInitiated.current) return;
+    
+    console.log("FAILURE DETECTED - Redirecting to cancellation page");
+    redirectInitiated.current = true;
+    paymentStatusDetected.current = true;
+    setLoading(false);
+    
+    // Clear payment URL immediately
+    AsyncStorage.removeItem("latestPaymentUrl");
+    
+    // Redirect to cancellation page with failure context
+    router.replace({
+      pathname: '/PaymentCancelledScreen',
+      params: { 
+        paymentFailed: 'true',
+        timestamp: Date.now()
+      }
+    });
+  };
+
+  // Enhanced navigation state handler - UPDATED VERSION
   const onNavigationStateChange = (navState) => {
     const { url, title, loading: navLoading } = navState;
     
@@ -163,35 +232,51 @@ const PaymentScreen = () => {
 
     // Update progress for loading bar
     if (navLoading) {
-      setProgress(0.7); // Partial progress while loading
+      setProgress(0.7);
     } else {
-      setProgress(1); // Complete when loaded
-      setTimeout(() => setProgress(0), 500); // Hide after completion
+      setProgress(1);
+      setTimeout(() => setProgress(0), 500);
     }
 
-    // Improved URL pattern matching for success
+    // CRITICAL FIX: Prevent multiple redirects
+    if (redirectInitiated.current || paymentStatusDetected.current) {
+      return;
+    }
+
+    // Enhanced URL pattern matching for success - More aggressive detection
     const isSuccessUrl = 
       url.includes('/success') || 
       url.includes('payment/success') ||
       url.includes('payfast/success') ||
       url.includes('return?status=success') ||
+      url.includes('complete') ||
+      url.includes('approved') ||
+      url.includes('thank-you') ||
+      url.includes('order-received') ||
+      url.includes('payment-complete') ||
       (title && (
         title.toLowerCase().includes('success') ||
         title.toLowerCase().includes('thank you') ||
         title.toLowerCase().includes('payment successful') ||
-        title.toLowerCase().includes('approved')
+        title.toLowerCase().includes('approved') ||
+        title.toLowerCase().includes('complete') ||
+        title.toLowerCase().includes('order confirmed') ||
+        title.toLowerCase().includes('transaction successful')
       ));
 
-    // Improved URL pattern matching for cancellation
+    // Enhanced URL pattern matching for cancellation
     const isCancelUrl = 
       url.includes('/cancel') || 
       url.includes('payment/cancel') ||
       url.includes('payfast/cancel') ||
       url.includes('return?status=cancel') ||
+      url.includes('cancelled') ||
+      url.includes('payment-cancelled') ||
       (title && (
         title.toLowerCase().includes('cancel') ||
         title.toLowerCase().includes('cancelled') ||
-        title.toLowerCase().includes('payment cancelled')
+        title.toLowerCase().includes('payment cancelled') ||
+        title.toLowerCase().includes('transaction cancelled')
       ));
 
     // Check for failure URLs
@@ -200,57 +285,31 @@ const PaymentScreen = () => {
       url.includes('payment/failure') ||
       url.includes('payfast/failure') ||
       url.includes('return?status=failure') ||
+      url.includes('declined') ||
+      url.includes('failed') ||
       (title && (
         title.toLowerCase().includes('failed') ||
         title.toLowerCase().includes('failure') ||
         title.toLowerCase().includes('declined') ||
-        title.toLowerCase().includes('error')
+        title.toLowerCase().includes('error') ||
+        title.toLowerCase().includes('unsuccessful')
       ));
 
-    // Handle success URL
+    // Handle success URL - IMMEDIATE REDIRECTION
     if (isSuccessUrl) {
-      setLoading(false);
-      AsyncStorage.removeItem("latestPaymentUrl");
-      setTimeout(() => {
-        router.replace({
-          pathname: '/OrderSuccessScreen',
-          params: { paymentStatus: 'success' }
-        });
-      }, 1000);
+      handlePaymentSuccess();
       return;
     }
     
     // Handle cancel URL
     if (isCancelUrl) {
-      setLoading(false);
-      AsyncStorage.removeItem("latestPaymentUrl");
-      setTimeout(() => {
-        Alert.alert(
-          "Payment Cancelled", 
-          "Your payment was cancelled. You can try again anytime.",
-          [{ 
-            text: "Back to Cart", 
-            onPress: () => router.replace('/(tabs)/CartScreen') 
-          }]
-        );
-      }, 500);
+      handlePaymentCancelled();
       return;
     }
 
     // Handle failure URL
     if (isFailureUrl) {
-      setLoading(false);
-      AsyncStorage.removeItem("latestPaymentUrl");
-      setTimeout(() => {
-        Alert.alert(
-          "Payment Failed", 
-          "We couldn't process your payment. Please try again or use a different payment method.",
-          [{ 
-            text: "Try Again", 
-            onPress: () => router.back() 
-          }]
-        );
-      }, 500);
+      handlePaymentFailed();
       return;
     }
 
@@ -261,24 +320,6 @@ const PaymentScreen = () => {
   // Enhanced WebView loading progress
   const onLoadProgress = ({ nativeEvent }) => {
     setProgress(nativeEvent.progress);
-  };
-
-  // Handle message posting from WebView
-  const onMessage = (event) => {
-    try {
-      const data = JSON.parse(event.nativeEvent.data);
-      console.log('Message from WebView:', data);
-      
-      if (data.type === 'payment_success') {
-        AsyncStorage.removeItem("latestPaymentUrl");
-        router.replace('/OrderSuccessScreen');
-      } else if (data.type === 'payment_cancel') {
-        AsyncStorage.removeItem("latestPaymentUrl");
-        router.back();
-      }
-    } catch (error) {
-      console.log('Non-JSON message:', event.nativeEvent.data);
-    }
   };
 
   // Enhanced WebView error handling
@@ -507,8 +548,7 @@ const PaymentScreen = () => {
             onNavigationStateChange={onNavigationStateChange}
             onError={onError}
             onHttpError={onHttpError}
-            onMessage={onMessage}
-            allowsBackForwardNavigationGestures={true}
+            allowsBackForwardNavigationGestures={false} // Prevent users from navigating back in WebView
             startInLoadingState={true}
             renderLoading={() => (
               <View style={styles.webviewLoader}>
@@ -526,58 +566,186 @@ const PaymentScreen = () => {
             sharedCookiesEnabled={true}
             thirdPartyCookiesEnabled={true}
             injectedJavaScript={`
-              // Enhanced payment detection
+              // Enhanced payment detection - More aggressive
+              let paymentStatusChecked = false;
+              
               function checkPaymentStatus() {
+                if (paymentStatusChecked) return;
+                
                 const currentUrl = window.location.href;
                 const pageTitle = document.title.toLowerCase();
+                const pageContent = document.body.innerText.toLowerCase();
                 
+                console.log('Checking payment status:', currentUrl);
+                
+                // Enhanced Success detection
+                const isSuccess = 
+                  currentUrl.includes('/success') || 
+                  currentUrl.includes('payment/success') ||
+                  currentUrl.includes('payfast/success') ||
+                  currentUrl.includes('return?status=success') ||
+                  currentUrl.includes('complete') ||
+                  currentUrl.includes('approved') ||
+                  currentUrl.includes('thank-you') ||
+                  currentUrl.includes('order-received') ||
+                  currentUrl.includes('payment-complete') ||
+                  pageTitle.includes('success') ||
+                  pageTitle.includes('thank you') ||
+                  pageTitle.includes('payment successful') ||
+                  pageTitle.includes('approved') ||
+                  pageTitle.includes('complete') ||
+                  pageTitle.includes('order confirmed') ||
+                  pageTitle.includes('transaction successful') ||
+                  pageContent.includes('payment successful') ||
+                  pageContent.includes('thank you for your payment') ||
+                  pageContent.includes('transaction approved') ||
+                  pageContent.includes('order has been received') ||
+                  pageContent.includes('your payment was successful');
+
+                // Enhanced Cancel detection
+                const isCancel = 
+                  currentUrl.includes('/cancel') || 
+                  currentUrl.includes('payment/cancel') ||
+                  currentUrl.includes('payfast/cancel') ||
+                  currentUrl.includes('return?status=cancel') ||
+                  currentUrl.includes('cancelled') ||
+                  currentUrl.includes('payment-cancelled') ||
+                  pageTitle.includes('cancel') ||
+                  pageTitle.includes('cancelled') ||
+                  pageTitle.includes('payment cancelled') ||
+                  pageTitle.includes('transaction cancelled') ||
+                  pageContent.includes('payment cancelled') ||
+                  pageContent.includes('transaction cancelled') ||
+                  pageContent.includes('you have cancelled');
+
+                // Enhanced Failure detection
+                const isFailure = 
+                  currentUrl.includes('/failure') || 
+                  currentUrl.includes('payment/failure') ||
+                  currentUrl.includes('payfast/failure') ||
+                  currentUrl.includes('return?status=failure') ||
+                  currentUrl.includes('declined') ||
+                  currentUrl.includes('failed') ||
+                  pageTitle.includes('failed') ||
+                  pageTitle.includes('failure') ||
+                  pageTitle.includes('declined') ||
+                  pageTitle.includes('error') ||
+                  pageTitle.includes('unsuccessful') ||
+                  pageContent.includes('payment failed') ||
+                  pageContent.includes('transaction declined') ||
+                  pageContent.includes('unsuccessful payment');
+
                 // Success detection
-                if (currentUrl.includes('/success') || 
-                    currentUrl.includes('payment/success') ||
-                    currentUrl.includes('payfast/success') ||
-                    currentUrl.includes('return?status=success') ||
-                    pageTitle.includes('success') ||
-                    pageTitle.includes('thank you') ||
-                    pageTitle.includes('payment successful') ||
-                    pageTitle.includes('approved')) {
+                if (isSuccess) {
+                  paymentStatusChecked = true;
                   window.ReactNativeWebView.postMessage(JSON.stringify({
                     type: 'payment_success',
                     url: currentUrl,
-                    title: document.title
+                    title: document.title,
+                    timestamp: Date.now(),
+                    detectedBy: 'javascript'
                   }));
+                  return;
                 }
                 
                 // Cancel detection
-                if (currentUrl.includes('/cancel') || 
-                    currentUrl.includes('payment/cancel') ||
-                    currentUrl.includes('payfast/cancel') ||
-                    currentUrl.includes('return?status=cancel') ||
-                    pageTitle.includes('cancel') ||
-                    pageTitle.includes('cancelled')) {
+                if (isCancel) {
+                  paymentStatusChecked = true;
                   window.ReactNativeWebView.postMessage(JSON.stringify({
                     type: 'payment_cancel',
                     url: currentUrl,
-                    title: document.title
+                    title: document.title,
+                    timestamp: Date.now(),
+                    detectedBy: 'javascript'
                   }));
+                  return;
+                }
+                
+                // Failure detection
+                if (isFailure) {
+                  paymentStatusChecked = true;
+                  window.ReactNativeWebView.postMessage(JSON.stringify({
+                    type: 'payment_failure',
+                    url: currentUrl,
+                    title: document.title,
+                    timestamp: Date.now(),
+                    detectedBy: 'javascript'
+                  }));
+                  return;
                 }
               }
               
-              // Initial check
+              // Initial check - more frequent
+              setTimeout(checkPaymentStatus, 500);
               setTimeout(checkPaymentStatus, 1000);
+              setTimeout(checkPaymentStatus, 2000);
+              setTimeout(checkPaymentStatus, 3000);
               
-              // Monitor URL changes
+              // Monitor URL changes more aggressively
+              let currentUrl = window.location.href;
+              const urlCheckInterval = setInterval(() => {
+                if (window.location.href !== currentUrl) {
+                  currentUrl = window.location.href;
+                  console.log('URL changed to:', currentUrl);
+                  setTimeout(checkPaymentStatus, 300);
+                }
+              }, 300);
+              
+              // Override history methods
               const originalPushState = history.pushState;
               history.pushState = function() {
                 originalPushState.apply(this, arguments);
-                setTimeout(checkPaymentStatus, 500);
+                setTimeout(checkPaymentStatus, 300);
               };
               
-              // Monitor hash changes
-              window.addEventListener('hashchange', checkPaymentStatus);
+              const originalReplaceState = history.replaceState;
+              history.replaceState = function() {
+                originalReplaceState.apply(this, arguments);
+                setTimeout(checkPaymentStatus, 300);
+              };
               
-              // Monitor popstate
-              window.addEventListener('popstate', checkPaymentStatus);
+              // Enhanced event listeners
+              window.addEventListener('hashchange', () => {
+                setTimeout(checkPaymentStatus, 300);
+              });
+              
+              window.addEventListener('popstate', () => {
+                setTimeout(checkPaymentStatus, 300);
+              });
+              
+              // Also check on any click (for forms that might redirect)
+              document.addEventListener('click', () => {
+                setTimeout(checkPaymentStatus, 1000);
+              }, true);
+              
+              // Check when page becomes visible (for tab switching)
+              document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) {
+                  setTimeout(checkPaymentStatus, 500);
+                }
+              });
+              
+              // Cleanup interval when page unloads
+              window.addEventListener('beforeunload', () => {
+                clearInterval(urlCheckInterval);
+              });
             `}
+            onMessage={(event) => {
+              try {
+                const data = JSON.parse(event.nativeEvent.data);
+                console.log('Message from WebView:', data);
+                
+                if (data.type === 'payment_success' && !redirectInitiated.current) {
+                  handlePaymentSuccess();
+                } else if (data.type === 'payment_cancel' && !redirectInitiated.current) {
+                  handlePaymentCancelled();
+                } else if (data.type === 'payment_failure' && !redirectInitiated.current) {
+                  handlePaymentFailed();
+                }
+              } catch (error) {
+                console.log('Non-JSON message:', event.nativeEvent.data);
+              }
+            }}
             userAgent={
               Platform.OS === 'ios' 
                 ? 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1'
@@ -602,6 +770,7 @@ const PaymentScreen = () => {
   );
 };
 
+// ... keep your existing styles exactly the same ...
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
