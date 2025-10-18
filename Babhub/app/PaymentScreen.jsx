@@ -76,8 +76,7 @@ const PaymentScreen = () => {
               text: "Cancel Payment", 
               style: "destructive",
               onPress: () => {
-                AsyncStorage.removeItem("latestPaymentUrl");
-                router.back();
+                handleManualCancellation();
               }
             }
           ]
@@ -89,6 +88,28 @@ const PaymentScreen = () => {
 
     return () => backHandler.remove();
   }, [paymentUrl, router]);
+
+  // Handle manual cancellation
+  const handleManualCancellation = () => {
+    if (redirectInitiated.current) return;
+    
+    console.log("MANUAL CANCELLATION - Redirecting to PaymentCancelledScreen");
+    redirectInitiated.current = true;
+    paymentStatusDetected.current = true;
+    setLoading(false);
+    
+    // Clear payment URL immediately
+    AsyncStorage.removeItem("latestPaymentUrl");
+    
+    // Redirect to cancellation page
+    router.replace({
+      pathname: '/PaymentCancelledScreen',
+      params: { 
+        manualCancellation: 'true',
+        timestamp: Date.now()
+      }
+    });
+  };
 
   // Load payment URL
   useEffect(() => {
@@ -161,28 +182,27 @@ const PaymentScreen = () => {
   }, [progress]);
 
   // Handle payment status redirection
- // In PaymentScreen.js - Update the handlePaymentSuccess function
-const handlePaymentSuccess = () => {
-  if (redirectInitiated.current) return;
-  
-  console.log("SUCCESS DETECTED - Immediate redirect to OrderSuccessScreen");
-  redirectInitiated.current = true;
-  paymentStatusDetected.current = true;
-  setLoading(false);
-  
-  // Clear payment URL immediately
-  AsyncStorage.removeItem("latestPaymentUrl");
-  
-  // IMMEDIATE redirect without delay - use replace to clear back stack
-  router.replace({
-    pathname: '/OrderSuccessScreen',
-    params: { 
-      paymentStatus: 'success',
-      timestamp: Date.now(),
-      clearCart: 'true' // Add this flag
-    }
-  });
-};
+  const handlePaymentSuccess = () => {
+    if (redirectInitiated.current) return;
+    
+    console.log("SUCCESS DETECTED - Immediate redirect to OrderSuccessScreen");
+    redirectInitiated.current = true;
+    paymentStatusDetected.current = true;
+    setLoading(false);
+    
+    // Clear payment URL immediately
+    AsyncStorage.removeItem("latestPaymentUrl");
+    
+    // IMMEDIATE redirect without delay
+    router.replace({
+      pathname: '/OrderSuccessScreen',
+      params: { 
+        paymentStatus: 'success',
+        timestamp: Date.now(),
+        clearCart: 'true'
+      }
+    });
+  };
 
   const handlePaymentCancelled = () => {
     if (redirectInitiated.current) return;
@@ -197,9 +217,10 @@ const handlePaymentSuccess = () => {
     
     // Redirect to dedicated cancellation page
     router.replace({
-      pathname: './PaymentCancelledScreen',
+      pathname: '/PaymentCancelledScreen',
       params: { 
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        autoDetected: 'true'
       }
     });
   };
@@ -225,7 +246,7 @@ const handlePaymentSuccess = () => {
     });
   };
 
-  // Enhanced navigation state handler - UPDATED VERSION
+  // Enhanced navigation state handler
   const onNavigationStateChange = (navState) => {
     const { url, title, loading: navLoading } = navState;
     
@@ -245,7 +266,7 @@ const handlePaymentSuccess = () => {
       return;
     }
 
-    // Enhanced URL pattern matching for success - More aggressive detection
+    // Enhanced URL pattern matching for success
     const isSuccessUrl = 
       url.includes('/success') || 
       url.includes('payment/success') ||
@@ -266,7 +287,7 @@ const handlePaymentSuccess = () => {
         title.toLowerCase().includes('transaction successful')
       ));
 
-    // Enhanced URL pattern matching for cancellation
+    // Enhanced URL pattern matching for cancellation - MORE AGGRESSIVE
     const isCancelUrl = 
       url.includes('/cancel') || 
       url.includes('payment/cancel') ||
@@ -274,11 +295,16 @@ const handlePaymentSuccess = () => {
       url.includes('return?status=cancel') ||
       url.includes('cancelled') ||
       url.includes('payment-cancelled') ||
+      url.includes('user_cancel') ||
+      url.includes('abort') ||
+      url.includes('payment_aborted') ||
       (title && (
         title.toLowerCase().includes('cancel') ||
         title.toLowerCase().includes('cancelled') ||
         title.toLowerCase().includes('payment cancelled') ||
-        title.toLowerCase().includes('transaction cancelled')
+        title.toLowerCase().includes('transaction cancelled') ||
+        title.toLowerCase().includes('aborted') ||
+        title.toLowerCase().includes('payment aborted')
       ));
 
     // Check for failure URLs
@@ -289,12 +315,14 @@ const handlePaymentSuccess = () => {
       url.includes('return?status=failure') ||
       url.includes('declined') ||
       url.includes('failed') ||
+      url.includes('error') ||
       (title && (
         title.toLowerCase().includes('failed') ||
         title.toLowerCase().includes('failure') ||
         title.toLowerCase().includes('declined') ||
         title.toLowerCase().includes('error') ||
-        title.toLowerCase().includes('unsuccessful')
+        title.toLowerCase().includes('unsuccessful') ||
+        title.toLowerCase().includes('could not process')
       ));
 
     // Handle success URL - IMMEDIATE REDIRECTION
@@ -303,7 +331,7 @@ const handlePaymentSuccess = () => {
       return;
     }
     
-    // Handle cancel URL
+    // Handle cancel URL - MORE AGGRESSIVE
     if (isCancelUrl) {
       handlePaymentCancelled();
       return;
@@ -347,8 +375,7 @@ const handlePaymentSuccess = () => {
           text: "Cancel", 
           style: "destructive",
           onPress: () => {
-            AsyncStorage.removeItem("latestPaymentUrl");
-            router.back();
+            handleManualCancellation();
           }
         }
       ]
@@ -362,7 +389,15 @@ const handlePaymentSuccess = () => {
     setHasError(true);
     Alert.alert(
       "Payment Unavailable", 
-      "The payment gateway is currently unavailable. Please try again later."
+      "The payment gateway is currently unavailable. Please try again later.",
+      [
+        { 
+          text: "OK", 
+          onPress: () => {
+            handleManualCancellation();
+          }
+        }
+      ]
     );
   };
 
@@ -382,10 +417,7 @@ const handlePaymentSuccess = () => {
         >
           <View style={styles.header}>
             <TouchableOpacity 
-              onPress={() => {
-                AsyncStorage.removeItem("latestPaymentUrl");
-                router.back();
-              }} 
+              onPress={handleManualCancellation}
               style={styles.backButton}
             >
               <View style={styles.backButtonInner}>
@@ -423,10 +455,7 @@ const handlePaymentSuccess = () => {
               
               <TouchableOpacity 
                 style={styles.backButtonError}
-                onPress={() => {
-                  AsyncStorage.removeItem("latestPaymentUrl");
-                  router.back();
-                }}
+                onPress={handleManualCancellation}
               >
                 <Ionicons name="arrow-back" size={20} color={COLORS.primary} />
                 <Text style={styles.backText}>Back to Checkout</Text>
@@ -472,23 +501,7 @@ const handlePaymentSuccess = () => {
         {/* Premium Header */}
         <View style={styles.header}>
           <TouchableOpacity 
-            onPress={() => {
-              Alert.alert(
-                "Cancel Payment",
-                "Are you sure you want to cancel this payment?",
-                [
-                  { text: "Continue Payment", style: "cancel" },
-                  { 
-                    text: "Cancel Payment", 
-                    style: "destructive",
-                    onPress: () => {
-                      AsyncStorage.removeItem("latestPaymentUrl");
-                      router.back();
-                    }
-                  }
-                ]
-              );
-            }} 
+            onPress={handleManualCancellation}
             style={styles.backButton}
           >
             <View style={styles.backButtonInner}>
@@ -550,7 +563,7 @@ const handlePaymentSuccess = () => {
             onNavigationStateChange={onNavigationStateChange}
             onError={onError}
             onHttpError={onHttpError}
-            allowsBackForwardNavigationGestures={false} // Prevent users from navigating back in WebView
+            allowsBackForwardNavigationGestures={false}
             startInLoadingState={true}
             renderLoading={() => (
               <View style={styles.webviewLoader}>
@@ -568,13 +581,13 @@ const handlePaymentSuccess = () => {
             sharedCookiesEnabled={true}
             thirdPartyCookiesEnabled={true}
             injectedJavaScript={`
-              // Enhanced payment detection - More aggressive
+              // Enhanced payment detection - More aggressive cancellation detection
               let paymentStatusChecked = false;
               
               function checkPaymentStatus() {
                 if (paymentStatusChecked) return;
                 
-                const currentUrl = window.location.href;
+                const currentUrl = window.location.href.toLowerCase();
                 const pageTitle = document.title.toLowerCase();
                 const pageContent = document.body.innerText.toLowerCase();
                 
@@ -604,7 +617,7 @@ const handlePaymentSuccess = () => {
                   pageContent.includes('order has been received') ||
                   pageContent.includes('your payment was successful');
 
-                // Enhanced Cancel detection
+                // Enhanced Cancel detection - MORE AGGRESSIVE
                 const isCancel = 
                   currentUrl.includes('/cancel') || 
                   currentUrl.includes('payment/cancel') ||
@@ -612,13 +625,20 @@ const handlePaymentSuccess = () => {
                   currentUrl.includes('return?status=cancel') ||
                   currentUrl.includes('cancelled') ||
                   currentUrl.includes('payment-cancelled') ||
+                  currentUrl.includes('user_cancel') ||
+                  currentUrl.includes('abort') ||
+                  currentUrl.includes('payment_aborted') ||
                   pageTitle.includes('cancel') ||
                   pageTitle.includes('cancelled') ||
                   pageTitle.includes('payment cancelled') ||
                   pageTitle.includes('transaction cancelled') ||
+                  pageTitle.includes('aborted') ||
+                  pageTitle.includes('payment aborted') ||
                   pageContent.includes('payment cancelled') ||
                   pageContent.includes('transaction cancelled') ||
-                  pageContent.includes('you have cancelled');
+                  pageContent.includes('you have cancelled') ||
+                  pageContent.includes('payment was cancelled') ||
+                  pageContent.includes('cancelled by user');
 
                 // Enhanced Failure detection
                 const isFailure = 
@@ -628,21 +648,24 @@ const handlePaymentSuccess = () => {
                   currentUrl.includes('return?status=failure') ||
                   currentUrl.includes('declined') ||
                   currentUrl.includes('failed') ||
+                  currentUrl.includes('error') ||
                   pageTitle.includes('failed') ||
                   pageTitle.includes('failure') ||
                   pageTitle.includes('declined') ||
                   pageTitle.includes('error') ||
                   pageTitle.includes('unsuccessful') ||
+                  pageTitle.includes('could not process') ||
                   pageContent.includes('payment failed') ||
                   pageContent.includes('transaction declined') ||
-                  pageContent.includes('unsuccessful payment');
+                  pageContent.includes('unsuccessful payment') ||
+                  pageContent.includes('could not process your payment');
 
                 // Success detection
                 if (isSuccess) {
                   paymentStatusChecked = true;
                   window.ReactNativeWebView.postMessage(JSON.stringify({
                     type: 'payment_success',
-                    url: currentUrl,
+                    url: window.location.href,
                     title: document.title,
                     timestamp: Date.now(),
                     detectedBy: 'javascript'
@@ -650,12 +673,12 @@ const handlePaymentSuccess = () => {
                   return;
                 }
                 
-                // Cancel detection
+                // Cancel detection - HIGH PRIORITY
                 if (isCancel) {
                   paymentStatusChecked = true;
                   window.ReactNativeWebView.postMessage(JSON.stringify({
                     type: 'payment_cancel',
-                    url: currentUrl,
+                    url: window.location.href,
                     title: document.title,
                     timestamp: Date.now(),
                     detectedBy: 'javascript'
@@ -668,7 +691,7 @@ const handlePaymentSuccess = () => {
                   paymentStatusChecked = true;
                   window.ReactNativeWebView.postMessage(JSON.stringify({
                     type: 'payment_failure',
-                    url: currentUrl,
+                    url: window.location.href,
                     title: document.title,
                     timestamp: Date.now(),
                     detectedBy: 'javascript'
@@ -677,9 +700,10 @@ const handlePaymentSuccess = () => {
                 }
               }
               
-              // Initial check - more frequent
+              // Initial check - more frequent for cancellation
               setTimeout(checkPaymentStatus, 500);
               setTimeout(checkPaymentStatus, 1000);
+              setTimeout(checkPaymentStatus, 1500);
               setTimeout(checkPaymentStatus, 2000);
               setTimeout(checkPaymentStatus, 3000);
               
@@ -689,41 +713,41 @@ const handlePaymentSuccess = () => {
                 if (window.location.href !== currentUrl) {
                   currentUrl = window.location.href;
                   console.log('URL changed to:', currentUrl);
-                  setTimeout(checkPaymentStatus, 300);
+                  setTimeout(checkPaymentStatus, 200); // Faster detection on URL change
                 }
-              }, 300);
+              }, 200);
               
-              // Override history methods
+              // Override history methods for instant detection
               const originalPushState = history.pushState;
               history.pushState = function() {
                 originalPushState.apply(this, arguments);
-                setTimeout(checkPaymentStatus, 300);
+                setTimeout(checkPaymentStatus, 200);
               };
               
               const originalReplaceState = history.replaceState;
               history.replaceState = function() {
                 originalReplaceState.apply(this, arguments);
-                setTimeout(checkPaymentStatus, 300);
+                setTimeout(checkPaymentStatus, 200);
               };
               
               // Enhanced event listeners
               window.addEventListener('hashchange', () => {
-                setTimeout(checkPaymentStatus, 300);
+                setTimeout(checkPaymentStatus, 200);
               });
               
               window.addEventListener('popstate', () => {
-                setTimeout(checkPaymentStatus, 300);
+                setTimeout(checkPaymentStatus, 200);
               });
               
               // Also check on any click (for forms that might redirect)
               document.addEventListener('click', () => {
-                setTimeout(checkPaymentStatus, 1000);
+                setTimeout(checkPaymentStatus, 500);
               }, true);
               
               // Check when page becomes visible (for tab switching)
               document.addEventListener('visibilitychange', () => {
                 if (!document.hidden) {
-                  setTimeout(checkPaymentStatus, 500);
+                  setTimeout(checkPaymentStatus, 300);
                 }
               });
               

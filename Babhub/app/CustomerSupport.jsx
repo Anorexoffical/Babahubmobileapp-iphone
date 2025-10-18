@@ -66,7 +66,7 @@ const CustomerSupportScreen = () => {
   };
 
   const handlePrivacyPolicy = () => {
-    navigation.navigate('PrivacyPolicy');
+    navigation.navigate('PrivacyPolicyScreen');
   };
 
   return (
@@ -371,6 +371,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 12,
     elevation: 6,
+    marginTop: 10,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -382,6 +383,7 @@ const styles = StyleSheet.create({
     fontSize: width * 0.04,
     fontWeight: '700',
     color: COLORS.dark,
+    paddingTop: 20,
   },
   contactCard: {
     flexDirection: 'row',

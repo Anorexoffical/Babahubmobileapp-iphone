@@ -293,38 +293,6 @@ const PrivacyPolicyScreen = () => {
             </View>
           </View>
 
-          {/* Section 6 - Huawei AppGallery Compliance */}
-          <View style={styles.complianceSection}>
-            <View style={styles.sectionHeader}>
-              <View style={styles.sectionIcon}>
-                <Ionicons name="phone-portrait" size={20} color={COLORS.white} />
-              </View>
-              <Text style={styles.complianceTitle}>Huawei AppGallery Compliance</Text>
-            </View>
-            
-            <View style={styles.complianceList}>
-              <View style={styles.complianceItem}>
-                <Ionicons name="checkmark-circle" size={18} color={COLORS.success} />
-                <Text style={styles.complianceText}>Transparent data collection practices</Text>
-              </View>
-              <View style={styles.complianceItem}>
-                <Ionicons name="checkmark-circle" size={18} color={COLORS.success} />
-                <Text style={styles.complianceText}>Secure data storage and transmission</Text>
-              </View>
-              <View style={styles.complianceItem}>
-                <Ionicons name="checkmark-circle" size={18} color={COLORS.success} />
-                <Text style={styles.complianceText}>No unauthorized data sharing</Text>
-              </View>
-              <View style={styles.complianceItem}>
-                <Ionicons name="checkmark-circle" size={18} color={COLORS.success} />
-                <Text style={styles.complianceText}>User consent for data processing</Text>
-              </View>
-              <View style={styles.complianceItem}>
-                <Ionicons name="checkmark-circle" size={18} color={COLORS.success} />
-                <Text style={styles.complianceText}>Compliance with regional privacy laws</Text>
-              </View>
-            </View>
-          </View>
 
           {/* Contact Section */}
           <View style={styles.contactSection}>

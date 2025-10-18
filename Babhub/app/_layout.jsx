@@ -1,5 +1,5 @@
 // app/_layout.js
-import { Stack, useRouter, useSegments } from 'expo-router';
+import { Stack, useRouter, useSegments, useNavigation } from 'expo-router';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { useEffect, useRef } from 'react';
 import { View, ActivityIndicator, BackHandler } from 'react-native';
@@ -15,6 +15,7 @@ function RouteProtection({ children }) {
   const { userToken, isLoading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
+  const navigation = useNavigation();
   const splashHidden = useRef(false);
 
   useEffect(() => {
@@ -142,7 +143,11 @@ export default function RootLayout() {
             gestureEnabled: false, // Disable swipe back on iOS
             animation: 'fade' // Use fade animation for cleaner transition
           }} />
-          <Stack.Screen name="PaymentCancelledScreen" />
+          <Stack.Screen name="PaymentCancelledScreen" options={{ 
+            gestureEnabled: false, // Disable swipe back on iOS
+            animation: 'fade', // Use fade animation for cleaner transition
+            headerLeft: () => null, // Remove back button
+          }} />
           <Stack.Screen name="PaymentScreen" options={{ gestureEnabled: false }} />
 
           {/* 404 page - must be last */}

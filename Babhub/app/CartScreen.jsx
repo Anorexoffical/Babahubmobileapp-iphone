@@ -88,6 +88,7 @@ const CartScreen = () => {
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [appIsReady, setAppIsReady] = useState(false);
+  const [productStock, setProductStock] = useState({}); // Store stock information
 
   useEffect(() => {
     const prepare = async () => {
@@ -96,6 +97,9 @@ const CartScreen = () => {
         if (storedCart) {
           const items = JSON.parse(storedCart);
           setCartItems(items);
+          
+          // Fetch stock information for all cart items
+          await fetchStockForCartItems(items);
         }
         
         // Artificial delay for demonstration
@@ -149,6 +153,41 @@ const CartScreen = () => {
     }
   }, [params.newCartItem]);
 
+  // Fetch stock information for cart items
+  const fetchStockForCartItems = async (items) => {
+    const stockData = {};
+    
+    try {
+      for (const item of items) {
+        if (!stockData[item.id]) {
+          const response = await fetch(`${BASE_URL}/api/products/${item.id}`);
+          const product = await response.json();
+          
+          // Find the stock for this specific variant
+          const variant = product.variants?.find(v => v.color === item.color);
+          const sizeObj = variant?.sizes?.find(s => s.size === item.size);
+          
+          if (sizeObj) {
+            stockData[item.id] = {
+              ...stockData[item.id],
+              [`${item.color}-${item.size}`]: sizeObj.stock
+            };
+          }
+        }
+      }
+      
+      setProductStock(stockData);
+    } catch (error) {
+      console.error('Error fetching stock data:', error);
+    }
+  };
+
+  // Get available stock for a specific cart item
+  const getAvailableStock = (item) => {
+    const stockKey = `${item.color}-${item.size}`;
+    return productStock[item.id]?.[stockKey] || 0;
+  };
+
   const removeItem = async (index) => {
     const updatedItems = cartItems.filter((_, i) => i !== index);
     setCartItems(updatedItems);
@@ -158,6 +197,19 @@ const CartScreen = () => {
   const updateQuantity = async (index, newQuantity) => {
     if (newQuantity < 1) {
       removeItem(index);
+      return;
+    }
+    
+    const item = cartItems[index];
+    const availableStock = getAvailableStock(item);
+    
+    // Check if new quantity exceeds available stock
+    if (newQuantity > availableStock) {
+      Alert.alert(
+        'Stock Limit',
+        `Only ${availableStock} items available in stock. You cannot add more than the available quantity.`,
+        [{ text: 'OK' }]
+      );
       return;
     }
     
@@ -256,91 +308,120 @@ const CartScreen = () => {
           <>
             {/* Cart Items - Made smaller */}
             <View style={styles.cartItemsContainer}>
-              {cartItems.map((item, index) => (
-                <View key={`${item.id}-${item.color}-${item.size}-${index}`} style={styles.cartItem}>
-                  <View style={styles.itemImageContainer}>
-                    <ProductImage 
-                      imageUrl={`${BASE_URL}${item.image}`}
-                      style={styles.itemImage}
-                    />
-                    <View style={styles.itemBadge}>
-                      <Text style={styles.itemBadgeText}>{item.quantity}</Text>
+              {cartItems.map((item, index) => {
+                const availableStock = getAvailableStock(item);
+                const isMaxQuantity = item.quantity >= availableStock;
+                
+                return (
+                  <View key={`${item.id}-${item.color}-${item.size}-${index}`} style={styles.cartItem}>
+                    <View style={styles.itemImageContainer}>
+                      <ProductImage 
+                        imageUrl={`${BASE_URL}${item.image}`}
+                        style={styles.itemImage}
+                      />
+                      <View style={styles.itemBadge}>
+                        <Text style={styles.itemBadgeText}>{item.quantity}</Text>
+                      </View>
                     </View>
-                  </View>
-                  
-                  <View style={styles.itemDetails}>
-                    <View style={styles.itemHeader}>
-                      <Text style={styles.itemTitle} numberOfLines={2}>
-                        {item.title}
-                      </Text>
-                      <TouchableOpacity 
-                        onPress={() => removeItem(index)}
-                        style={styles.removeButton}
-                      >
-                        <Ionicons name="close" size={16} color={COLORS.grayLight} />
-                      </TouchableOpacity>
-                    </View>
+                    
+                    <View style={styles.itemDetails}>
+                      <View style={styles.itemHeader}>
+                        <Text style={styles.itemTitle} numberOfLines={2}>
+                          {item.title}
+                        </Text>
+                        <TouchableOpacity 
+                          onPress={() => removeItem(index)}
+                          style={styles.removeButton}
+                        >
+                          <Ionicons name="close" size={16} color={COLORS.grayLight} />
+                        </TouchableOpacity>
+                      </View>
 
-                    {/* Category Display */}
-                    <View style={styles.categoryContainer}>
-                      {item.category && (
-                        <View style={styles.categoryPill}>
-                          <Ionicons name="pricetag" size={10} color={COLORS.primary} />
-                          <Text style={styles.itemCategory}>{item.category}</Text>
+                      {/* Category Display */}
+                      <View style={styles.categoryContainer}>
+                        {item.category && (
+                          <View style={styles.categoryPill}>
+                            <Ionicons name="pricetag" size={10} color={COLORS.primary} />
+                            <Text style={styles.itemCategory}>{item.category}</Text>
+                          </View>
+                        )}
+                      </View>
+
+                      {/* Variants Display */}
+                      <View style={styles.variantsContainer}>
+                        <View style={styles.variantPill}>
+                          <View style={[styles.colorDot, { backgroundColor: item.color }]} />
+                          <Text style={styles.variantText}>{item.color}</Text>
+                        </View>
+                        <View style={styles.variantPill}>
+                          <Text style={styles.variantText}>Size: {item.size}</Text>
+                        </View>
+                      </View>
+
+                      {/* Stock Information */}
+                      {availableStock > 0 && (
+                        <View style={styles.stockInfo}>
+                          <Text style={[
+                            styles.stockText,
+                            availableStock <= 10 && styles.lowStockText
+                          ]}>
+                            {availableStock <= 10 
+                              ? `Only ${availableStock} left in stock` 
+                              : `${availableStock} in stock`
+                            }
+                          </Text>
                         </View>
                       )}
-                    </View>
 
-                    {/* Variants Display */}
-                    <View style={styles.variantsContainer}>
-                      <View style={styles.variantPill}>
-                        <View style={[styles.colorDot, { backgroundColor: item.color }]} />
-                        <Text style={styles.variantText}>{item.color}</Text>
-                      </View>
-                      <View style={styles.variantPill}>
-                        <Text style={styles.variantText}>Size: {item.size}</Text>
-                      </View>
-                    </View>
+                      {/* Bottom Row */}
+                      <View style={styles.itemBottomRow}>
+                        <Text style={styles.itemPrice}>
+                          R {(item.price * item.quantity).toFixed(2)}
+                        </Text>
+                        
+                        {/* Improved Quantity Controls with stock validation */}
+                        <View style={styles.quantityControl}>
+                          <TouchableOpacity 
+                            onPress={() => updateQuantity(index, item.quantity - 1)}
+                            style={[
+                              styles.quantityBtn,
+                              styles.quantityMinus,
+                              item.quantity <= 1 && styles.quantityBtnDisabled
+                            ]}
+                            disabled={item.quantity <= 1}
+                          >
+                            <Ionicons 
+                              name="remove" 
+                              size={16} 
+                              color={item.quantity <= 1 ? COLORS.grayLight : COLORS.white} 
+                            />
+                          </TouchableOpacity>
 
-                    {/* Bottom Row */}
-                    <View style={styles.itemBottomRow}>
-                      <Text style={styles.itemPrice}>
-                        R {(item.price * item.quantity).toFixed(2)}
-                      </Text>
-                      
-                      {/* Improved Quantity Controls with larger buttons and border radius 140 */}
-                      <View style={styles.quantityControl}>
-                        <TouchableOpacity 
-                          onPress={() => updateQuantity(index, item.quantity - 1)}
-                          style={[
-                            styles.quantityBtn,
-                            styles.quantityMinus,
-                            item.quantity <= 1 && styles.quantityBtnDisabled
-                          ]}
-                          disabled={item.quantity <= 1}
-                        >
-                          <Ionicons 
-                            name="remove" 
-                            size={16} 
-                            color={item.quantity <= 1 ? COLORS.grayLight : COLORS.white} 
-                          />
-                        </TouchableOpacity>
+                          <View style={styles.quantityDisplay}>
+                            <Text style={styles.quantityNumber}>{item.quantity}</Text>
+                          </View>
 
-                        <View style={styles.quantityDisplay}>
-                          <Text style={styles.quantityNumber}>{item.quantity}</Text>
+                          <TouchableOpacity 
+                            onPress={() => updateQuantity(index, item.quantity + 1)}
+                            style={[
+                              styles.quantityBtn, 
+                              styles.quantityPlus,
+                              isMaxQuantity && styles.quantityBtnDisabled
+                            ]}
+                            disabled={isMaxQuantity}
+                          >
+                            <Ionicons 
+                              name="add" 
+                              size={16} 
+                              color={isMaxQuantity ? COLORS.grayLight : COLORS.white} 
+                            />
+                          </TouchableOpacity>
                         </View>
-
-                        <TouchableOpacity 
-                          onPress={() => updateQuantity(index, item.quantity + 1)}
-                          style={[styles.quantityBtn, styles.quantityPlus]}
-                        >
-                          <Ionicons name="add" size={16} color={COLORS.white} />
-                        </TouchableOpacity>
                       </View>
                     </View>
                   </View>
-                </View>
-              ))}
+                );
+              })}
             </View>
 
             {/* Order Summary */}
@@ -454,8 +535,6 @@ const CartScreen = () => {
     </SafeAreaView>
   );
 };
-
-// ... (styles remain exactly the same as your previous code)
 
 const styles = StyleSheet.create({
   safeArea: {
@@ -644,7 +723,7 @@ const styles = StyleSheet.create({
   variantsContainer: {
     flexDirection: 'row',
     gap: 6,
-    marginBottom: 8,
+    marginBottom: 4,
   },
   variantPill: {
     flexDirection: 'row',
@@ -666,6 +745,17 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: COLORS.dark,
     fontWeight: '500',
+  },
+  stockInfo: {
+    marginBottom: 6,
+  },
+  stockText: {
+    fontSize: 11,
+    color: COLORS.success,
+    fontWeight: '500',
+  },
+  lowStockText: {
+    color: COLORS.warning,
   },
   itemBottomRow: {
     flexDirection: 'row',

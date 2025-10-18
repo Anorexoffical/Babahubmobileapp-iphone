@@ -198,6 +198,12 @@ const WishlistScreen = () => {
     });
   };
 
+  // FIXED: Navigation function for empty state
+  const handleExploreProducts = () => {
+    // Navigate to StoreScreen which is likely your main products page
+    router.push('/(tabs)/StoreScreen');
+  };
+
   const renderRating = (rating) => {
     return (
       <View style={styles.ratingContainer}>
@@ -327,7 +333,7 @@ const WishlistScreen = () => {
           </Text>
           <TouchableOpacity 
             style={styles.continueShoppingButton} 
-            onPress={() => router.push('/(tabs)/home')}
+            onPress={handleExploreProducts} // FIXED: Using the corrected navigation function
             activeOpacity={0.8}
           >
             <Ionicons name="search" size={20} color={COLORS.white} />

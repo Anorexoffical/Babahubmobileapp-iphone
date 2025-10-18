@@ -409,7 +409,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     paddingHorizontal: 24,
     paddingVertical: 18,
-    borderRadius: 16,
+    borderRadius: 140,
     gap: 8,
     ...Platform.select({
       ios: {
@@ -435,7 +435,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     paddingHorizontal: 24,
     paddingVertical: 18,
-    borderRadius: 16,
+    borderRadius: 140,
     borderWidth: 2,
     borderColor: COLORS.primary,
     gap: 8,
