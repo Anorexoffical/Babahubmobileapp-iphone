@@ -2,7 +2,7 @@
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { useEffect, useRef } from 'react';
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, BackHandler } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 
 // Keep splash visible until manually hidden
@@ -138,7 +138,10 @@ export default function RootLayout() {
           <Stack.Screen name="PrivacyPolicyScreen" />
           <Stack.Screen name="ProductDetailPage" />
           <Stack.Screen name="ProfileDetailsScreen" />
-          <Stack.Screen name="OrderSuccessScreen"  />
+          <Stack.Screen name="OrderSuccessScreen" options={{ 
+            gestureEnabled: false, // Disable swipe back on iOS
+            animation: 'fade' // Use fade animation for cleaner transition
+          }} />
           <Stack.Screen name="PaymentCancelledScreen" />
           <Stack.Screen name="PaymentScreen" options={{ gestureEnabled: false }} />
 

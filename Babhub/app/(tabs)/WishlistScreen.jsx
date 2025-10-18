@@ -8,9 +8,7 @@ import {
   StyleSheet, 
   ActivityIndicator,
   Dimensions,
-  Animated,
-  Modal,
-  TouchableWithoutFeedback
+  Animated
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -43,10 +41,36 @@ const MAX_CART_ITEMS = 3;
 
 // Function to correctly get full image URL for product images
 const getImageUrl = (imagePath) => {
-  if (!imagePath) return '';
-  if (imagePath.startsWith('http')) return imagePath;
+  if (!imagePath) {
+    return 'https://via.placeholder.com/150/6366F1/FFFFFF?text=No+Image';
+  }
   
+  // If it's already a full URL, return as is
+  if (imagePath.startsWith('http')) {
+    return imagePath;
+  }
+  
+  // If it's a relative path, construct the full URL
   const normalizedPath = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
+  return `https://account.babahub.co${normalizedPath}`;
+};
+
+// Function to ensure image URL is in the correct format for cart
+const normalizeImageUrl = (imageUrl) => {
+  if (!imageUrl) return '';
+  
+  // If it's already a full URL with babahub.co, return as is
+  if (imageUrl.includes('babahub.co')) {
+    return imageUrl;
+  }
+  
+  // If it's a placeholder or external URL, return as is
+  if (imageUrl.startsWith('http')) {
+    return imageUrl;
+  }
+  
+  // Otherwise, construct the full URL
+  const normalizedPath = imageUrl.startsWith('/') ? imageUrl : `/${imageUrl}`;
   return `https://account.babahub.co${normalizedPath}`;
 };
 
@@ -55,18 +79,12 @@ const WishlistScreen = () => {
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [showAddToCartModal, setShowAddToCartModal] = useState(false);
-  const [productToAdd, setProductToAdd] = useState(null);
   
   // Refs for animations
   const router = useRouter();
   
   // Enhanced Animations
   const fadeAnim = useState(new Animated.Value(0))[0];
-  const slideAnim = useState(new Animated.Value(height))[0];
-  const overlayOpacity = useState(new Animated.Value(0))[0];
-  const buttonScaleAnim = useState(new Animated.Value(1))[0];
-  const modalScaleAnim = useState(new Animated.Value(0.9))[0];
 
   useFocusEffect(
     React.useCallback(() => {
@@ -83,80 +101,6 @@ const WishlistScreen = () => {
       duration: 800,
       useNativeDriver: true,
     }).start();
-  };
-
-  const animateModalIn = () => {
-    // Reset animations
-    slideAnim.setValue(height);
-    overlayOpacity.setValue(0);
-    modalScaleAnim.setValue(0.9);
-    
-    // Parallel animations for smooth opening
-    Animated.parallel([
-      // Overlay fade in
-      Animated.timing(overlayOpacity, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-      // Modal slide up with bounce
-      Animated.spring(slideAnim, {
-        toValue: 0,
-        tension: 60,
-        friction: 12,
-        useNativeDriver: true,
-      }),
-      // Modal scale effect
-      Animated.spring(modalScaleAnim, {
-        toValue: 1,
-        tension: 60,
-        friction: 12,
-        useNativeDriver: true,
-      })
-    ]).start();
-  };
-
-  const animateModalOut = () => {
-    // Parallel animations for smooth closing
-    Animated.parallel([
-      // Overlay fade out
-      Animated.timing(overlayOpacity, {
-        toValue: 0,
-        duration: 250,
-        useNativeDriver: true,
-      }),
-      // Modal slide down
-      Animated.timing(slideAnim, {
-        toValue: height,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-      // Modal scale down
-      Animated.timing(modalScaleAnim, {
-        toValue: 0.9,
-        duration: 300,
-        useNativeDriver: true,
-      })
-    ]).start(() => {
-      // Reset state after animation completes
-      setShowAddToCartModal(false);
-      setProductToAdd(null);
-    });
-  };
-
-  const animateButtonPress = () => {
-    Animated.sequence([
-      Animated.timing(buttonScaleAnim, {
-        toValue: 0.95,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-      Animated.timing(buttonScaleAnim, {
-        toValue: 1,
-        duration: 100,
-        useNativeDriver: true,
-      })
-    ]).start();
   };
 
   const loadWishlist = async () => {
@@ -182,7 +126,10 @@ const WishlistScreen = () => {
               rating: item.rating || 4.5,
               reviews: item.reviews || 0,
               description: item.description || 'No description available',
-              category: item.category || 'General'
+              category: item.category || 'General',
+              // Add color and size defaults to match cart structure
+              color: item.color || 'Default',
+              size: item.size || 'Standard'
             });
           }
         });
@@ -230,59 +177,6 @@ const WishlistScreen = () => {
     return cartItem ? cartItem.quantity : 0;
   };
 
-  const getUniqueCartItemsCount = () => {
-    return cartItems.length;
-  };
-
-  const canAddToCart = (productId) => {
-    // If item already exists in cart, we can always add more quantity
-    if (cartItems.find(item => item.id === productId)) {
-      return true;
-    }
-    // Check if we haven't reached the maximum unique items limit
-    return getUniqueCartItemsCount() < MAX_CART_ITEMS;
-  };
-
-  const addToCart = async (product) => {
-    try {
-      // Check if we can add this item to cart
-      if (!canAddToCart(product.id)) {
-        // Show modal with cart limit warning
-        return;
-      }
-
-      const existingItemIndex = cartItems.findIndex(item => item.id === product.id);
-      let updatedCart = [...cartItems];
-
-      if (existingItemIndex > -1) {
-        updatedCart[existingItemIndex].quantity += 1;
-      } else {
-        updatedCart.push({
-          id: product.id,
-          title: product.title,
-          brand: product.brand,
-          image: product.image,
-          price: product.price,
-          rating: product.rating,
-          reviews: product.reviews,
-          description: product.description,
-          category: product.category,
-          quantity: 1,
-          addedAt: new Date().toISOString()
-        });
-      }
-
-      setCartItems(updatedCart);
-      await AsyncStorage.setItem('cart', JSON.stringify(updatedCart));
-      
-      // Simply close the modal without showing success message
-      animateModalOut();
-
-    } catch (error) {
-      console.error('Failed to add to cart', error);
-    }
-  };
-
   const removeFromWishlist = async (productId, productTitle) => {
     try {
       const updatedWishlist = wishlistItems.filter(item => item.id !== productId);
@@ -291,31 +185,17 @@ const WishlistScreen = () => {
       
       console.log('Item removed from wishlist:', productTitle);
       
-      // No need to navigate back - the wishlist will update automatically
-      // and the StoreScreen will sync when user navigates back
     } catch (error) {
       console.error('Failed to remove from wishlist', error);
     }
   };
 
   const handleAddToCartPress = (item) => {
-    setProductToAdd(item);
-    setShowAddToCartModal(true);
-    // Small delay to ensure state is updated before animation
-    setTimeout(() => {
-      animateModalIn();
-    }, 10);
-  };
-
-  const confirmAddToCart = () => {
-    animateButtonPress();
-    if (productToAdd) {
-      addToCart(productToAdd);
-    }
-  };
-
-  const cancelAddToCart = () => {
-    animateModalOut();
+    // Redirect to product detail page instead of showing popup
+    router.push({ 
+      pathname: 'ProductDetailPage', 
+      params: { id: item.id } 
+    });
   };
 
   const renderRating = (rating) => {
@@ -366,10 +246,12 @@ const WishlistScreen = () => {
         >
           <View style={styles.imageContainer}>
             <Image 
-              source={{ uri: item.image }} 
+              source={{ uri: normalizeImageUrl(item.image) }} 
               style={styles.image}
               resizeMode="cover"
-              onError={() => console.log('Image failed to load for:', item.title)}
+              onError={(error) => {
+                console.log('Image failed to load for:', item.title, 'URL:', item.image);
+              }}
             />
             <View style={styles.wishlistBadge}>
               <Ionicons name="heart" size={16} color={COLORS.error} />
@@ -412,146 +294,6 @@ const WishlistScreen = () => {
       </Animated.View>
     );
   };
-
-  // Enhanced Add to Cart Confirmation Modal with Smooth Animations
-  const AddToCartModal = () => (
-    <Modal
-      visible={showAddToCartModal}
-      transparent
-      animationType="none"
-      onRequestClose={cancelAddToCart}
-      statusBarTranslucent
-    >
-      <TouchableWithoutFeedback onPress={cancelAddToCart}>
-        <Animated.View 
-          style={[
-            styles.modalOverlay,
-            {
-              opacity: overlayOpacity,
-            }
-          ]}
-        >
-          <TouchableWithoutFeedback>
-            <Animated.View 
-              style={[
-                styles.modalContainer,
-                {
-                  transform: [
-                    { translateY: slideAnim },
-                    { scale: modalScaleAnim }
-                  ]
-                }
-              ]}
-            >
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Add to Cart</Text>
-                <TouchableOpacity 
-                  style={styles.closeButton}
-                  onPress={cancelAddToCart}
-                >
-                  <Ionicons name="close" size={24} color={COLORS.gray} />
-                </TouchableOpacity>
-              </View>
-
-              {productToAdd && (
-                <View style={styles.modalProductInfo}>
-                  <View style={styles.modalImageContainer}>
-                    <Image 
-                      source={{ uri: productToAdd.image }} 
-                      style={styles.modalProductImage}
-                      resizeMode="cover"
-                      onError={(error) => console.log('Modal image failed to load:', error)}
-                    />
-                  </View>
-                  <View style={styles.modalProductDetails}>
-                    <Text style={styles.modalProductBrand}>{productToAdd.brand}</Text>
-                    <Text style={styles.modalProductName} numberOfLines={2}>
-                      {productToAdd.title}
-                    </Text>
-                    <Text style={styles.modalProductPrice}>
-                      R{((productToAdd.price || 0) * 18).toFixed(2)}
-                    </Text>
-                    
-                    {getCartQuantity(productToAdd.id) > 0 && (
-                      <View style={styles.alreadyInCartBadge}>
-                        <Ionicons name="information-circle" size={14} color={COLORS.white} />
-                        <Text style={styles.alreadyInCartText}>
-                          {getCartQuantity(productToAdd.id)} in cart
-                        </Text>
-                      </View>
-                    )}
-
-                    {!canAddToCart(productToAdd.id) && getCartQuantity(productToAdd.id) === 0 && (
-                      <View style={styles.cartLimitWarning}>
-                        <Ionicons name="warning" size={16} color={COLORS.white} />
-                        <Text style={styles.cartLimitWarningText}>
-                          Cart limit reached ({MAX_CART_ITEMS} unique items max)
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-                </View>
-              )}
-
-              <View style={styles.modalFeatures}>
-                <View style={styles.featureItem}>
-                  <Ionicons name="shield-checkmark" size={20} color={COLORS.success} />
-                  <Text style={styles.featureText}>Authentic Product</Text>
-                </View>
-                <View style={styles.featureItem}>
-                  <Ionicons name="return-up-back" size={20} color={COLORS.primary} />
-                  <Text style={styles.featureText}>Easy Returns</Text>
-                </View>
-                <View style={styles.featureItem}>
-                  <Ionicons name="rocket" size={20} color={COLORS.secondary} />
-                  <Text style={styles.featureText}>Fast Delivery</Text>
-                </View>
-              </View>
-
-              <View style={styles.modalButtons}>
-                <TouchableOpacity 
-                  style={styles.cancelButton}
-                  onPress={cancelAddToCart}
-                >
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
-                </TouchableOpacity>
-                
-                <Animated.View
-                  style={{
-                    transform: [{ scale: buttonScaleAnim }],
-                    flex: 2
-                  }}
-                >
-                  <TouchableOpacity 
-                    style={[
-                      styles.confirmButton,
-                      !canAddToCart(productToAdd?.id) && getCartQuantity(productToAdd?.id) === 0 && styles.confirmButtonDisabled
-                    ]}
-                    onPress={confirmAddToCart}
-                    disabled={!canAddToCart(productToAdd?.id) && getCartQuantity(productToAdd?.id) === 0}
-                  >
-                    <Ionicons name="cart" size={20} color={COLORS.white} />
-                    <Text style={styles.confirmButtonText}>
-                      {getCartQuantity(productToAdd?.id) > 0 ? 'Add One More' : 'Add to Cart'}
-                    </Text>
-                  </TouchableOpacity>
-                </Animated.View>
-              </View>
-
-              {/* Additional Info - Only show when limit is reached */}
-              {!canAddToCart(productToAdd?.id) && getCartQuantity(productToAdd?.id) === 0 && (
-                <View style={styles.modalFooter}>
-                  <Text style={styles.modalFooterText}>
-                    💡 You can add more quantity to existing items, but only {MAX_CART_ITEMS} unique items are allowed
-                  </Text>
-                </View>
-              )}
-            </Animated.View>
-          </TouchableWithoutFeedback>
-        </Animated.View>
-      </TouchableWithoutFeedback>
-    </Modal>
-  );
 
   if (loading) {
     return (
@@ -603,8 +345,6 @@ const WishlistScreen = () => {
           onRefresh={loadWishlist}
         />
       )}
-
-      <AddToCartModal />
     </View>
   );
 };
@@ -808,11 +548,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  // UPDATED: Cart button made perfectly circular
   cartButton: {
     backgroundColor: COLORS.primary,
-    width: 36,
-    height: 36,
-    borderRadius: 12,
+    width: 40, // Increased slightly for better circle
+    height: 40, // Increased slightly for better circle
+    borderRadius: 20, // Half of width/height for perfect circle
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: COLORS.primary,
@@ -826,8 +567,8 @@ const styles = StyleSheet.create({
   },
   quantityBadge: {
     position: 'absolute',
-    top: -8,
-    right: -8,
+    top: -6, // Adjusted position for new circle size
+    right: -6, // Adjusted position for new circle size
     backgroundColor: COLORS.error,
     borderRadius: 10,
     minWidth: 20,
@@ -846,177 +587,6 @@ const styles = StyleSheet.create({
   removeButton: {
     padding: 8,
     marginLeft: 8,
-  },
-  // Enhanced Modal Styles
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    justifyContent: 'flex-end',
-  },
-  modalContainer: {
-    backgroundColor: COLORS.white,
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-    padding: 24,
-    minHeight: height * 0.55,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 20,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  modalTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: COLORS.dark,
-  },
-  closeButton: {
-    padding: 4,
-  },
-  modalProductInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.background,
-    borderRadius: 20,
-    padding: 16,
-    marginBottom: 20,
-  },
-  modalImageContainer: {
-    position: 'relative',
-  },
-  modalProductImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 16,
-    marginRight: 16,
-  },
-  modalProductDetails: {
-    flex: 1,
-  },
-  modalProductBrand: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: COLORS.primary,
-    marginBottom: 4,
-    textTransform: 'uppercase',
-  },
-  modalProductName: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: COLORS.dark,
-    marginBottom: 8,
-    lineHeight: 20,
-  },
-  modalProductPrice: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: COLORS.primary,
-    marginBottom: 8,
-  },
-  alreadyInCartBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.primary,
-    alignSelf: 'flex-start',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    gap: 4,
-  },
-  alreadyInCartText: {
-    color: COLORS.white,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  cartLimitWarning: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.warning,
-    alignSelf: 'flex-start',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-    gap: 6,
-    marginTop: 4,
-  },
-  cartLimitWarningText: {
-    color: COLORS.white,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  modalFeatures: {
-    marginBottom: 24,
-    gap: 12,
-  },
-  featureItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  featureText: {
-    fontSize: 14,
-    color: COLORS.dark,
-    fontWeight: '500',
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 16,
-  },
-  cancelButton: {
-    flex: 1,
-    backgroundColor: COLORS.light,
-    paddingVertical: 16,
-    borderRadius: 16,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: COLORS.grayLight,
-  },
-  cancelButtonText: {
-    color: COLORS.dark,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  confirmButton: {
-    flex: 1,
-    backgroundColor: COLORS.primary,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-    borderRadius: 16,
-    gap: 8,
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  confirmButtonDisabled: {
-    backgroundColor: COLORS.grayLight,
-    shadowColor: COLORS.gray,
-  },
-  confirmButtonText: {
-    color: COLORS.white,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  modalFooter: {
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.light,
-  },
-  modalFooterText: {
-    fontSize: 12,
-    color: COLORS.gray,
-    textAlign: 'center',
-    fontStyle: 'italic',
   },
 });
 

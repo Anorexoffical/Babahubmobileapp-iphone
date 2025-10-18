@@ -49,6 +49,9 @@ const COLORS = {
   cardBackground: '#FFFFFF',
 };
 
+// Maximum unique items allowed in cart
+const MAX_CART_ITEMS = 3;
+
 // Home banners data
 const homeBanners = [
   {
@@ -151,7 +154,70 @@ const getImageUrl = (imagePath) => {
   return `https://account.babahub.co${normalizedPath}`;
 };
 
-// Search Suggestions Component (Same as StoreScreen)
+// Function to ensure image URL is in the correct format for cart
+const normalizeImageUrl = (imageUrl) => {
+  if (!imageUrl) return '';
+  
+  if (imageUrl.includes('babahub.co')) {
+    return imageUrl;
+  }
+  
+  if (imageUrl.startsWith('http')) {
+    return imageUrl;
+  }
+  
+  const normalizedPath = imageUrl.startsWith('/') ? imageUrl : `/${imageUrl}`;
+  return `https://account.babahub.co${normalizedPath}`;
+};
+
+// Internet connection check function
+const checkInternetConnection = () => {
+  return new Promise((resolve) => {
+    const timeout = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Timeout')), 5000)
+    );
+
+    const request = fetch('https://www.google.com', { method: 'HEAD' });
+
+    Promise.race([request, timeout])
+      .then(() => resolve(true))
+      .catch(() => resolve(false));
+  });
+};
+
+// SIMPLIFIED Internet Status Bar Component
+const InternetStatusBar = ({ isOnline, onRetry }) => {
+  const translateY = useRef(new Animated.Value(-50)).current;
+
+  useEffect(() => {
+    Animated.spring(translateY, {
+      toValue: isOnline ? -50 : 0,
+      tension: 50,
+      friction: 8,
+      useNativeDriver: true,
+    }).start();
+  }, [isOnline]);
+
+  if (isOnline) return null;
+
+  return (
+    <Animated.View 
+      style={[
+        styles.internetStatusBar,
+        {
+          transform: [{ translateY }]
+        }
+      ]}
+    >
+      <View style={styles.internetStatusContent}>
+        <Ionicons name="wifi-outline" size={16} color={COLORS.white} />
+        <Text style={styles.internetStatusText}>No internet connection</Text>
+      </View>
+    </Animated.View>
+  );
+};
+
+// Search Suggestions Component
 const SearchSuggestions = ({ suggestions, popularSearches, onSuggestionPress, searchText, visible, searchResults }) => {
   const opacityAnim = useRef(new Animated.Value(0)).current;
   const translateYAnim = useRef(new Animated.Value(-20)).current;
@@ -264,7 +330,7 @@ const SearchSuggestions = ({ suggestions, popularSearches, onSuggestionPress, se
   );
 };
 
-// Banner Item Component (Same as StoreScreen)
+// Banner Item Component
 const BannerItem = ({ item, index, currentIndex }) => {
   const translateX = useRef(new Animated.Value(width)).current;
   const opacity = useRef(new Animated.Value(0)).current;
@@ -367,11 +433,12 @@ const QuickAccessItem = ({ item, onPress }) => {
   );
 };
 
-// Product Item Component (Same as StoreScreen)
-const ProductItem = ({ item, onPress, onWishlistToggle, isInWishlist, index }) => {
+// UPDATED Product Item Component - Add to cart now navigates to product detail
+const ProductItem = ({ item, onPress, onWishlistToggle, isInWishlist, index, onAddToCart, cartQuantity }) => {
   const price = item.variants?.[0]?.sizes?.[0]?.price || item.price || 0;
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [recentlyAdded, setRecentlyAdded] = useState(false);
   
   const scaleValue = useRef(new Animated.Value(1)).current;
   const cardOpacity = useRef(new Animated.Value(0)).current;
@@ -417,6 +484,24 @@ const ProductItem = ({ item, onPress, onWishlistToggle, isInWishlist, index }) =
   const handleWishlistPress = (e) => {
     e.stopPropagation();
     onWishlistToggle(item);
+  };
+
+  // CHANGED: Add to cart now navigates to product detail page
+  const handleAddToCartPress = (e) => {
+    e.stopPropagation();
+    // Navigate to product detail page instead of adding to cart
+    onPress(item);
+  };
+
+  const renderCartQuantityBadge = (quantity) => {
+    if (quantity > 0) {
+      return (
+        <View style={styles.quantityBadge}>
+          <Text style={styles.quantityText}>{quantity}</Text>
+        </View>
+      );
+    }
+    return null;
   };
   
   const imageUrl = getImageUrl(item.image);
@@ -504,17 +589,23 @@ const ProductItem = ({ item, onPress, onWishlistToggle, isInWishlist, index }) =
             
             <View style={styles.priceContainer}>
               <Text style={styles.price}>${price.toFixed(2)}</Text>
-              <TouchableOpacity
-                style={styles.cartButton}
-                onPress={(e) => {
-                  e.stopPropagation();
-                  onPress(item);
-                }}
-              >
-                <View style={styles.cartIconContainer}>
-                  <Ionicons name="bag-handle-outline" size={16} color={COLORS.white} />
-                </View>
-              </TouchableOpacity>
+              <View style={styles.cartButtonContainer}>
+                <TouchableOpacity
+                  style={[
+                    styles.cartButton,
+                    cartQuantity > 0 && styles.cartButtonActive,
+                    recentlyAdded && styles.cartButtonPulse
+                  ]}
+                  onPress={handleAddToCartPress} // CHANGED: Now navigates to product detail
+                >
+                  <Ionicons 
+                    name="cart" // CHANGED: Always show cart icon, no checkmark
+                    size={16} 
+                    color={COLORS.white} 
+                  />
+                </TouchableOpacity>
+                {cartQuantity > 0 && renderCartQuantityBadge(cartQuantity)}
+              </View>
             </View>
           </View>
         </TouchableOpacity>
@@ -523,8 +614,8 @@ const ProductItem = ({ item, onPress, onWishlistToggle, isInWishlist, index }) =
   );
 };
 
-// Sticky Header Component (Same as StoreScreen)
-const StickyHeader = ({ user, cartItems, router, scrollY }) => {
+// Sticky Header Component
+const StickyHeader = ({ user, cartItems, router, scrollY, isOnline }) => {
   const headerHeight = 80;
   const headerTranslate = scrollY.interpolate({
     inputRange: [0, headerHeight],
@@ -554,6 +645,11 @@ const StickyHeader = ({ user, cartItems, router, scrollY }) => {
             </Text>
           </View>
           <Text style={styles.stickyUsername}>Home</Text>
+          {!isOnline && (
+            <View style={styles.offlineDot}>
+              <Ionicons name="wifi-outline" size={12} color={COLORS.white} />
+            </View>
+          )}
         </View>
         
         <View style={styles.stickyIcons}>
@@ -650,7 +746,7 @@ const HomeScreen = () => {
   const { user } = useAuth();
   const [searchText, setSearchText] = useState('');
   const [wishlist, setWishlist] = useState([]);
-  const [cartItems, setCartItems] = useState(0);
+  const [cartItems, setCartItems] = useState([]);
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -660,6 +756,9 @@ const HomeScreen = () => {
   const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
   const [isSearchActive, setIsSearchActive] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
+  const [isOnline, setIsOnline] = useState(true);
+  const [connectionChecking, setConnectionChecking] = useState(false);
+  const [hasCachedData, setHasCachedData] = useState(false);
   
   const router = useRouter();
   const scrollY = useRef(new Animated.Value(0)).current;
@@ -669,7 +768,26 @@ const HomeScreen = () => {
   // API base URL
   const API_BASE_URL = 'https://account.babahub.co';
 
-  // Fetch wishlist and cart count from AsyncStorage
+  // Check internet connection
+  const checkConnection = async () => {
+    setConnectionChecking(true);
+    const connected = await checkInternetConnection();
+    setIsOnline(connected);
+    setConnectionChecking(false);
+    
+    if (!connected && products.length > 0) {
+      setHasCachedData(true);
+      Toast.show({
+        type: 'info',
+        text1: 'Offline Mode',
+        text2: 'Showing cached products',
+      });
+    }
+    
+    return connected;
+  };
+
+  // Fetch wishlist and cart from AsyncStorage
   const fetchWishlistAndCart = async () => {
     try {
       const wishlistData = await AsyncStorage.getItem('wishlist');
@@ -683,12 +801,78 @@ const HomeScreen = () => {
       const cartData = await AsyncStorage.getItem('cart');
       if (cartData) {
         const cartItems = JSON.parse(cartData);
-        setCartItems(cartItems.length);
+        setCartItems(cartItems);
       } else {
-        setCartItems(0);
+        setCartItems([]);
       }
     } catch (error) {
       console.error('Error fetching wishlist or cart:', error);
+    }
+  };
+
+  // Get cart quantity for a specific product
+  const getCartQuantity = (productId) => {
+    const cartItem = cartItems.find(item => item.id === productId);
+    return cartItem ? cartItem.quantity : 0;
+  };
+
+  // Enhanced Add to Cart function
+  const handleAddToCart = async (product) => {
+    try {
+      // Check cart limit
+      const uniqueItems = new Set(cartItems.map(item => item.id));
+      if (uniqueItems.size >= MAX_CART_ITEMS && !uniqueItems.has(product._id)) {
+        Toast.show({
+          type: 'error',
+          text1: 'Cart Limit Reached',
+          text2: `Maximum ${MAX_CART_ITEMS} unique items allowed in cart`,
+        });
+        return;
+      }
+
+      const price = product.variants?.[0]?.sizes?.[0]?.price || product.price || 0;
+      
+      const cartItem = {
+        id: product._id,
+        title: product.name,
+        brand: product.brand,
+        image: normalizeImageUrl(product.image),
+        price: price,
+        quantity: 1,
+        color: 'Default',
+        size: 'Standard'
+      };
+
+      const storedCart = await AsyncStorage.getItem('cart');
+      let currentCart = storedCart ? JSON.parse(storedCart) : [];
+      
+      // Check if item already exists in cart
+      const existingItemIndex = currentCart.findIndex(item => item.id === cartItem.id);
+      
+      if (existingItemIndex > -1) {
+        // Update quantity if item exists
+        currentCart[existingItemIndex].quantity += 1;
+      } else {
+        // Add new item to cart
+        currentCart.push(cartItem);
+      }
+      
+      await AsyncStorage.setItem('cart', JSON.stringify(currentCart));
+      setCartItems(currentCart);
+      
+      Toast.show({
+        type: 'success',
+        text1: 'Added to Cart',
+        text2: `${cartItem.title} added to your cart`,
+      });
+      
+    } catch (error) {
+      console.error('Failed to add to cart', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Failed to add item to cart',
+      });
     }
   };
 
@@ -697,14 +881,42 @@ const HomeScreen = () => {
     useCallback(() => {
       console.log('HomeScreen focused - refreshing wishlist and cart');
       fetchWishlistAndCart();
+      checkConnection();
     }, [])
   );
 
   // Initial data fetch
   useEffect(() => {
-    fetchWishlistAndCart();
-    fetchProducts();
+    const initializeData = async () => {
+      const connected = await checkConnection();
+      if (connected) {
+        await fetchWishlistAndCart();
+        await fetchProducts();
+      } else {
+        // Load cached products if available
+        await loadCachedProducts();
+      }
+    };
+    
+    initializeData();
   }, []);
+
+  // Load cached products from AsyncStorage
+  const loadCachedProducts = async () => {
+    try {
+      const cachedProducts = await AsyncStorage.getItem('cached_products');
+      if (cachedProducts) {
+        const parsedProducts = JSON.parse(cachedProducts);
+        setProducts(parsedProducts);
+        setFilteredProducts(parsedProducts);
+        setHasCachedData(true);
+      }
+      setLoading(false);
+    } catch (error) {
+      console.error('Error loading cached products:', error);
+      setLoading(false);
+    }
+  };
 
   // Fetch products from backend API
   const fetchProducts = async () => {
@@ -719,89 +931,100 @@ const HomeScreen = () => {
       
       const data = await response.json();
       
-      setProducts(data.products || data);
-      setFilteredProducts(data.products || data);
+      const productsData = data.products || data;
+      setProducts(productsData);
+      setFilteredProducts(productsData);
+      
+      // Cache products for offline use
+      await AsyncStorage.setItem('cached_products', JSON.stringify(productsData));
+      setHasCachedData(true);
       
     } catch (err) {
       console.error('Error fetching products:', err);
       
-      // Fallback to mock data
-      const mockProducts = [
-        {
-          _id: '1',
-          name: 'Premium Cotton T-Shirt',
-          brand: 'FashionHub',
-          category: 'Clothing',
-          image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&h=500&fit=crop',
-          variants: [{ sizes: [{ price: 29.99 }] }],
-          price: 29.99
-        },
-        {
-          _id: '2',
-          name: 'Wireless Bluetooth Headphones',
-          brand: 'TechGear',
-          category: 'Electronics',
-          image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=500&fit=crop',
-          variants: [{ sizes: [{ price: 149.99 }] }],
-          price: 149.99
-        },
-        {
-          _id: '3',
-          name: 'Smart Watch Pro',
-          brand: 'TechGear',
-          category: 'Electronics',
-          image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=500&fit=crop',
-          variants: [{ sizes: [{ price: 199.99 }] }],
-          price: 199.99
-        },
-        {
-          _id: '4',
-          name: 'Minimalist Sneakers',
-          brand: 'EcoWear',
-          category: 'Shoes',
-          image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&h=500&fit=crop',
-          variants: [{ sizes: [{ price: 79.99 }] }],
-          price: 79.99
-        },
-        {
-          _id: '5',
-          name: 'Designer Handbag',
-          brand: 'LuxuryBrand',
-          category: 'Accessories',
-          image: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=400&h=500&fit=crop',
-          variants: [{ sizes: [{ price: 299.99 }] }],
-          price: 299.99
-        },
-        {
-          _id: '6',
-          name: 'Running Shoes',
-          brand: 'ActiveWear',
-          category: 'Shoes',
-          image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&h=500&fit=crop',
-          variants: [{ sizes: [{ price: 89.99 }] }],
-          price: 89.99
-        },
-        {
-          _id: '7',
-          name: 'Gaming Laptop',
-          brand: 'TechGear',
-          category: 'Electronics',
-          image: 'https://images.unsplash.com/photo-1603302576837-37561b2e2302?w=400&h=500&fit=crop',
-          variants: [{ sizes: [{ price: 1299.99 }] }],
-          price: 1299.99
-        },
-        {
-          _id: '8',
-          name: 'Designer Sunglasses',
-          brand: 'LuxuryBrand',
-          category: 'Accessories',
-          image: 'https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=400&h=500&fit=crop',
-          variants: [{ sizes: [{ price: 199.99 }] }],
-          price: 199.99
-        },
-      ];
-      setProducts(mockProducts);
-      setFilteredProducts(mockProducts);
+      // Try to load cached products as fallback
+      await loadCachedProducts();
+      
+      if (!hasCachedData) {
+        // Fallback to mock data only if no cached data available
+        const mockProducts = [
+          {
+            _id: '1',
+            name: 'Premium Cotton T-Shirt',
+            brand: 'FashionHub',
+            category: 'Clothing',
+            image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&h=500&fit=crop',
+            variants: [{ sizes: [{ price: 29.99 }] }],
+            price: 29.99
+          },
+          {
+            _id: '2',
+            name: 'Wireless Bluetooth Headphones',
+            brand: 'TechGear',
+            category: 'Electronics',
+            image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=500&fit=crop',
+            variants: [{ sizes: [{ price: 149.99 }] }],
+            price: 149.99
+          },
+          {
+            _id: '3',
+            name: 'Smart Watch Pro',
+            brand: 'TechGear',
+            category: 'Electronics',
+            image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=500&fit=crop',
+            variants: [{ sizes: [{ price: 199.99 }] }],
+            price: 199.99
+          },
+          {
+            _id: '4',
+            name: 'Minimalist Sneakers',
+            brand: 'EcoWear',
+            category: 'Shoes',
+            image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&h=500&fit=crop',
+            variants: [{ sizes: [{ price: 79.99 }] }],
+            price: 79.99
+          },
+          {
+            _id: '5',
+            name: 'Designer Handbag',
+            brand: 'LuxuryBrand',
+            category: 'Accessories',
+            image: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=400&h=500&fit=crop',
+            variants: [{ sizes: [{ price: 299.99 }] }],
+            price: 299.99
+          },
+          {
+            _id: '6',
+            name: 'Running Shoes',
+            brand: 'ActiveWear',
+            category: 'Shoes',
+            image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&h=500&fit=crop',
+            variants: [{ sizes: [{ price: 89.99 }] }],
+            price: 89.99
+          },
+          {
+            _id: '7',
+            name: 'Gaming Laptop',
+            brand: 'TechGear',
+            category: 'Electronics',
+            image: 'https://images.unsplash.com/photo-1603302576837-37561b2e2302?w=400&h=500&fit=crop',
+            variants: [{ sizes: [{ price: 1299.99 }] }],
+            price: 1299.99
+          },
+          {
+            _id: '8',
+            name: 'Designer Sunglasses',
+            brand: 'LuxuryBrand',
+            category: 'Accessories',
+            image: 'https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=400&h=500&fit=crop',
+            variants: [{ sizes: [{ price: 199.99 }] }],
+            price: 199.99
+          },
+        ];
+        setProducts(mockProducts);
+        setFilteredProducts(mockProducts);
+        setHasCachedData(true);
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -862,10 +1085,17 @@ const HomeScreen = () => {
     searchInputRef.current?.blur();
   };
 
-  const onRefresh = () => {
+  const onRefresh = async () => {
     setRefreshing(true);
-    fetchProducts();
-    fetchWishlistAndCart();
+    const connected = await checkConnection();
+    if (connected) {
+      await fetchProducts();
+      await fetchWishlistAndCart();
+    } else {
+      // Reload cached data when offline
+      await loadCachedProducts();
+    }
+    setRefreshing(false);
   };
 
   const toggleWishlist = async (product) => {
@@ -976,6 +1206,7 @@ const HomeScreen = () => {
 
   const renderProductItem = ({ item, index }) => {
     const productInWishlist = isInWishlist(item._id);
+    const cartQuantity = getCartQuantity(item._id);
     
     return (
       <ProductItem 
@@ -984,6 +1215,8 @@ const HomeScreen = () => {
         onWishlistToggle={toggleWishlist}
         isInWishlist={productInWishlist}
         index={index}
+        onAddToCart={handleAddToCart}
+        cartQuantity={cartQuantity}
       />
     );
   };
@@ -1005,12 +1238,19 @@ const HomeScreen = () => {
 
   return (
     <View style={styles.scrollContainer}>
+      {/* SIMPLIFIED Internet Status Bar */}
+      <InternetStatusBar 
+        isOnline={isOnline} 
+        onRetry={checkConnection}
+      />
+
       {/* Sticky Header */}
       <StickyHeader 
         user={user}
-        cartItems={cartItems}
+        cartItems={cartItems.length}
         router={router}
         scrollY={scrollY}
+        isOnline={isOnline}
       />
 
       <Animated.ScrollView 
@@ -1029,8 +1269,19 @@ const HomeScreen = () => {
             tintColor={COLORS.primary}
           />
         }
+        contentContainerStyle={!isOnline ? styles.offlineContent : {}}
       >
         <View style={styles.container}>
+          {/* Offline Indicator in Content */}
+          {!isOnline && hasCachedData && (
+            <View style={styles.offlineIndicator}>
+              <Ionicons name="cloud-offline-outline" size={16} color={COLORS.warning} />
+              <Text style={styles.offlineIndicatorText}>
+                You're offline • Showing cached products
+              </Text>
+            </View>
+          )}
+
           {/* Main Header */}
           <View style={styles.header}>
             <View style={styles.profileContainer}>
@@ -1046,9 +1297,9 @@ const HomeScreen = () => {
               >
                 <View style={styles.bigHeaderCartContainer}>
                   <Ionicons name="cart" size={28} color={COLORS.dark} />
-                  {cartItems > 0 && (
+                  {cartItems.length > 0 && (
                     <View style={styles.badge}>
-                      <Text style={styles.badgeText}>{cartItems}</Text>
+                      <Text style={styles.badgeText}>{cartItems.length}</Text>
                     </View>
                   )}
                 </View>
@@ -1302,6 +1553,59 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 16,
     color: COLORS.gray,
+  },
+  // SIMPLIFIED Internet Status Bar Styles
+  internetStatusBar: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: COLORS.error,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    zIndex: 2000,
+  },
+  internetStatusContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  internetStatusText: {
+    color: COLORS.white,
+    fontSize: 14,
+    fontWeight: '500',
+    marginLeft: 8,
+  },
+  // Offline Styles
+  offlineContent: {
+    paddingTop: 40, // Extra padding to account for status bar
+  },
+  offlineIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.warning + '20',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginHorizontal: 20,
+    marginTop: 10,
+    borderRadius: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: COLORS.warning,
+  },
+  offlineIndicatorText: {
+    color: COLORS.warning,
+    fontSize: 14,
+    fontWeight: '500',
+    marginLeft: 8,
+  },
+  offlineDot: {
+    backgroundColor: COLORS.error,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
   },
   header: {
     flexDirection: 'row',
@@ -1803,6 +2107,11 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: COLORS.primary,
   },
+  cartButtonContainer: {
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   cartButton: {
     backgroundColor: COLORS.primary,
     width: 36,
@@ -1821,6 +2130,32 @@ const styles = StyleSheet.create({
         elevation: 4,
       },
     }),
+  },
+  cartButtonActive: {
+    backgroundColor: COLORS.success,
+  },
+  cartButtonPulse: {
+    backgroundColor: COLORS.success,
+    transform: [{ scale: 1.1 }],
+  },
+  quantityBadge: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    backgroundColor: COLORS.error,
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: COLORS.white,
+    zIndex: 1,
+  },
+  quantityText: {
+    color: COLORS.white,
+    fontSize: 10,
+    fontWeight: '800',
   },
   cartIconContainer: {
     justifyContent: 'center',

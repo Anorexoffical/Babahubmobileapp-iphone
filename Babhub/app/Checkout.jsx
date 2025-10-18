@@ -828,7 +828,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: 20,
+    paddingBottom: 100, // Increased to accommodate the larger button
   },
   loadingContainer: {
     flex: 1,
@@ -855,7 +855,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
-  // Premium Popup Styles - Updated with brand colors
+  // Premium Popup Styles
   popupOverlay: {
     flex: 1,
     justifyContent: 'center',
@@ -872,7 +872,7 @@ const styles = StyleSheet.create({
   },
   popupContainer: {
     backgroundColor: COLORS.white,
-    borderRadius: 16,
+    borderRadius: 20,
     width: '100%',
     maxWidth: 340,
     shadowColor: COLORS.black,
@@ -925,21 +925,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 14,
-    borderRadius: 10,
+    paddingHorizontal: 20,
+    paddingVertical: 16, // Increased vertical padding
+    borderRadius: 140,
     gap: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 4,
+    minHeight: 52, // Ensure minimum height
   },
   popupButtonText: {
     color: COLORS.white,
-    fontSize: 15,
+    fontSize: 16, // Increased font size
     fontWeight: '700',
   },
-  // Header - Consistent with CartScreen
+  // Header
   header: {
     backgroundColor: COLORS.white,
     flexDirection: 'row',
@@ -1122,7 +1124,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '500',
   },
-  // Order Items - Compact Design
+  // Order Items
   orderItemsContainer: {
     gap: 10,
     marginBottom: 16,
@@ -1344,22 +1346,32 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.primary,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 12,
-    gap: 6,
+    paddingHorizontal: 32, // Increased horizontal padding
+    paddingVertical: 18, // Increased vertical padding
+    borderRadius: 140,
+    gap: 8,
     flex: 1,
     marginLeft: 12,
     justifyContent: 'center',
-    minWidth: 120, // Ensure button has proper width
+    minWidth: 140, // Increased minimum width
+    minHeight: 56, // Added minimum height
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 8,
   },
   checkoutButtonDisabled: {
     backgroundColor: COLORS.grayLight,
+    shadowColor: COLORS.gray,
   },
   checkoutText: {
     color: COLORS.white,
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 17, // Slightly larger font
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    includeFontPadding: false, // Prevents extra padding around text
+    textAlignVertical: 'center', // Ensures proper vertical alignment
   },
 });
 

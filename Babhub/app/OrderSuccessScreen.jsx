@@ -10,7 +10,8 @@ import {
   Dimensions,
   StatusBar,
   BackHandler,
-  Platform
+  Platform,
+  Alert
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -42,35 +43,38 @@ const COLORS = {
 
 const OrderSuccessScreen = () => {
   const router = useRouter();
+  
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
   const confettiAnim = useRef(null);
 
-  // Clear cart and prevent going back
+  // Clear cart and handle navigation reset
   useEffect(() => {
-    const clearCartAndPreventBack = async () => {
+    const initializeSuccessScreen = async () => {
       try {
-        // Clear the cart from AsyncStorage
+        // 1. Clear the cart from AsyncStorage
         await AsyncStorage.setItem('cart', JSON.stringify([]));
-        console.log('Cart cleared successfully');
+        console.log('🛒 Cart cleared successfully');
+        
+        // 2. Clear any pending payment URLs
+        await AsyncStorage.removeItem('latestPaymentUrl');
+        
       } catch (error) {
-        console.error('Error clearing cart:', error);
+        console.error('❌ Error initializing success screen:', error);
       }
     };
 
-    // Prevent hardware back button
+    // Handle Android back button - completely disable
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
-      // Force navigation to home screen
-      router.replace('/(tabs)/HomeScreen');
-      return true; // Prevent default back behavior
+      // Show message that back is disabled
+      Alert.alert(
+        "Order Completed",
+        "Your order has been successfully placed. Please use the buttons below to continue.",
+        [{ text: "OK" }]
+      );
+      return true; // Always prevent back navigation
     });
-
-    // Prevent gesture back navigation (Expo Router)
-    const preventGestureBack = () => {
-      // This prevents the swipe back gesture
-      router.setParams({ preventBack: 'true' });
-    };
 
     // Start animations
     Animated.parallel([
@@ -98,41 +102,40 @@ const OrderSuccessScreen = () => {
       confettiAnim.current.play();
     }
 
-    // Clear cart and setup back prevention
-    clearCartAndPreventBack();
-    preventGestureBack();
+    // Initialize the screen
+    initializeSuccessScreen();
 
+    // Cleanup
     return () => {
       backHandler.remove();
     };
   }, []);
 
-  // Handle navigation with animation - completely replace current route
-  const navigateWithAnimation = (route) => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: -50,
-        duration: 300,
-        useNativeDriver: true,
-      })
-    ]).start(() => {
-      // Use replace to remove this screen from history
-      router.replace(route);
-    });
+  // Completely replace navigation stack and clear cart
+  const navigateWithReset = async (targetRoute) => {
+    try {
+      // Ensure cart is cleared one more time
+      await AsyncStorage.setItem('cart', JSON.stringify([]));
+      
+      // Use replace to completely remove current screen from history
+      if (targetRoute === 'home') {
+        router.replace('/(tabs)/HomeScreen');
+      } else if (targetRoute === 'orders') {
+        router.replace('/MyOrder');
+      }
+    } catch (error) {
+      console.error('Navigation error:', error);
+      // Fallback navigation
+      router.replace('/(tabs)/HomeScreen');
+    }
   };
 
-  // Force user to select a button - no other way to navigate
   const handleContinueShopping = () => {
-    navigateWithAnimation('/(tabs)/HomeScreen');
+    navigateWithReset('home');
   };
 
   const handleViewOrders = () => {
-    navigateWithAnimation('/MyOrder');
+    navigateWithReset('orders');
   };
 
   return (

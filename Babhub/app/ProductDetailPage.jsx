@@ -12,7 +12,8 @@ import {
   SafeAreaView,
   Platform,
   Alert,
-  Easing
+  Easing,
+  StatusBar
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -278,6 +279,14 @@ const ProductDetailPage = () => {
     ]).start();
   };
 
+  const handleBack = () => {
+    if (router.canGoBack?.()) {
+      router.back();
+    } else {
+      router.replace('/');
+    }
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={styles.safeArea}>
@@ -351,8 +360,8 @@ const ProductDetailPage = () => {
         // If item exists, just update the quantity (no limit for same item)
         cart[existingItemIndex].quantity += newItem.quantity;
       } else {
-        // Check if adding a new product would exceed the 4 unique product limit
-        if (cart.length >= 4) {
+        // Check if adding a new product would exceed the 3 unique product limit
+        if (cart.length >= 3) {
           setShowLimitModal(true);
           return;
         }
@@ -481,7 +490,7 @@ const ProductDetailPage = () => {
             </View>
             <Text style={styles.modalTitle}>Cart Limit Reached</Text>
             <Text style={styles.modalText}>
-              You can only add up to 4 different products to your cart. Please remove some items to add new ones.
+              You can only add up to 3 different products to your cart. Please remove some items to add new ones.
             </Text>
             <View style={styles.modalButtons}>
               <TouchableOpacity 
@@ -491,12 +500,13 @@ const ProductDetailPage = () => {
                 <Text style={styles.modalSecondaryButtonText}>Continue Shopping</Text>
               </TouchableOpacity>
               <TouchableOpacity 
-                style={styles.modalButton}
+                style={[styles.modalButton, styles.viewCartButton]}
                 onPress={() => {
                   setShowLimitModal(false);
                   router.push('/CartScreen');
                 }}
               >
+                <Ionicons name="cart" size={18} color={COLORS.white} style={styles.buttonIcon} />
                 <Text style={styles.modalButtonText}>View Cart</Text>
               </TouchableOpacity>
             </View>
@@ -540,7 +550,7 @@ const ProductDetailPage = () => {
                 style={[styles.modalButton, styles.viewCartButton]}
                 onPress={handleViewCart}
               >
-                <Ionicons name="cart" size={20} color={COLORS.white} style={styles.buttonIcon} />
+                <Ionicons name="cart" size={18} color={COLORS.white} style={styles.buttonIcon} />
                 <Text style={styles.viewCartText}>View Cart</Text>
               </TouchableOpacity>
             </View>
@@ -578,13 +588,13 @@ const ProductDetailPage = () => {
             </View>
           )}
 
-          {/* Back Button */}
-          <TouchableOpacity
+          {/* Back Button - Updated with light purple background */}
+          <TouchableOpacity 
             style={styles.backButton}
-            onPress={() => router.canGoBack?.() ? router.back() : router.replace('/')}
+            onPress={handleBack}
           >
             <View style={styles.backButtonInner}>
-              <Ionicons name="chevron-back" size={24} color={COLORS.dark} />
+              <Ionicons name="arrow-back" size={20} color={COLORS.primary} />
             </View>
           </TouchableOpacity>
 
@@ -600,8 +610,8 @@ const ProductDetailPage = () => {
               ]}>
                 <Ionicons 
                   name={isInWishlist ? "heart" : "heart-outline"} 
-                  size={22} 
-                  color={isInWishlist ? COLORS.secondary : COLORS.dark} 
+                  size={20} 
+                  color={isInWishlist ? COLORS.secondary : COLORS.primary} 
                 />
               </View>
             </TouchableOpacity>
@@ -690,13 +700,13 @@ const ProductDetailPage = () => {
             </View>
           </View>
 
-          {/* Stock Status - Small, light background, dark text, placed opposite to Select Color */}
+          {/* Stock Status */}
           <View style={styles.stockContainer}>
             <Animated.View 
               style={[
                 styles.stockBadge,
                 { 
-                  backgroundColor: stockStatus.color + '15', // Light background with opacity
+                  backgroundColor: stockStatus.color + '15',
                   opacity: stockAlertOpacity 
                 }
               ]}
@@ -716,7 +726,6 @@ const ProductDetailPage = () => {
           <View style={styles.sizeSection}>
             <View style={styles.optionHeader}>
               <Text style={styles.optionTitle}>Select Size</Text>
-              {/* Removed the selected size text from the right side */}
             </View>
             <View style={styles.sizeOptions}>
               {sizes.map((sizeObj, index) => (
@@ -822,30 +831,32 @@ const ProductDetailPage = () => {
 
       {/* Add to Cart Button */}
       <View style={styles.footer}>
-        <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
-          <TouchableOpacity 
-            onPress={handleAddToCart}
-            disabled={stock <= 0}
-            style={[styles.addToCartButton, stock <= 0 && styles.disabledButton]}
-          >
-            <Animated.View style={{ transform: [{ scale: cartPulse }] }}>
-              <Ionicons 
-                name="cart" 
-                size={22} 
-                color={COLORS.white} 
-                style={styles.cartIcon} 
-              />
-            </Animated.View>
-            <Text style={styles.buttonText}>
-              {stock <= 0 ? 'Out of Stock' : `Add to Cart • $${(price * quantity).toFixed(2)}`}
-            </Text>
-            {stock > 0 && (
-              <View style={styles.buttonBadge}>
-                <Text style={styles.buttonBadgeText}>{quantity}</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-        </Animated.View>
+        <View style={styles.footerContainer}>
+          <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
+            <TouchableOpacity 
+              onPress={handleAddToCart}
+              disabled={stock <= 0}
+              style={[styles.addToCartButton, stock <= 0 && styles.disabledButton]}
+            >
+              <Animated.View style={{ transform: [{ scale: cartPulse }] }}>
+                <Ionicons 
+                  name="cart" 
+                  size={22} 
+                  color={COLORS.white} 
+                  style={styles.cartIcon} 
+                />
+              </Animated.View>
+              <Text style={styles.buttonText}>
+                {stock <= 0 ? 'Out of Stock' : `Add to Cart • $${(price * quantity).toFixed(2)}`}
+              </Text>
+              {stock > 0 && (
+                <View style={styles.buttonBadge}>
+                  <Text style={styles.buttonBadgeText}>{quantity}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          </Animated.View>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -897,7 +908,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     paddingHorizontal: 24,
     paddingVertical: 12,
-    borderRadius: 12,
+    borderRadius: 140,
   },
   backHomeText: {
     color: COLORS.white,
@@ -912,7 +923,6 @@ const styles = StyleSheet.create({
     zIndex: 1000,
     backgroundColor: COLORS.white,
     borderRadius: 25,
-
     padding: 12,
     ...Platform.select({
       ios: {
@@ -926,7 +936,7 @@ const styles = StyleSheet.create({
       },
     }),
   },
-  // Modal Styles
+  // Modal Styles - Improved
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
@@ -937,9 +947,10 @@ const styles = StyleSheet.create({
   modalContent: {
     backgroundColor: COLORS.white,
     borderRadius: 20,
-    padding: 30,
+    padding: 25,
     alignItems: 'center',
     width: '90%',
+    maxWidth: 400,
     ...Platform.select({
       ios: {
         shadowColor: COLORS.dark,
@@ -962,32 +973,32 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   modalTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '700',
     color: COLORS.dark,
     marginBottom: 12,
     textAlign: 'center',
   },
   successModalTitle: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '700',
     color: COLORS.success,
     marginBottom: 12,
     textAlign: 'center',
   },
   modalText: {
-    fontSize: 16,
+    fontSize: 14,
     textAlign: 'center',
     marginBottom: 24,
     color: COLORS.gray,
-    lineHeight: 22,
+    lineHeight: 20,
   },
   successModalText: {
-    fontSize: 16,
+    fontSize: 14,
     textAlign: 'center',
     marginBottom: 24,
     color: COLORS.gray,
-    lineHeight: 22,
+    lineHeight: 20,
   },
   modalButtons: {
     flexDirection: 'row',
@@ -1002,42 +1013,44 @@ const styles = StyleSheet.create({
   modalButton: {
     flex: 1,
     backgroundColor: COLORS.primary,
-    paddingVertical: 14,
-    borderRadius: 12,
+    paddingVertical: 12,
+    borderRadius: 140,
     alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 44,
   },
   modalSecondaryButton: {
     backgroundColor: COLORS.light,
   },
   continueShoppingButton: {
     backgroundColor: COLORS.light,
-    flex: 1.5,
+    flex: 1.2,
   },
   viewCartButton: {
     backgroundColor: COLORS.primary,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     flex: 1,
   },
   modalButtonText: {
     color: COLORS.white,
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
-        borderRadius: 140,
   },
   modalSecondaryButtonText: {
     color: COLORS.dark,
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
   },
   continueShoppingText: {
     color: COLORS.dark,
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
   },
   viewCartText: {
     color: COLORS.white,
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     marginLeft: 6,
   },
@@ -1092,6 +1105,7 @@ const styles = StyleSheet.create({
     color: COLORS.gray,
     fontWeight: '500',
   },
+  // Updated Back Button with light purple background
   backButton: {
     position: 'absolute',
     top: 50,
@@ -1099,20 +1113,12 @@ const styles = StyleSheet.create({
     zIndex: 3,
   },
   backButtonInner: {
-    backgroundColor: COLORS.white,
-    borderRadius: 12,
-    padding: 10,
-    ...Platform.select({
-      ios: {
-        shadowColor: COLORS.dark,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
+    width: 36,
+    height: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(99, 102, 241, 0.1)', // Light purple background
+    borderRadius: 10,
   },
   wishlistButton: {
     position: 'absolute',
@@ -1121,9 +1127,12 @@ const styles = StyleSheet.create({
     zIndex: 3,
   },
   wishlistButtonInner: {
-    backgroundColor: COLORS.white,
-    borderRadius: 12,
-    padding: 10,
+    width: 36,
+    height: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(99, 102, 241, 0.1)', // Light purple background
+    borderRadius: 10,
     ...Platform.select({
       ios: {
         shadowColor: COLORS.dark,
@@ -1139,14 +1148,14 @@ const styles = StyleSheet.create({
   wishlistButtonActive: {
     backgroundColor: COLORS.secondary + '20',
   },
-  // Stock Badge - Small, light background, dark text, placed opposite to Select Color
+  // Stock Badge
   stockContainer: {
     alignItems: 'flex-end',
     marginBottom: 15,
     marginTop: -15,
   },
   stockBadge: {
-    borderRadius: 20,
+    borderRadius: 140,
     paddingHorizontal: 16,
     paddingVertical: 8,
     alignSelf: 'flex-end',
@@ -1185,7 +1194,7 @@ const styles = StyleSheet.create({
   paginationDot: {
     width: 8,
     height: 8,
-    borderRadius: 4,
+    borderRadius: 140,
     backgroundColor: 'rgba(255,255,255,0.5)',
   },
   paginationDotActive: {
@@ -1220,7 +1229,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.light,
     paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: 8,
+    borderRadius: 140,
   },
   ratingText: {
     fontSize: 14,
@@ -1262,7 +1271,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.success + '20',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 8,
+    borderRadius: 140,
   },
   deliveryText: {
     fontSize: 14,
@@ -1297,7 +1306,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
   },
-  // Removed selectedSizeText style since it's no longer used
   colorOptions: {
     flexDirection: 'row',
     gap: 12,
@@ -1305,7 +1313,7 @@ const styles = StyleSheet.create({
   colorOption: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: 140,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
@@ -1329,7 +1337,7 @@ const styles = StyleSheet.create({
   colorCheckmark: {
     width: 20,
     height: 20,
-    borderRadius: 10,
+    borderRadius: 140,
     backgroundColor: 'rgba(0,0,0,0.3)',
     justifyContent: 'center',
     alignItems: 'center',
@@ -1342,7 +1350,7 @@ const styles = StyleSheet.create({
   sizeOption: {
     width: 60,
     height: 50,
-    borderRadius: 12,
+    borderRadius: 140,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: COLORS.white,
@@ -1385,7 +1393,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: 'rgba(255,255,255,0.7)',
-    borderRadius: 10,
+    borderRadius: 140,
   },
   // Sections
   section: {
@@ -1416,7 +1424,7 @@ const styles = StyleSheet.create({
   featureIcon: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: 140,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1441,7 +1449,7 @@ const styles = StyleSheet.create({
   quantityControl: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 16,
+    borderRadius: 140,
     overflow: 'hidden',
     backgroundColor: COLORS.white,
     borderWidth: 2,
@@ -1491,7 +1499,12 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
+    backgroundColor: 'transparent',
+  },
+  footerContainer: {
     backgroundColor: COLORS.white,
+    borderTopLeftRadius: 25,
+    borderTopRightRadius: 25,
     padding: 20,
     paddingBottom: Platform.OS === 'ios' ? 30 : 20,
     borderTopWidth: 1,
@@ -1511,7 +1524,7 @@ const styles = StyleSheet.create({
   addToCartButton: {
     backgroundColor: COLORS.primary,
     padding: 18,
-    borderRadius: 16,
+    borderRadius: 140,
     flexDirection: 'row',
     justifyContent: 'flex-start',
     alignItems: 'center',
@@ -1544,7 +1557,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.secondary,
     width: 24,
     height: 24,
-    borderRadius: 12,
+    borderRadius: 140,
     justifyContent: 'center',
     alignItems: 'center',
     position: 'absolute',

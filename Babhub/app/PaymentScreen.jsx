@@ -161,26 +161,28 @@ const PaymentScreen = () => {
   }, [progress]);
 
   // Handle payment status redirection
-  const handlePaymentSuccess = () => {
-    if (redirectInitiated.current) return;
-    
-    console.log("SUCCESS DETECTED - Immediate redirect to OrderSuccessScreen");
-    redirectInitiated.current = true;
-    paymentStatusDetected.current = true;
-    setLoading(false);
-    
-    // Clear payment URL immediately
-    AsyncStorage.removeItem("latestPaymentUrl");
-    
-    // IMMEDIATE redirect without delay
-    router.replace({
-      pathname: '/OrderSuccessScreen',
-      params: { 
-        paymentStatus: 'success',
-        timestamp: Date.now()
-      }
-    });
-  };
+ // In PaymentScreen.js - Update the handlePaymentSuccess function
+const handlePaymentSuccess = () => {
+  if (redirectInitiated.current) return;
+  
+  console.log("SUCCESS DETECTED - Immediate redirect to OrderSuccessScreen");
+  redirectInitiated.current = true;
+  paymentStatusDetected.current = true;
+  setLoading(false);
+  
+  // Clear payment URL immediately
+  AsyncStorage.removeItem("latestPaymentUrl");
+  
+  // IMMEDIATE redirect without delay - use replace to clear back stack
+  router.replace({
+    pathname: '/OrderSuccessScreen',
+    params: { 
+      paymentStatus: 'success',
+      timestamp: Date.now(),
+      clearCart: 'true' // Add this flag
+    }
+  });
+};
 
   const handlePaymentCancelled = () => {
     if (redirectInitiated.current) return;

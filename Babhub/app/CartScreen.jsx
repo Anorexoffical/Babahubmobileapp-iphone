@@ -105,11 +105,23 @@ const CartScreen = () => {
       } finally {
         setAppIsReady(true);
         setLoading(false);
-        await SplashScreen.hideAsync();
+        // Only hide splash screen if app is ready and we're not unmounting
+        if (!loading) {
+          try {
+            await SplashScreen.hideAsync();
+          } catch (error) {
+            console.log('Splash screen already hidden');
+          }
+        }
       }
     };
 
     prepare();
+
+    // Cleanup function to prevent splash screen errors
+    return () => {
+      setAppIsReady(false);
+    };
   }, []);
 
   useEffect(() => {
@@ -296,20 +308,21 @@ const CartScreen = () => {
                         R {(item.price * item.quantity).toFixed(2)}
                       </Text>
                       
-                      {/* Quantity Controls */}
+                      {/* Improved Quantity Controls with larger buttons and border radius 140 */}
                       <View style={styles.quantityControl}>
                         <TouchableOpacity 
                           onPress={() => updateQuantity(index, item.quantity - 1)}
                           style={[
                             styles.quantityBtn,
+                            styles.quantityMinus,
                             item.quantity <= 1 && styles.quantityBtnDisabled
                           ]}
                           disabled={item.quantity <= 1}
                         >
                           <Ionicons 
                             name="remove" 
-                            size={14} 
-                            color={item.quantity <= 1 ? COLORS.grayLight : COLORS.primary} 
+                            size={16} 
+                            color={item.quantity <= 1 ? COLORS.grayLight : COLORS.white} 
                           />
                         </TouchableOpacity>
 
@@ -319,9 +332,9 @@ const CartScreen = () => {
 
                         <TouchableOpacity 
                           onPress={() => updateQuantity(index, item.quantity + 1)}
-                          style={styles.quantityBtn}
+                          style={[styles.quantityBtn, styles.quantityPlus]}
                         >
-                          <Ionicons name="add" size={14} color={COLORS.primary} />
+                          <Ionicons name="add" size={16} color={COLORS.white} />
                         </TouchableOpacity>
                       </View>
                     </View>
@@ -413,21 +426,26 @@ const CartScreen = () => {
         )}
       </ScrollView>
 
-      {/* Checkout Footer */}
+      {/* Improved Checkout Footer */}
       {cartItems.length > 0 && (
         <View style={styles.footer}>
           <View style={styles.footerBackground}>
             <View style={styles.footerContent}>
               <View style={styles.footerSummary}>
+                <Text style={styles.footerTotalLabel}>Total Amount</Text>
                 <Text style={styles.footerTotal}>R {calculateTotal().toFixed(2)}</Text>
-                <Text style={styles.footerItems}>{itemCount} items</Text>
+                <Text style={styles.footerItems}>{itemCount} {itemCount === 1 ? 'item' : 'items'}</Text>
               </View>
               <TouchableOpacity 
                 style={styles.checkoutButton}
                 onPress={() => router.push('/Checkout')}
               >
-                <Text style={styles.checkoutText}>Checkout</Text>
-                <Ionicons name="arrow-forward" size={18} color={COLORS.white} />
+                <View style={styles.checkoutButtonContent}>
+                  <Text style={styles.checkoutText}>Proceed to Checkout</Text>
+                  <View style={styles.checkoutIconContainer}>
+                    <Ionicons name="arrow-forward" size={18} color={COLORS.white} />
+                  </View>
+                </View>
               </TouchableOpacity>
             </View>
           </View>
@@ -437,24 +455,27 @@ const CartScreen = () => {
   );
 };
 
+// ... (styles remain exactly the same as your previous code)
+
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: COLORS.white, // Changed to white
+    backgroundColor: COLORS.white,
   },
   container: {
     flex: 1,
-    backgroundColor: COLORS.white, // Changed to white
+    backgroundColor: COLORS.white,
   },
   scrollContent: {
     flexGrow: 1,
-    backgroundColor: COLORS.white, // Changed to white
+    backgroundColor: COLORS.white,
+    paddingBottom: 100,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: COLORS.white, // Changed to white
+    backgroundColor: COLORS.white,
   },
   loadingText: {
     marginTop: 16,
@@ -462,7 +483,6 @@ const styles = StyleSheet.create({
     color: COLORS.gray,
     fontWeight: '500',
   },
-  // Header - White with reduced height and rounded corners
   header: {
     backgroundColor: COLORS.white,
     flexDirection: 'row',
@@ -471,8 +491,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     paddingTop: Platform.OS === 'ios' ? 50 : 30,
-    borderBottomLeftRadius: 20, // Rounded corners maintained
-    borderBottomRightRadius: 20, // Rounded corners maintained
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
@@ -488,7 +508,7 @@ const styles = StyleSheet.create({
     height: 36,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(99, 102, 241, 0.1)', // Light purple background
+    backgroundColor: 'rgba(99, 102, 241, 0.1)',
     borderRadius: 10,
   },
   headerCenter: {
@@ -498,7 +518,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: COLORS.dark, // Changed to dark for white background
+    color: COLORS.dark,
     marginBottom: 2,
   },
   headerSubtitle: {
@@ -511,12 +531,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: 'rgba(220, 38, 38, 0.1)',
   },
-  // Cart Items Container
   cartItemsContainer: {
     paddingHorizontal: 16,
     paddingTop: 8,
   },
-  // Cart Item - Made smaller
   cartItem: {
     flexDirection: 'row',
     backgroundColor: COLORS.white,
@@ -662,37 +680,54 @@ const styles = StyleSheet.create({
   quantityControl: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.light,
-    borderRadius: 8,
+    backgroundColor: COLORS.white,
+    borderRadius: 140,
+    borderWidth: 1,
+    borderColor: COLORS.light,
     padding: 2,
     gap: 2,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
   quantityBtn: {
-    width: 24,
-    height: 24,
+    width: 28,
+    height: 28,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 6,
-    backgroundColor: COLORS.white,
+    borderRadius: 140,
+  },
+  quantityMinus: {
+    backgroundColor: COLORS.primary,
+  },
+  quantityPlus: {
+    backgroundColor: COLORS.primary,
   },
   quantityBtnDisabled: {
-    opacity: 0.5,
+    backgroundColor: COLORS.grayLight,
   },
   quantityDisplay: {
-    minWidth: 28,
-    height: 24,
+    minWidth: 32,
+    height: 28,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: COLORS.white,
-    borderRadius: 4,
-    paddingHorizontal: 2,
+    borderRadius: 140,
+    paddingHorizontal: 4,
   },
   quantityNumber: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '700',
     color: COLORS.dark,
   },
-  // Order Summary
   summarySection: {
     paddingHorizontal: 16,
     marginTop: 8,
@@ -764,7 +799,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: COLORS.primary,
   },
-  // Shipping Progress
   shippingProgress: {
     marginHorizontal: 16,
     marginBottom: 16,
@@ -807,7 +841,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     borderRadius: 2,
   },
-  // Empty State
   emptyState: {
     flex: 1,
     justifyContent: 'center',
@@ -820,12 +853,12 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     alignItems: 'center',
   },
-emptyImage: {
-  width: width * 3,
-  height: width * 0.6,
-  maxWidth: 1500,
-  maxHeight: 400,
-},
+  emptyImage: {
+    width: width * 0.6,
+    height: width * 0.4,
+    maxWidth: 300,
+    maxHeight: 200,
+  },
   emptyTitle: {
     fontSize: 20,
     fontWeight: '700',
@@ -847,7 +880,7 @@ emptyImage: {
     backgroundColor: COLORS.primary,
     paddingHorizontal: 24,
     paddingVertical: 12,
-    borderRadius: 12,
+    borderRadius: 140,
     gap: 8,
   },
   startShoppingText: {
@@ -855,17 +888,20 @@ emptyImage: {
     fontSize: 15,
     fontWeight: '600',
   },
-  // Footer
   footer: {
-    paddingTop: 12,
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'transparent',
   },
   footerBackground: {
     backgroundColor: COLORS.white,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: Platform.OS === 'ios' ? 30 : 20,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 24,
     borderTopWidth: 1,
     borderLeftWidth: 1,
     borderRightWidth: 1,
@@ -873,12 +909,12 @@ emptyImage: {
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: -2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 8,
+        shadowOffset: { width: 0, height: -4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 12,
       },
       android: {
-        elevation: 6,
+        elevation: 8,
       },
     }),
   },
@@ -890,8 +926,14 @@ emptyImage: {
   footerSummary: {
     flex: 1,
   },
+  footerTotalLabel: {
+    fontSize: 12,
+    color: COLORS.gray,
+    fontWeight: '500',
+    marginBottom: 2,
+  },
   footerTotal: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '800',
     color: COLORS.primary,
     marginBottom: 2,
@@ -901,21 +943,45 @@ emptyImage: {
     color: COLORS.gray,
   },
   checkoutButton: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 140,
+    paddingHorizontal: 4,
+    paddingVertical: 4,
+    marginLeft: 16,
+    ...Platform.select({
+      ios: {
+        shadowColor: COLORS.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
+  },
+  checkoutButtonContent: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: COLORS.primary,
     paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 12,
-    gap: 6,
-    flex: 1,
-    marginLeft: 12,
-    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 140,
+    gap: 8,
   },
   checkoutText: {
     color: COLORS.white,
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  checkoutIconContainer: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    width: 24,
+    height: 24,
+    borderRadius: 140,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 
