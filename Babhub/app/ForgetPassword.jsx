@@ -198,10 +198,29 @@ const ForgetPassword = () => {
   };
 
   const handleBackToLogin = () => {
-    // Clear any stored credentials when going back to login
-    SecureStore.deleteItemAsync('reset_email');
-    SecureStore.deleteItemAsync('reset_timestamp');
-    router.push('/login');
+    // Show confirmation before going back
+    Alert.alert(
+      "Go Back to Login?",
+      "Are you sure you want to go back to login? Any entered information will be lost.",
+      [
+        { 
+          text: "Cancel", 
+          style: "cancel",
+          onPress: () => {}
+        },
+        { 
+          text: "Yes, Go Back", 
+          style: "destructive",
+          onPress: () => {
+            // Clear any stored credentials when going back to login
+            SecureStore.deleteItemAsync('reset_email');
+            SecureStore.deleteItemAsync('reset_timestamp');
+            // Use back function to navigate back
+            router.back();
+          }
+        }
+      ]
+    );
   };
 
   const contactSupport = () => {

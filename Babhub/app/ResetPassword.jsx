@@ -94,8 +94,10 @@ const ResetPassword = () => {
         handleGoToLogin();
         return true; // Prevent default back behavior
       }
-      // Allow back navigation if reset is not completed
-      return false;
+      
+      // Show confirmation for back to recovery
+      handleBackToRecovery();
+      return true; // Prevent default back behavior
     });
 
     return () => backHandler.remove();
@@ -209,7 +211,7 @@ const ResetPassword = () => {
     // Clear all session data
     SecureStore.deleteItemAsync('reset_email');
     SecureStore.deleteItemAsync('reset_timestamp');
-    // Navigate to login
+    // Navigate to login using replace to prevent going back
     router.replace('/login');
   };
 
@@ -284,7 +286,26 @@ const ResetPassword = () => {
       // If reset is completed, redirect to login
       handleGoToLogin();
     } else {
-      router.push('/ForgetPassword');
+      // Show confirmation before going back
+      Alert.alert(
+        "Go Back to Recovery?",
+        "Are you sure you want to go back to recovery? Any entered password information will be lost.",
+        [
+          { 
+            text: "Cancel", 
+            style: "cancel",
+            onPress: () => {}
+          },
+          { 
+            text: "Yes, Go Back", 
+            style: "destructive",
+            onPress: () => {
+              // Use back function to navigate back to ForgetPassword
+              router.back();
+            }
+          }
+        ]
+      );
     }
   };
 

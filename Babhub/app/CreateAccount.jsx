@@ -217,17 +217,13 @@ const CreateAccount = () => {
   const handleSuccessContinue = () => {
     setShowSuccessModal(false);
     clearForm();
-    // Use setTimeout to ensure modal is fully closed before navigation
-    setTimeout(() => {
-      router.push('/login');
-    }, 300);
+    // Use router.back() to go back to previous screen (login) instead of pushing new page
+    router.back();
   };
 
   const handleBackToLogin = () => {
-    // Use setTimeout to ensure any animations are complete
-    setTimeout(() => {
-      router.push('/login');
-    }, 100);
+    // Use router.back() to go back to previous screen instead of pushing new page
+    router.back();
   };
 
   const scrollViewRef = React.useRef();
@@ -597,8 +593,8 @@ const CreateAccount = () => {
               onPress={handleSuccessContinue}
               activeOpacity={0.9}
             >
-              <Text style={styles.successButtonText}>Continue to Login</Text>
-              <MaterialIcons name="arrow-forward" size={20} color={COLORS.white} />
+              <Text style={styles.successButtonText}>Back to Login</Text>
+              <MaterialIcons name="arrow-back" size={20} color={COLORS.white} />
             </TouchableOpacity>
           </View>
         </View>

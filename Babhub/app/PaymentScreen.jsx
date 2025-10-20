@@ -63,24 +63,7 @@ const PaymentScreen = () => {
   useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
       if (paymentUrl) {
-        Alert.alert(
-          "Cancel Payment",
-          "Are you sure you want to cancel this payment?",
-          [
-            { 
-              text: "Continue Payment", 
-              style: "cancel",
-              onPress: () => {}
-            },
-            { 
-              text: "Cancel Payment", 
-              style: "destructive",
-              onPress: () => {
-                handleManualCancellation();
-              }
-            }
-          ]
-        );
+        showCancelConfirmation();
         return true;
       }
       return false;
@@ -89,7 +72,45 @@ const PaymentScreen = () => {
     return () => backHandler.remove();
   }, [paymentUrl, router]);
 
-  // Handle manual cancellation
+  // Show confirmation popup for cancellation
+  const showCancelConfirmation = () => {
+    Alert.alert(
+      "Cancel Payment?",
+      "Are you sure you want to cancel this payment? Your transaction will be interrupted.",
+      [
+        { 
+          text: "Continue Payment", 
+          style: "cancel",
+          onPress: () => {}
+        },
+        { 
+          text: "Yes, Cancel", 
+          style: "destructive",
+          onPress: () => {
+            handleBackToCheckout();
+          }
+        }
+      ]
+    );
+  };
+
+  // Handle back to checkout (without showing payment cancelled screen)
+  const handleBackToCheckout = () => {
+    if (redirectInitiated.current) return;
+    
+    console.log("BACK BUTTON - Returning to checkout");
+    redirectInitiated.current = true;
+    paymentStatusDetected.current = true;
+    setLoading(false);
+    
+    // Clear payment URL immediately
+    AsyncStorage.removeItem("latestPaymentUrl");
+    
+    // Simply go back to previous screen (checkout)
+    router.back();
+  };
+
+  // Handle manual cancellation (for other cancellation scenarios)
   const handleManualCancellation = () => {
     if (redirectInitiated.current) return;
     
@@ -101,7 +122,7 @@ const PaymentScreen = () => {
     // Clear payment URL immediately
     AsyncStorage.removeItem("latestPaymentUrl");
     
-    // Redirect to cancellation page
+    // Redirect to cancellation page (for non-back-button cancellations)
     router.replace({
       pathname: '/PaymentCancelledScreen',
       params: { 
@@ -375,7 +396,7 @@ const PaymentScreen = () => {
           text: "Cancel", 
           style: "destructive",
           onPress: () => {
-            handleManualCancellation();
+            showCancelConfirmation();
           }
         }
       ]
@@ -394,7 +415,7 @@ const PaymentScreen = () => {
         { 
           text: "OK", 
           onPress: () => {
-            handleManualCancellation();
+            showCancelConfirmation();
           }
         }
       ]
@@ -417,7 +438,7 @@ const PaymentScreen = () => {
         >
           <View style={styles.header}>
             <TouchableOpacity 
-              onPress={handleManualCancellation}
+              onPress={showCancelConfirmation}
               style={styles.backButton}
             >
               <View style={styles.backButtonInner}>
@@ -455,7 +476,7 @@ const PaymentScreen = () => {
               
               <TouchableOpacity 
                 style={styles.backButtonError}
-                onPress={handleManualCancellation}
+                onPress={showCancelConfirmation}
               >
                 <Ionicons name="arrow-back" size={20} color={COLORS.primary} />
                 <Text style={styles.backText}>Back to Checkout</Text>
@@ -501,7 +522,7 @@ const PaymentScreen = () => {
         {/* Premium Header */}
         <View style={styles.header}>
           <TouchableOpacity 
-            onPress={handleManualCancellation}
+            onPress={showCancelConfirmation}
             style={styles.backButton}
           >
             <View style={styles.backButtonInner}>

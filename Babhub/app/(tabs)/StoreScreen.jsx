@@ -634,7 +634,7 @@ const TrendingProductCard = ({ item, index, onAddToCart, cartQuantity }) => {
   );
 };
 
-// UPDATED Product Item Component - Add to cart now navigates to product detail
+// UPDATED Product Item Component - Only show NEW badge if isFeatured is true
 const ProductItem = ({ item, onPress, onWishlistToggle, isInWishlist, index, onAddToCart, cartQuantity }) => {
   const price = item.variants?.[0]?.sizes?.[0]?.price || item.price || 0;
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -765,10 +765,12 @@ const ProductItem = ({ item, onPress, onWishlistToggle, isInWishlist, index, onA
               </TouchableOpacity>
             </View>
 
-            {/* UPDATED: NEW badge with brand-like design */}
-            <View style={styles.newBadge}>
-              <Text style={styles.newBadgeText}>NEW</Text>
-            </View>
+            {/* UPDATED: NEW badge only shown if isFeatured is true */}
+            {item.isFeatured === true && (
+              <View style={styles.newBadge}>
+                <Text style={styles.newBadgeText}>NEW</Text>
+              </View>
+            )}
           </View>
           
           <View style={styles.cardContent}>
@@ -1127,11 +1129,12 @@ const StoreScreen = () => {
     }
   };
 
-  // Fetch products from backend API
+  // Fetch products from backend API - Get all products
   const fetchProducts = async () => {
     try {
       setLoading(true);
       
+      // Get all products (not just featured ones)
       const response = await fetch(`${API_BASE_URL}/api/products`);
       
       if (!response.ok) {
@@ -1140,15 +1143,18 @@ const StoreScreen = () => {
       
       const data = await response.json();
       
+      // Set all products (including both featured and non-featured)
       setProducts(data);
       setFilteredProducts(data);
       
-      // NEW: Extract categories from products and update state
+      // NEW: Extract categories from all products and update state
       const extractedCategories = extractCategoriesFromProducts(data);
       setCategories(extractedCategories);
+      console.log('All products loaded:', data.length);
+      console.log('Featured products count:', data.filter(product => product.isFeatured === true).length);
       console.log('Categories extracted:', extractedCategories);
       
-      // Cache products for offline use
+      // Cache all products for offline use
       await AsyncStorage.setItem('cached_products', JSON.stringify(data));
       setHasCachedData(true);
       
@@ -1159,7 +1165,7 @@ const StoreScreen = () => {
       await loadCachedProducts();
       
       if (!hasCachedData) {
-        // Fallback to mock data with categories
+        // Fallback to mock data with mixed isFeatured status
         const mockProducts = [
           {
             _id: '1',
@@ -1168,7 +1174,8 @@ const StoreScreen = () => {
             category: 'Clothing',
             image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&h=500&fit=crop',
             variants: [{ sizes: [{ price: 29.99 }] }],
-            price: 29.99
+            price: 29.99,
+            isFeatured: true // Featured product - will show NEW badge
           },
           {
             _id: '2',
@@ -1177,7 +1184,8 @@ const StoreScreen = () => {
             category: 'Clothing',
             image: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=400&h=500&fit=crop',
             variants: [{ sizes: [{ price: 59.99 }] }],
-            price: 59.99
+            price: 59.99,
+            isFeatured: false // Not featured - no NEW badge
           },
           {
             _id: '3',
@@ -1186,7 +1194,8 @@ const StoreScreen = () => {
             category: 'Electronics',
             image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=500&fit=crop',
             variants: [{ sizes: [{ price: 199.99 }] }],
-            price: 199.99
+            price: 199.99,
+            isFeatured: true // Featured product - will show NEW badge
           },
           {
             _id: '4',
@@ -1195,7 +1204,8 @@ const StoreScreen = () => {
             category: 'Shoes',
             image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&h=500&fit=crop',
             variants: [{ sizes: [{ price: 79.99 }] }],
-            price: 79.99
+            price: 79.99,
+            isFeatured: false // Not featured - no NEW badge
           },
           {
             _id: '5',
@@ -1204,7 +1214,8 @@ const StoreScreen = () => {
             category: 'Accessories',
             image: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=400&h=500&fit=crop',
             variants: [{ sizes: [{ price: 299.99 }] }],
-            price: 299.99
+            price: 299.99,
+            isFeatured: true // Featured product - will show NEW badge
           },
           {
             _id: '6',
@@ -1213,7 +1224,8 @@ const StoreScreen = () => {
             category: 'Electronics',
             image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=500&fit=crop',
             variants: [{ sizes: [{ price: 149.99 }] }],
-            price: 149.99
+            price: 149.99,
+            isFeatured: false // Not featured - no NEW badge
           },
           {
             _id: '7',
@@ -1222,7 +1234,8 @@ const StoreScreen = () => {
             category: 'Shoes',
             image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&h=500&fit=crop',
             variants: [{ sizes: [{ price: 89.99 }] }],
-            price: 89.99
+            price: 89.99,
+            isFeatured: true // Featured product - will show NEW badge
           },
           {
             _id: '8',
@@ -1231,7 +1244,8 @@ const StoreScreen = () => {
             category: 'Accessories',
             image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=500&fit=crop',
             variants: [{ sizes: [{ price: 349.99 }] }],
-            price: 349.99
+            price: 349.99,
+            isFeatured: false // Not featured - no NEW badge
           },
         ];
         setProducts(mockProducts);
@@ -2488,7 +2502,7 @@ const styles = StyleSheet.create({
   heartIconActive: {
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
   },
-  // UPDATED: NEW badge with brand-like design
+  // UPDATED: NEW badge with brand-like design - Only shown if isFeatured is true
   newBadge: {
     position: 'absolute',
     top: 12,
