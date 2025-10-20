@@ -13,7 +13,9 @@ import {
   Animated,
   TouchableWithoutFeedback,
   Linking,
-  BackHandler
+  BackHandler,
+  SafeAreaView,
+  Platform
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -42,6 +44,11 @@ const COLORS = {
   error: '#DC2626',
   whatsapp: '#25D366',
 };
+
+// Responsive scaling functions
+const scale = (size) => (width / 375) * size;
+const verticalScale = (size) => (height / 812) * size;
+const moderateScale = (size, factor = 0.5) => size + (scale(size) - size) * factor;
 
 const MyOrder = () => {
   const { user } = useAuth();
@@ -95,7 +102,6 @@ const MyOrder = () => {
 
   // FIXED: Proper navigation to ProfileScreen that feels like going back
   const handleBack = () => {
-    // Navigate to ProfileScreen with proper animation that feels like going back
     router.navigate({
       pathname: '/(tabs)/ProfileScreen',
       params: { fromMyOrders: true }
@@ -165,7 +171,7 @@ const MyOrder = () => {
   };
 
   const handleWhatsAppSupport = (orderId) => {
-    const phoneNumber = '+27845000000'; // Updated WhatsApp number
+    const phoneNumber = '+27845000000';
     const message = `Hello, I need help with my order ${orderId}. Can you assist me?`;
     const url = `whatsapp://send?phone=${phoneNumber}&text=${encodeURIComponent(message)}`;
     
@@ -184,7 +190,7 @@ const MyOrder = () => {
       <View style={styles.cardHeader}>
         <View style={styles.orderInfo}>
           <View style={styles.orderIdContainer}>
-            <Ionicons name="receipt-outline" size={16} color={COLORS.primary} />
+            <Ionicons name="receipt-outline" size={scale(16)} color={COLORS.primary} />
             <Text style={styles.orderId} numberOfLines={1}>
               {formatOrderId(item.orderID)}
             </Text>
@@ -195,7 +201,7 @@ const MyOrder = () => {
         <View style={[styles.statusBadge, getStatusStyle(item.deliveryStatus)]}>
           <Ionicons 
             name={getStatusIcon(item.deliveryStatus)} 
-            size={14} 
+            size={scale(14)} 
             color={getStatusTextStyle(item.deliveryStatus).color} 
           />
           <Text style={[styles.statusText, getStatusTextStyle(item.deliveryStatus)]}>
@@ -238,7 +244,7 @@ const MyOrder = () => {
           onPress={() => showOrderDetails(item)}
         >
           <Text style={styles.detailsButtonText}>View Details</Text>
-          <Ionicons name="chevron-forward" size={16} color={COLORS.primary} />
+          <Ionicons name="chevron-forward" size={scale(16)} color={COLORS.primary} />
         </TouchableOpacity>
       </View>
     </TouchableOpacity>
@@ -326,266 +332,276 @@ const MyOrder = () => {
         statusBarTranslucent
         onRequestClose={hideOrderDetails}
       >
-        <View style={styles.modalOverlay}>
-          <TouchableWithoutFeedback onPress={hideOrderDetails}>
-            <View style={styles.modalOverlayTouchable} />
-          </TouchableWithoutFeedback>
-          
-          <Animated.View 
-            style={[
-              styles.modalContent,
-              { transform: [{ translateY: modalTranslateY }] }
-            ]}
-          >
-            {/* Modal Header - Consistent with main header */}
-            <View style={styles.modalHeader}>
-              <View style={styles.modalHeaderContent}>
-                <Text style={styles.modalTitle}>Order Details</Text>
-                <Text style={styles.modalSubtitle}>
-                  {formatOrderId(selectedOrder.orderID)} • {formatDate(selectedOrder.createdAt)}
-                </Text>
-              </View>
-              <TouchableOpacity 
-                style={styles.closeButton}
-                onPress={hideOrderDetails}
-              >
-                <Ionicons name="close" size={24} color={COLORS.white} />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView 
-              style={styles.modalScroll}
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={styles.modalScrollContent}
+        <SafeAreaView style={styles.modalSafeArea}>
+          <View style={styles.modalOverlay}>
+            <TouchableWithoutFeedback onPress={hideOrderDetails}>
+              <View style={styles.modalOverlayTouchable} />
+            </TouchableWithoutFeedback>
+            
+            <Animated.View 
+              style={[
+                styles.modalContent,
+                { transform: [{ translateY: modalTranslateY }] }
+              ]}
             >
-              {/* Enhanced Order Status Card */}
-              <View style={styles.statusCard}>
-                <View style={styles.statusHeader}>
-                  <View style={styles.statusIconMain}>
-                    <Ionicons 
-                      name={getStatusIcon(selectedOrder.deliveryStatus)} 
-                      size={28} 
-                      color={getStatusTextStyle(selectedOrder.deliveryStatus).color} 
-                    />
-                  </View>
-                  <View style={styles.statusContent}>
-                    <Text style={styles.statusTitle}>Order Status</Text>
-                    <View style={[styles.statusBadgeLarge, getStatusStyle(selectedOrder.deliveryStatus)]}>
+              {/* Modal Header - Consistent with main header */}
+              <View style={styles.modalHeader}>
+                <View style={styles.modalHeaderContent}>
+                  <Text style={styles.modalTitle}>Order Details</Text>
+                  <Text style={styles.modalSubtitle}>
+                    {formatOrderId(selectedOrder.orderID)} • {formatDate(selectedOrder.createdAt)}
+                  </Text>
+                </View>
+                <TouchableOpacity 
+                  style={styles.closeButton}
+                  onPress={hideOrderDetails}
+                >
+                  <Ionicons name="close" size={scale(24)} color={COLORS.white} />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView 
+                style={styles.modalScroll}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.modalScrollContent}
+              >
+                {/* Enhanced Order Status Card */}
+                <View style={styles.statusCard}>
+                  <View style={styles.statusHeader}>
+                    <View style={styles.statusIconMain}>
                       <Ionicons 
                         name={getStatusIcon(selectedOrder.deliveryStatus)} 
-                        size={16} 
+                        size={scale(28)} 
                         color={getStatusTextStyle(selectedOrder.deliveryStatus).color} 
                       />
-                      <Text style={[styles.statusTextLarge, getStatusTextStyle(selectedOrder.deliveryStatus)]}>
-                        {getStatusDisplay(selectedOrder.deliveryStatus)}
+                    </View>
+                    <View style={styles.statusContent}>
+                      <Text style={styles.statusTitle}>Order Status</Text>
+                      <View style={[styles.statusBadgeLarge, getStatusStyle(selectedOrder.deliveryStatus)]}>
+                        <Ionicons 
+                          name={getStatusIcon(selectedOrder.deliveryStatus)} 
+                          size={scale(16)} 
+                          color={getStatusTextStyle(selectedOrder.deliveryStatus).color} 
+                        />
+                        <Text style={[styles.statusTextLarge, getStatusTextStyle(selectedOrder.deliveryStatus)]}>
+                          {getStatusDisplay(selectedOrder.deliveryStatus)}
+                        </Text>
+                      </View>
+                      <Text style={styles.statusDescription}>
+                        {getStatusDescription(selectedOrder.deliveryStatus)}
                       </Text>
                     </View>
-                    <Text style={styles.statusDescription}>
-                      {getStatusDescription(selectedOrder.deliveryStatus)}
-                    </Text>
                   </View>
                 </View>
-              </View>
 
-              {/* Order Items */}
-              <View style={styles.modalSection}>
-                <Text style={styles.sectionTitle}>Order Items</Text>
-                <View style={styles.itemsContainer}>
-                  {selectedOrder.items.map((item, index) => (
-                    <View key={index} style={styles.orderItemCard}>
-                      <View style={styles.itemContent}>
-                        <Text style={styles.itemTitle}>{item.title}</Text>
-                        
-                        {/* Item Variants */}
-                        <View style={styles.itemVariants}>
-                          {item.color && (
-                            <View style={styles.variantChip}>
-                              <Text style={styles.variantText}>Color: {item.color}</Text>
-                            </View>
-                          )}
-                          {item.size && (
-                            <View style={styles.variantChip}>
-                              <Text style={styles.variantText}>Size: {item.size}</Text>
-                            </View>
-                          )}
-                        </View>
-
-                        {/* Quantity and Price */}
-                        <View style={styles.itemDetails}>
-                          <View style={styles.quantityContainer}>
-                            <Text style={styles.quantityLabel}>Quantity:</Text>
-                            <Text style={styles.quantityValue}>{item.quantity}</Text>
+                {/* Order Items */}
+                <View style={styles.modalSection}>
+                  <Text style={styles.sectionTitle}>Order Items</Text>
+                  <View style={styles.itemsContainer}>
+                    {selectedOrder.items.map((item, index) => (
+                      <View key={index} style={styles.orderItemCard}>
+                        <View style={styles.itemContent}>
+                          <Text style={styles.itemTitle}>{item.title}</Text>
+                          
+                          {/* Item Variants */}
+                          <View style={styles.itemVariants}>
+                            {item.color && (
+                              <View style={styles.variantChip}>
+                                <Text style={styles.variantText}>Color: {item.color}</Text>
+                              </View>
+                            )}
+                            {item.size && (
+                              <View style={styles.variantChip}>
+                                <Text style={styles.variantText}>Size: {item.size}</Text>
+                              </View>
+                            )}
                           </View>
-                          <View style={styles.priceContainer}>
-                            <Text style={styles.itemPrice}>PKR {parseFloat(item.price).toLocaleString()} each</Text>
-                            <Text style={styles.itemTotal}>
-                              PKR {(parseFloat(item.price) * parseInt(item.quantity)).toLocaleString()}
-                            </Text>
+
+                          {/* Quantity and Price */}
+                          <View style={styles.itemDetails}>
+                            <View style={styles.quantityContainer}>
+                              <Text style={styles.quantityLabel}>Quantity:</Text>
+                              <Text style={styles.quantityValue}>{item.quantity}</Text>
+                            </View>
+                            <View style={styles.priceContainer}>
+                              <Text style={styles.itemPrice}>PKR {parseFloat(item.price).toLocaleString()} each</Text>
+                              <Text style={styles.itemTotal}>
+                                PKR {(parseFloat(item.price) * parseInt(item.quantity)).toLocaleString()}
+                              </Text>
+                            </View>
                           </View>
                         </View>
                       </View>
+                    ))}
+                  </View>
+                </View>
+
+                {/* Order Summary */}
+                <View style={styles.modalSection}>
+                  <Text style={styles.sectionTitle}>Payment Summary</Text>
+                  <View style={styles.summaryCard}>
+                    <View style={styles.summaryRow}>
+                      <Text style={styles.summaryLabel}>Items Total</Text>
+                      <Text style={styles.summaryValue}>
+                        PKR {subtotal.toLocaleString()}
+                      </Text>
                     </View>
-                  ))}
-                </View>
-              </View>
-
-              {/* Order Summary */}
-              <View style={styles.modalSection}>
-                <Text style={styles.sectionTitle}>Payment Summary</Text>
-                <View style={styles.summaryCard}>
-                  <View style={styles.summaryRow}>
-                    <Text style={styles.summaryLabel}>Items Total</Text>
-                    <Text style={styles.summaryValue}>
-                      PKR {subtotal.toLocaleString()}
-                    </Text>
-                  </View>
-                  <View style={styles.summaryRow}>
-                    <Text style={styles.summaryLabel}>Shipping Fee</Text>
-                    <Text style={styles.freeText}>FREE</Text>
-                  </View>
-                  <View style={styles.summaryRow}>
-                    <Text style={styles.summaryLabel}>Tax & Charges</Text>
-                    <Text style={styles.summaryValue}>
-                      PKR {(totalAmount - subtotal).toLocaleString()}
-                    </Text>
-                  </View>
-                  <View style={styles.summaryDivider} />
-                  <View style={styles.finalTotal}>
-                    <Text style={styles.finalTotalLabel}>Total Paid</Text>
-                    <Text style={styles.finalTotalValue}>
-                      PKR {totalAmount.toLocaleString()}
-                    </Text>
+                    <View style={styles.summaryRow}>
+                      <Text style={styles.summaryLabel}>Shipping Fee</Text>
+                      <Text style={styles.freeText}>FREE</Text>
+                    </View>
+                    <View style={styles.summaryRow}>
+                      <Text style={styles.summaryLabel}>Tax & Charges</Text>
+                      <Text style={styles.summaryValue}>
+                        PKR {(totalAmount - subtotal).toLocaleString()}
+                      </Text>
+                    </View>
+                    <View style={styles.summaryDivider} />
+                    <View style={styles.finalTotal}>
+                      <Text style={styles.finalTotalLabel}>Total Paid</Text>
+                      <Text style={styles.finalTotalValue}>
+                        PKR {totalAmount.toLocaleString()}
+                      </Text>
+                    </View>
                   </View>
                 </View>
-              </View>
-            </ScrollView>
+              </ScrollView>
 
-            {/* Enhanced Action Buttons */}
-            <View style={styles.modalActions}>
-              <TouchableOpacity 
-                style={styles.whatsappButton}
-                onPress={() => handleWhatsAppSupport(selectedOrder.orderID)}
-              >
-                <Ionicons name="logo-whatsapp" size={20} color={COLORS.white} />
-                <Text style={styles.whatsappButtonText}>Get Help on WhatsApp</Text>
-              </TouchableOpacity>
-            </View>
-          </Animated.View>
-        </View>
+              {/* Enhanced Action Buttons */}
+              <View style={styles.modalActions}>
+                <TouchableOpacity 
+                  style={styles.whatsappButton}
+                  onPress={() => handleWhatsAppSupport(selectedOrder.orderID)}
+                >
+                  <Ionicons name="logo-whatsapp" size={scale(20)} color={COLORS.white} />
+                  <Text style={styles.whatsappButtonText}>Get Help on WhatsApp</Text>
+                </TouchableOpacity>
+              </View>
+            </Animated.View>
+          </View>
+        </SafeAreaView>
       </Modal>
     );
   };
 
   if (loading) {
     return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.container}>
+          <StatusBar backgroundColor={COLORS.primary} barStyle="light-content" />
+          <View style={styles.header}>
+            <TouchableOpacity
+              onPress={handleBack}
+              style={styles.backButton}
+            >
+              <Ionicons name="arrow-back" size={scale(24)} color={COLORS.white} />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>My Orders</Text>
+            <View style={styles.headerSpacer} />
+          </View>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={COLORS.primary} />
+            <Text style={styles.loadingText}>Loading your orders...</Text>
+          </View>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         <StatusBar backgroundColor={COLORS.primary} barStyle="light-content" />
+        
+        {/* Header - Consistent styling */}
         <View style={styles.header}>
           <TouchableOpacity
             onPress={handleBack}
             style={styles.backButton}
           >
-            <Ionicons name="arrow-back" size={24} color={COLORS.white} />
+            <Ionicons name="arrow-back" size={scale(24)} color={COLORS.white} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>My Orders</Text>
           <View style={styles.headerSpacer} />
         </View>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={COLORS.primary} />
-          <Text style={styles.loadingText}>Loading your orders...</Text>
-        </View>
-      </View>
-    );
-  }
 
-  return (
-    <View style={styles.container}>
-      <StatusBar backgroundColor={COLORS.primary} barStyle="light-content" />
-      
-      {/* Header - Consistent styling */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={handleBack}
-          style={styles.backButton}
-        >
-          <Ionicons name="arrow-back" size={24} color={COLORS.white} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>My Orders</Text>
-        <View style={styles.headerSpacer} />
-      </View>
-
-      {/* Order Summary */}
-      <View style={styles.summaryContainer}>
-        <View style={styles.summaryCard}>
-          <View style={styles.summaryItem}>
-            <Ionicons name="receipt" size={20} color={COLORS.primary} />
-            <Text style={styles.summaryNumber}>{orders.length}</Text>
-            <Text style={styles.summaryLabel}>Total Orders</Text>
-          </View>
-          <View style={styles.summaryDivider} />
-          <View style={styles.summaryItem}>
-            <Ionicons name="checkmark-circle" size={20} color={COLORS.success} />
-            <Text style={styles.summaryNumber}>
-              {orders.filter(order => order.deliveryStatus === 'Completed').length}
-            </Text>
-            <Text style={styles.summaryLabel}>Delivered</Text>
-          </View>
-          <View style={styles.summaryDivider} />
-          <View style={styles.summaryItem}>
-            <Ionicons name="time" size={20} color={COLORS.warning} />
-            <Text style={styles.summaryNumber}>
-              {orders.filter(order => order.deliveryStatus === 'Processing').length}
-            </Text>
-            <Text style={styles.summaryLabel}>Processing</Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Orders List */}
-      {orders.length > 0 ? (
-        <FlatList
-          data={orders}
-          keyExtractor={(item) => item.id || item.orderID}
-          renderItem={renderOrder}
-          contentContainerStyle={styles.list}
-          showsVerticalScrollIndicator={false}
-          ListHeaderComponent={
-            <View style={styles.listHeader}>
-              <Text style={styles.recentOrdersTitle}>Recent Orders</Text>
-              <Text style={styles.ordersSubtitle}>
-                Tap on any order to view details
-              </Text>
+        {/* Order Summary */}
+        <View style={styles.summaryContainer}>
+          <View style={styles.summaryCard}>
+            <View style={styles.summaryItem}>
+              <Ionicons name="receipt" size={scale(20)} color={COLORS.primary} />
+              <Text style={styles.summaryNumber}>{orders.length}</Text>
+              <Text style={styles.summaryLabel}>Total Orders</Text>
             </View>
-          }
-        />
-      ) : (
-        <ScrollView contentContainerStyle={styles.emptyContainer}>
-          <View style={styles.emptyIllustration}>
-            <Ionicons name="bag-handle-outline" size={width * 0.25} color={COLORS.grayLight} />
+            <View style={styles.summaryDivider} />
+            <View style={styles.summaryItem}>
+              <Ionicons name="checkmark-circle" size={scale(20)} color={COLORS.success} />
+              <Text style={styles.summaryNumber}>
+                {orders.filter(order => order.deliveryStatus === 'Completed').length}
+              </Text>
+              <Text style={styles.summaryLabel}>Delivered</Text>
+            </View>
+            <View style={styles.summaryDivider} />
+            <View style={styles.summaryItem}>
+              <Ionicons name="time" size={scale(20)} color={COLORS.warning} />
+              <Text style={styles.summaryNumber}>
+                {orders.filter(order => order.deliveryStatus === 'Processing').length}
+              </Text>
+              <Text style={styles.summaryLabel}>Processing</Text>
+            </View>
           </View>
-          <Text style={styles.emptyTitle}>No Orders Yet</Text>
-          <Text style={styles.emptyText}>
-            When you place orders, they will appear here with all the details
-          </Text>
-          <TouchableOpacity 
-            style={styles.shopButton}
-            onPress={() => router.navigate('/(tabs)/HomeScreen')}
-          >
-            <Ionicons name="storefront-outline" size={20} color={COLORS.white} />
-            <Text style={styles.shopButtonText}>Start Shopping</Text>
-          </TouchableOpacity>
-        </ScrollView>
-      )}
+        </View>
 
-      {/* Order Detail Modal */}
-      <OrderDetailModal />
-    </View>
+        {/* Orders List */}
+        {orders.length > 0 ? (
+          <FlatList
+            data={orders}
+            keyExtractor={(item) => item.id || item.orderID}
+            renderItem={renderOrder}
+            contentContainerStyle={styles.list}
+            showsVerticalScrollIndicator={false}
+            ListHeaderComponent={
+              <View style={styles.listHeader}>
+                <Text style={styles.recentOrdersTitle}>Recent Orders</Text>
+                <Text style={styles.ordersSubtitle}>
+                  Tap on any order to view details
+                </Text>
+              </View>
+            }
+          />
+        ) : (
+          <ScrollView contentContainerStyle={styles.emptyContainer}>
+            <View style={styles.emptyIllustration}>
+              <Ionicons name="bag-handle-outline" size={scale(80)} color={COLORS.grayLight} />
+            </View>
+            <Text style={styles.emptyTitle}>No Orders Yet</Text>
+            <Text style={styles.emptyText}>
+              When you place orders, they will appear here with all the details
+            </Text>
+            <TouchableOpacity 
+              style={styles.shopButton}
+              onPress={() => router.navigate('/(tabs)/HomeScreen')}
+            >
+              <Ionicons name="storefront-outline" size={scale(20)} color={COLORS.white} />
+              <Text style={styles.shopButtonText}>Start Shopping</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        )}
+
+        {/* Order Detail Modal */}
+        <OrderDetailModal />
+      </View>
+    </SafeAreaView>
   );
 };
 
 export default MyOrder;
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: Platform.OS === 'android' ? COLORS.white : COLORS.background,
+  },
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
@@ -595,44 +611,44 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: width * 0.05,
-    paddingVertical: height * 0.02,
-    paddingTop: height * 0.06,
-    borderBottomLeftRadius: 25,
-    borderBottomRightRadius: 25,
+    paddingHorizontal: scale(16),
+    paddingVertical: verticalScale(12),
+    paddingTop: Platform.OS === 'ios' ? verticalScale(12) : verticalScale(16),
+    borderBottomLeftRadius: scale(20),
+    borderBottomRightRadius: scale(20),
     shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 10 },
+    shadowOffset: { width: 0, height: scale(4) },
     shadowOpacity: 0.3,
-    shadowRadius: 20,
+    shadowRadius: scale(20),
     elevation: 10,
   },
   backButton: {
-    padding: 8,
-    borderRadius: 12,
+    padding: scale(8),
+    borderRadius: scale(12),
     backgroundColor: 'rgba(255,255,255,0.2)',
   },
   headerTitle: {
-    fontSize: width * 0.045,
+    fontSize: moderateScale(18),
     fontWeight: '800',
     color: COLORS.white,
     letterSpacing: 0.5,
   },
   headerSpacer: {
-    width: 40,
+    width: scale(40),
   },
   summaryContainer: {
-    paddingHorizontal: width * 0.05,
-    paddingVertical: height * 0.015,
+    paddingHorizontal: scale(16),
+    paddingVertical: verticalScale(12),
   },
   summaryCard: {
     flexDirection: 'row',
     backgroundColor: COLORS.white,
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: scale(16),
+    padding: scale(16),
     shadowColor: '#000',
     shadowOpacity: 0.08,
-    shadowOffset: { width: 0, height: 4 },
-    shadowRadius: 16,
+    shadowOffset: { width: 0, height: scale(4) },
+    shadowRadius: scale(16),
     elevation: 4,
   },
   summaryItem: {
@@ -640,49 +656,50 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   summaryNumber: {
-    fontSize: width * 0.05,
+    fontSize: moderateScale(18),
     fontWeight: '800',
     color: COLORS.primary,
-    marginVertical: 4,
+    marginVertical: verticalScale(4),
   },
   summaryLabel: {
-    fontSize: width * 0.028,
+    fontSize: moderateScale(12),
     color: COLORS.gray,
     fontWeight: '600',
+    textAlign: 'center',
   },
   summaryDivider: {
     width: 1,
     backgroundColor: COLORS.light,
-    marginHorizontal: 8,
+    marginHorizontal: scale(8),
   },
   listHeader: {
-    marginBottom: 12,
-    paddingTop: 8,
+    marginBottom: verticalScale(12),
+    paddingTop: verticalScale(8),
   },
   recentOrdersTitle: {
-    fontSize: width * 0.04,
+    fontSize: moderateScale(16),
     fontWeight: '700',
     color: COLORS.dark,
-    marginBottom: 2,
+    marginBottom: verticalScale(2),
   },
   ordersSubtitle: {
-    fontSize: width * 0.032,
+    fontSize: moderateScale(13),
     color: COLORS.gray,
     fontWeight: '500',
   },
   list: {
-    paddingHorizontal: width * 0.05,
-    paddingBottom: height * 0.02,
+    paddingHorizontal: scale(16),
+    paddingBottom: verticalScale(20),
   },
   card: {
     backgroundColor: COLORS.white,
-    padding: 16,
-    borderRadius: 16,
-    marginBottom: 12,
+    padding: scale(16),
+    borderRadius: scale(16),
+    marginBottom: verticalScale(12),
     shadowColor: '#000',
     shadowOpacity: 0.06,
-    shadowOffset: { width: 0, height: 4 },
-    shadowRadius: 12,
+    shadowOffset: { width: 0, height: scale(4) },
+    shadowRadius: scale(12),
     elevation: 3,
     borderWidth: 1,
     borderColor: COLORS.light,
@@ -691,84 +708,84 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 12,
+    marginBottom: verticalScale(12),
   },
   orderInfo: {
     flex: 1,
-    marginRight: 12,
+    marginRight: scale(12),
   },
   orderIdContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: verticalScale(4),
   },
   orderId: {
-    fontSize: width * 0.038,
+    fontSize: moderateScale(15),
     fontWeight: '700',
     color: COLORS.dark,
-    marginLeft: 6,
+    marginLeft: scale(6),
     flex: 1,
   },
   orderDate: {
-    fontSize: width * 0.03,
+    fontSize: moderateScale(12),
     color: COLORS.gray,
     fontWeight: '500',
   },
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 16,
+    paddingHorizontal: scale(10),
+    paddingVertical: verticalScale(5),
+    borderRadius: scale(16),
     borderWidth: 1,
-    gap: 4,
+    gap: scale(4),
   },
   statusText: {
-    fontSize: width * 0.028,
+    fontSize: moderateScale(11),
     fontWeight: '700',
     textTransform: 'capitalize',
   },
   itemsPreview: {
-    marginBottom: 12,
+    marginBottom: verticalScale(12),
   },
   itemsCount: {
-    fontSize: width * 0.032,
+    fontSize: moderateScale(13),
     color: COLORS.gray,
     fontWeight: '600',
-    marginBottom: 6,
+    marginBottom: verticalScale(6),
   },
   itemsList: {
-    gap: 4,
+    gap: verticalScale(4),
   },
   itemRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   bulletPoint: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
+    width: scale(4),
+    height: scale(4),
+    borderRadius: scale(2),
     backgroundColor: COLORS.primary,
-    marginRight: 8,
+    marginRight: scale(8),
   },
   itemPreview: {
-    fontSize: width * 0.035,
+    fontSize: moderateScale(14),
     color: COLORS.dark,
     fontWeight: '500',
     flex: 1,
   },
   moreItems: {
-    fontSize: width * 0.032,
+    fontSize: moderateScale(13),
     color: COLORS.primary,
     fontWeight: '600',
     fontStyle: 'italic',
-    marginLeft: 12,
+    marginLeft: scale(12),
   },
   cardFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 12,
+    paddingTop: verticalScale(12),
     borderTopWidth: 1,
     borderTopColor: COLORS.light,
   },
@@ -776,31 +793,35 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   totalLabel: {
-    fontSize: width * 0.032,
+    fontSize: moderateScale(13),
     color: COLORS.gray,
     fontWeight: '500',
-    marginBottom: 2,
+    marginBottom: verticalScale(2),
   },
   orderTotal: {
-    fontSize: width * 0.04,
+    fontSize: moderateScale(16),
     fontWeight: '800',
     color: COLORS.primary,
   },
   detailsButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 12,
+    paddingHorizontal: scale(14),
+    paddingVertical: verticalScale(8),
+    borderRadius: scale(12),
     backgroundColor: COLORS.primary + '08',
   },
   detailsButtonText: {
-    fontSize: width * 0.032,
+    fontSize: moderateScale(13),
     fontWeight: '600',
     color: COLORS.primary,
-    marginRight: 4,
+    marginRight: scale(4),
   },
-  // Modal Styles - IMPROVED with consistent header
+  // Modal Styles
+  modalSafeArea: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -814,147 +835,147 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: COLORS.white,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: scale(24),
+    borderTopRightRadius: scale(24),
     maxHeight: height * 0.85,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    padding: 20,
-    paddingBottom: 16,
+    padding: scale(20),
+    paddingBottom: scale(16),
     backgroundColor: COLORS.primary,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: scale(24),
+    borderTopRightRadius: scale(24),
   },
   modalHeaderContent: {
     flex: 1,
   },
   modalTitle: {
-    fontSize: width * 0.045,
+    fontSize: moderateScale(18),
     fontWeight: '800',
     color: COLORS.white,
-    marginBottom: 4,
+    marginBottom: verticalScale(4),
   },
   modalSubtitle: {
-    fontSize: width * 0.032,
+    fontSize: moderateScale(13),
     color: 'rgba(255,255,255,0.8)',
     fontWeight: '500',
   },
   closeButton: {
-    padding: 4,
-    marginLeft: 12,
+    padding: scale(4),
+    marginLeft: scale(12),
   },
   modalScroll: {
     flex: 1,
   },
   modalScrollContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 16,
+    paddingHorizontal: scale(20),
+    paddingBottom: scale(16),
   },
   // Enhanced Status Card
   statusCard: {
     backgroundColor: COLORS.background,
-    padding: 16,
-    borderRadius: 16,
-    marginVertical: 12,
+    padding: scale(16),
+    borderRadius: scale(16),
+    marginVertical: verticalScale(12),
   },
   statusHeader: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 16,
+    gap: scale(16),
   },
   statusIconMain: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: scale(48),
+    height: scale(48),
+    borderRadius: scale(24),
     backgroundColor: COLORS.white,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
     shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 8,
+    shadowOffset: { width: 0, height: scale(2) },
+    shadowRadius: scale(8),
     elevation: 2,
   },
   statusContent: {
     flex: 1,
-    gap: 8,
+    gap: verticalScale(8),
   },
   statusTitle: {
-    fontSize: width * 0.035,
+    fontSize: moderateScale(14),
     fontWeight: '600',
     color: COLORS.gray,
   },
   statusBadgeLarge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
+    paddingHorizontal: scale(12),
+    paddingVertical: verticalScale(6),
+    borderRadius: scale(16),
     borderWidth: 1,
-    gap: 6,
+    gap: scale(6),
     alignSelf: 'flex-start',
   },
   statusTextLarge: {
-    fontSize: width * 0.032,
+    fontSize: moderateScale(13),
     fontWeight: '700',
     textTransform: 'capitalize',
   },
   statusDescription: {
-    fontSize: width * 0.033,
+    fontSize: moderateScale(13),
     color: COLORS.gray,
-    lineHeight: 18,
+    lineHeight: scale(18),
   },
   modalSection: {
-    marginBottom: 20,
+    marginBottom: verticalScale(20),
   },
   sectionTitle: {
-    fontSize: width * 0.038,
+    fontSize: moderateScale(15),
     fontWeight: '700',
     color: COLORS.dark,
-    marginBottom: 12,
+    marginBottom: verticalScale(12),
   },
   itemsContainer: {
-    gap: 10,
+    gap: verticalScale(10),
   },
   orderItemCard: {
     backgroundColor: COLORS.white,
-    padding: 14,
-    borderRadius: 12,
+    padding: scale(14),
+    borderRadius: scale(12),
     borderWidth: 1,
     borderColor: COLORS.light,
     shadowColor: '#000',
     shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 8,
+    shadowOffset: { width: 0, height: scale(2) },
+    shadowRadius: scale(8),
     elevation: 2,
   },
   itemContent: {
-    gap: 10,
+    gap: verticalScale(10),
   },
   itemTitle: {
-    fontSize: width * 0.036,
+    fontSize: moderateScale(14),
     fontWeight: '600',
     color: COLORS.dark,
-    lineHeight: 20,
+    lineHeight: scale(20),
   },
   itemVariants: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 6,
+    gap: scale(6),
   },
   variantChip: {
     backgroundColor: COLORS.primary + '15',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
+    paddingHorizontal: scale(8),
+    paddingVertical: verticalScale(4),
+    borderRadius: scale(6),
     borderWidth: 1,
     borderColor: COLORS.primary + '30',
   },
   variantText: {
-    fontSize: width * 0.03,
+    fontSize: moderateScale(12),
     color: COLORS.primary,
     fontWeight: '500',
   },
@@ -966,59 +987,59 @@ const styles = StyleSheet.create({
   quantityContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: scale(6),
   },
   quantityLabel: {
-    fontSize: width * 0.032,
+    fontSize: moderateScale(13),
     color: COLORS.gray,
     fontWeight: '500',
   },
   quantityValue: {
-    fontSize: width * 0.032,
+    fontSize: moderateScale(13),
     color: COLORS.dark,
     fontWeight: '600',
     backgroundColor: COLORS.primary + '15',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
+    paddingHorizontal: scale(8),
+    paddingVertical: verticalScale(2),
+    borderRadius: scale(6),
   },
   priceContainer: {
     alignItems: 'flex-end',
   },
   itemPrice: {
-    fontSize: width * 0.032,
+    fontSize: moderateScale(13),
     color: COLORS.gray,
     fontWeight: '500',
-    marginBottom: 2,
+    marginBottom: verticalScale(2),
   },
   itemTotal: {
-    fontSize: width * 0.035,
+    fontSize: moderateScale(14),
     fontWeight: '700',
     color: COLORS.primary,
   },
   summaryCard: {
     backgroundColor: COLORS.background,
-    padding: 16,
-    borderRadius: 12,
+    padding: scale(16),
+    borderRadius: scale(12),
   },
   summaryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: verticalScale(10),
   },
   summaryLabel: {
-    fontSize: width * 0.035,
+    fontSize: moderateScale(14),
     color: COLORS.gray,
     fontWeight: '500',
   },
   summaryValue: {
-    fontSize: width * 0.035,
+    fontSize: moderateScale(14),
     color: COLORS.dark,
     fontWeight: '600',
   },
   freeText: {
-    fontSize: width * 0.035,
+    fontSize: moderateScale(14),
     color: COLORS.success,
     fontWeight: '700',
   },
@@ -1026,25 +1047,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 6,
-    paddingTop: 10,
+    marginTop: verticalScale(6),
+    paddingTop: verticalScale(10),
     borderTopWidth: 2,
     borderTopColor: COLORS.primary + '30',
   },
   finalTotalLabel: {
-    fontSize: width * 0.038,
+    fontSize: moderateScale(15),
     fontWeight: '700',
     color: COLORS.dark,
   },
   finalTotalValue: {
-    fontSize: width * 0.04,
+    fontSize: moderateScale(16),
     fontWeight: '800',
     color: COLORS.primary,
   },
   // Enhanced Modal Actions
   modalActions: {
-    padding: 20,
-    paddingTop: 16,
+    padding: scale(20),
+    paddingTop: scale(16),
     borderTopWidth: 1,
     borderTopColor: COLORS.light,
     backgroundColor: COLORS.white,
@@ -1054,18 +1075,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: COLORS.whatsapp,
-    paddingVertical: 16,
-    borderRadius: 12,
-    gap: 8,
+    paddingVertical: verticalScale(16),
+    borderRadius: scale(12),
+    gap: scale(8),
     shadowColor: COLORS.whatsapp,
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: scale(4) },
     shadowOpacity: 0.3,
-    shadowRadius: 8,
+    shadowRadius: scale(8),
     elevation: 4,
   },
   whatsappButtonText: {
     color: COLORS.white,
-    fontSize: width * 0.038,
+    fontSize: moderateScale(15),
     fontWeight: '700',
   },
   loadingContainer: {
@@ -1075,8 +1096,8 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   loadingText: {
-    marginTop: height * 0.02,
-    fontSize: width * 0.038,
+    marginTop: verticalScale(20),
+    fontSize: moderateScale(15),
     color: COLORS.gray,
     fontWeight: '500',
   },
@@ -1084,49 +1105,49 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: width * 0.1,
-    paddingTop: height * 0.05,
+    paddingHorizontal: scale(40),
+    paddingTop: verticalScale(50),
   },
   emptyIllustration: {
-    width: width * 0.3,
-    height: width * 0.3,
-    borderRadius: width * 0.15,
+    width: scale(100),
+    height: scale(100),
+    borderRadius: scale(50),
     backgroundColor: COLORS.light,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: verticalScale(20),
   },
   emptyTitle: {
-    fontSize: width * 0.055,
+    fontSize: moderateScale(20),
     fontWeight: '800',
     color: COLORS.dark,
-    marginBottom: 10,
+    marginBottom: verticalScale(10),
     textAlign: 'center',
   },
   emptyText: {
-    fontSize: width * 0.038,
+    fontSize: moderateScale(15),
     color: COLORS.gray,
     textAlign: 'center',
-    marginBottom: 28,
-    lineHeight: 22,
+    marginBottom: verticalScale(28),
+    lineHeight: scale(22),
   },
   shopButton: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.primary,
-    paddingHorizontal: 24,
-    paddingVertical: 14,
-    borderRadius: 14,
-    gap: 8,
+    paddingHorizontal: scale(24),
+    paddingVertical: verticalScale(14),
+    borderRadius: scale(14),
+    gap: scale(8),
     shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: scale(4) },
     shadowOpacity: 0.3,
-    shadowRadius: 8,
+    shadowRadius: scale(8),
     elevation: 4,
   },
   shopButtonText: {
     color: COLORS.white,
-    fontSize: width * 0.038,
+    fontSize: moderateScale(15),
     fontWeight: '700',
   },
 });

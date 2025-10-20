@@ -15,7 +15,8 @@ import {
   Platform,
   Alert,
   Animated,
-  Easing
+  Easing,
+  StatusBar
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -23,8 +24,17 @@ import debounce from 'lodash.debounce';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
+import NetInfo from '@react-native-community/netinfo';
 
 const { width, height } = Dimensions.get('window');
+
+// Get status bar height for different devices
+const STATUS_BAR_HEIGHT = Platform.OS === 'ios' ? 44 : StatusBar.currentHeight || 28;
+
+// Responsive sizing functions
+const responsiveWidth = (percentage) => (width * percentage) / 100;
+const responsiveHeight = (percentage) => (height * percentage) / 100;
+const responsiveFont = (size) => (width * size) / 400;
 
 // Consistent color palette from homepage
 const COLORS = {
@@ -224,28 +234,13 @@ const normalizeImageUrl = (imageUrl) => {
   return `https://account.babahub.co${normalizedPath}`;
 };
 
-// Internet connection check function
-const checkInternetConnection = () => {
-  return new Promise((resolve) => {
-    const timeout = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Timeout')), 5000)
-    );
-
-    const request = fetch('https://www.google.com', { method: 'HEAD' });
-
-    Promise.race([request, timeout])
-      .then(() => resolve(true))
-      .catch(() => resolve(false));
-  });
-};
-
-// SIMPLIFIED Internet Status Bar Component
+// IMPROVED Internet Status Bar Component using NetInfo
 const InternetStatusBar = ({ isOnline, onRetry }) => {
-  const translateY = useRef(new Animated.Value(-50)).current;
+  const translateY = useRef(new Animated.Value(-60)).current;
 
   useEffect(() => {
     Animated.spring(translateY, {
-      toValue: isOnline ? -50 : 0,
+      toValue: isOnline ? -60 : 0,
       tension: 50,
       friction: 8,
       useNativeDriver: true,
@@ -264,8 +259,11 @@ const InternetStatusBar = ({ isOnline, onRetry }) => {
       ]}
     >
       <View style={styles.internetStatusContent}>
-        <Ionicons name="wifi-outline" size={16} color={COLORS.white} />
+        <Ionicons name="wifi-outline" size={18} color={COLORS.white} />
         <Text style={styles.internetStatusText}>No internet connection</Text>
+        <TouchableOpacity onPress={onRetry} style={styles.retryButton}>
+          <Text style={styles.retryText}>Retry</Text>
+        </TouchableOpacity>
       </View>
     </Animated.View>
   );
@@ -507,7 +505,7 @@ const MiddleBanner = ({ item }) => {
         <View style={styles.middleBannerIcon}>
           <Ionicons 
             name={item.icon} 
-            size={32} 
+            size={responsiveFont(32)} 
             color={COLORS.white} 
           />
         </View>
@@ -526,7 +524,7 @@ const MiddleBanner = ({ item }) => {
           </Text>
           <Ionicons 
             name={isCopied ? 'checkmark' : 'copy-outline'} 
-            size={16} 
+            size={responsiveFont(16)} 
             color={COLORS.white} 
           />
         </TouchableOpacity>
@@ -600,7 +598,7 @@ const TrendingProductCard = ({ item, index, onAddToCart, cartQuantity }) => {
         />
         
         <View style={styles.trendingBadge}>
-          <Ionicons name="trending-up" size={12} color={COLORS.white} />
+          <Ionicons name="trending-up" size={responsiveFont(12)} color={COLORS.white} />
           <Text style={styles.trendingBadgeText}>TRENDING</Text>
         </View>
         
@@ -621,7 +619,7 @@ const TrendingProductCard = ({ item, index, onAddToCart, cartQuantity }) => {
               >
                 <Ionicons 
                   name={recentlyAdded ? "checkmark" : "cart"} 
-                  size={16} 
+                  size={responsiveFont(16)} 
                   color={COLORS.white} 
                 />
               </TouchableOpacity>
@@ -759,7 +757,7 @@ const ProductItem = ({ item, onPress, onWishlistToggle, isInWishlist, index, onA
               >
                 <Ionicons
                   name={isInWishlist ? 'heart' : 'heart-outline'}
-                  size={20}
+                  size={responsiveFont(20)}
                   color={isInWishlist ? COLORS.error : COLORS.white}
                 />
               </TouchableOpacity>
@@ -786,7 +784,7 @@ const ProductItem = ({ item, onPress, onWishlistToggle, isInWishlist, index, onA
                   <Ionicons 
                     key={star} 
                     name="star" 
-                    size={12} 
+                    size={responsiveFont(12)} 
                     color={star <= 4 ? COLORS.secondary : COLORS.grayLight} 
                   />
                 ))}
@@ -807,7 +805,7 @@ const ProductItem = ({ item, onPress, onWishlistToggle, isInWishlist, index, onA
                 >
                   <Ionicons 
                     name="cart" // CHANGED: Always show cart icon, no checkmark
-                    size={16} 
+                    size={responsiveFont(16)} 
                     color={COLORS.white} 
                   />
                 </TouchableOpacity>
@@ -823,7 +821,7 @@ const ProductItem = ({ item, onPress, onWishlistToggle, isInWishlist, index, onA
 
 // UPDATED Sticky Header Component - Bigger Cart Icon with Internet Status
 const StickyHeader = ({ user, cartItems, router, scrollY, isOnline }) => {
-  const headerHeight = 80;
+  const headerHeight = responsiveHeight(10);
   const headerTranslate = scrollY.interpolate({
     inputRange: [0, headerHeight],
     outputRange: [0, -headerHeight],
@@ -854,7 +852,7 @@ const StickyHeader = ({ user, cartItems, router, scrollY, isOnline }) => {
           <Text style={styles.stickyUsername}>Store</Text>
           {!isOnline && (
             <View style={styles.offlineDot}>
-              <Ionicons name="wifi-outline" size={12} color={COLORS.white} />
+              <Ionicons name="wifi-outline" size={responsiveFont(12)} color={COLORS.white} />
             </View>
           )}
         </View>
@@ -866,7 +864,7 @@ const StickyHeader = ({ user, cartItems, router, scrollY, isOnline }) => {
             onPress={() => router.push('../CartScreen')}
           >
             <View style={styles.bigCartIconContainer}>
-              <Ionicons name="cart" size={28} color={COLORS.primary} />
+              <Ionicons name="cart" size={responsiveFont(28)} color={COLORS.primary} />
               {cartItems > 0 && (
                 <View style={styles.stickyBadge}>
                   <Text style={styles.stickyBadgeText}>{cartItems}</Text>
@@ -950,24 +948,51 @@ const StoreScreen = () => {
   // API base URL
   const API_BASE_URL = 'https://account.babahub.co';
 
-  // Check internet connection
-  const checkConnection = async () => {
+  // IMPROVED: Internet connection check using NetInfo
+  const checkConnection = useCallback(async () => {
     setConnectionChecking(true);
-    const connected = await checkInternetConnection();
-    setIsOnline(connected);
-    setConnectionChecking(false);
-    
-    if (!connected && products.length > 0) {
-      setHasCachedData(true);
-      Toast.show({
-        type: 'info',
-        text1: 'Offline Mode',
-        text2: 'Showing cached products',
-      });
+    try {
+      const netInfoState = await NetInfo.fetch();
+      const connected = netInfoState.isConnected && netInfoState.isInternetReachable;
+      setIsOnline(connected);
+      
+      if (!connected && products.length > 0) {
+        setHasCachedData(true);
+        Toast.show({
+          type: 'info',
+          text1: 'Offline Mode',
+          text2: 'Showing cached products',
+        });
+      }
+      
+      return connected;
+    } catch (error) {
+      console.error('Error checking connection:', error);
+      setIsOnline(false);
+      return false;
+    } finally {
+      setConnectionChecking(false);
     }
-    
-    return connected;
-  };
+  }, [products.length]);
+
+  // Set up network listener
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener(state => {
+      const connected = state.isConnected && state.isInternetReachable;
+      setIsOnline(connected);
+      
+      if (!connected && products.length > 0) {
+        setHasCachedData(true);
+        Toast.show({
+          type: 'info',
+          text1: 'Offline Mode',
+          text2: 'Showing cached products',
+        });
+      }
+    });
+
+    return () => unsubscribe();
+  }, [products.length]);
 
   // NEW: Extract unique categories from products
   const extractCategoriesFromProducts = (products) => {
@@ -1588,6 +1613,12 @@ const StoreScreen = () => {
   if (loading) {
     return (
       <SafeAreaView style={styles.safeArea}>
+        {/* FIXED: White status bar */}
+        <StatusBar 
+          backgroundColor={COLORS.white} 
+          barStyle="dark-content" 
+          translucent={false}
+        />
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color={COLORS.primary} />
           <Text style={styles.loadingText}>Loading store...</Text>
@@ -1597,8 +1628,15 @@ const StoreScreen = () => {
   }
 
   return (
-    <View style={styles.scrollContainer}>
-      {/* SIMPLIFIED Internet Status Bar */}
+    <SafeAreaView style={styles.safeArea}>
+      {/* FIXED: White status bar */}
+      <StatusBar 
+        backgroundColor={COLORS.white} 
+        barStyle="dark-content" 
+        translucent={false}
+      />
+      
+      {/* IMPROVED Internet Status Bar using NetInfo */}
       <InternetStatusBar 
         isOnline={isOnline} 
         onRetry={checkConnection}
@@ -1635,7 +1673,7 @@ const StoreScreen = () => {
           {/* Offline Indicator in Content */}
           {!isOnline && hasCachedData && (
             <View style={styles.offlineIndicator}>
-              <Ionicons name="cloud-offline-outline" size={16} color={COLORS.warning} />
+              <Ionicons name="cloud-offline-outline" size={responsiveFont(16)} color={COLORS.warning} />
               <Text style={styles.offlineIndicatorText}>
                 You're offline • Showing cached products
               </Text>
@@ -1657,7 +1695,7 @@ const StoreScreen = () => {
                 onPress={() => router.push('../CartScreen')}
               >
                 <View style={styles.bigHeaderCartContainer}>
-                  <Ionicons name="cart" size={28} color={COLORS.dark} />
+                  <Ionicons name="cart" size={responsiveFont(28)} color={COLORS.dark} />
                   {cartItems.length > 0 && (
                     <View style={styles.badge}>
                       <Text style={styles.badgeText}>{cartItems.length}</Text>
@@ -1682,7 +1720,7 @@ const StoreScreen = () => {
             ]}>
               <View style={styles.searchInnerContainer}>
                 <View style={styles.searchIconContainer}>
-                  <Ionicons name="search" size={20} color={COLORS.primary} />
+                  <Ionicons name="search" size={responsiveFont(20)} color={COLORS.primary} />
                 </View>
                 
                 <TextInput
@@ -1703,7 +1741,7 @@ const StoreScreen = () => {
                     style={styles.searchClearButton}
                     onPress={clearSearch}
                   >
-                    <Ionicons name="close-circle" size={18} color={COLORS.gray} />
+                    <Ionicons name="close-circle" size={responsiveFont(18)} color={COLORS.gray} />
                   </TouchableOpacity>
                 ) : null}
               </View>
@@ -1761,7 +1799,7 @@ const StoreScreen = () => {
                   </>
                 ) : (
                   <View style={styles.noSearchResults}>
-                    <Ionicons name="search-outline" size={80} color={COLORS.grayLight} />
+                    <Ionicons name="search-outline" size={responsiveFont(80)} color={COLORS.grayLight} />
                     <Text style={styles.noSearchResultsText}>No products found</Text>
                     <Text style={styles.noSearchResultsSubtext}>
                       We couldn't find any products matching "{searchText}"
@@ -1792,7 +1830,7 @@ const StoreScreen = () => {
                     <Text style={styles.sectionTitle}>Featured Brands</Text>
                     <TouchableOpacity style={styles.seeAllButton}>
                       <Text style={styles.seeAll}>See All</Text>
-                      <Ionicons name="chevron-forward" size={16} color={COLORS.primary} />
+                      <Ionicons name="chevron-forward" size={responsiveFont(16)} color={COLORS.primary} />
                     </TouchableOpacity>
                   </View>
                   <FlatList
@@ -1829,7 +1867,7 @@ const StoreScreen = () => {
                     />
                   ) : (
                     <View style={styles.emptyState}>
-                      <Ionicons name="grid-outline" size={50} color={COLORS.grayLight} />
+                      <Ionicons name="grid-outline" size={responsiveFont(50)} color={COLORS.grayLight} />
                       <Text style={styles.emptyStateText}>No products found</Text>
                       <Text style={styles.emptyStateSubtext}>
                         {`No products available in ${selectedCategory} category`}
@@ -1844,7 +1882,7 @@ const StoreScreen = () => {
                     <Text style={styles.sectionTitle}>Summer Collection</Text>
                     <TouchableOpacity style={styles.seeAllButton}>
                       <Text style={styles.seeAll}>View All</Text>
-                      <Ionicons name="chevron-forward" size={16} color={COLORS.primary} />
+                      <Ionicons name="chevron-forward" size={responsiveFont(16)} color={COLORS.primary} />
                     </TouchableOpacity>
                   </View>
                   <View style={styles.bannerContainer}>
@@ -1910,7 +1948,7 @@ const StoreScreen = () => {
                     <Text style={styles.sectionTitle}>🔥 Trending Now</Text>
                     <TouchableOpacity style={styles.seeAllButton}>
                       <Text style={styles.seeAll}>View All</Text>
-                      <Ionicons name="chevron-forward" size={16} color={COLORS.primary} />
+                      <Ionicons name="chevron-forward" size={responsiveFont(16)} color={COLORS.primary} />
                     </TouchableOpacity>
                   </View>
                   <FlatList
@@ -1987,7 +2025,7 @@ const StoreScreen = () => {
                   ) : (
                     !searchLoading && filteredProducts.length <= 12 && searchResults.length === 0 && (
                       <View style={styles.emptyState}>
-                        <Ionicons name="heart-outline" size={50} color={COLORS.grayLight} />
+                        <Ionicons name="heart-outline" size={responsiveFont(50)} color={COLORS.grayLight} />
                         <Text style={styles.emptyStateText}>You've reached the end!</Text>
                         <Text style={styles.emptyStateSubtext}>
                           Thanks for browsing our store
@@ -2002,14 +2040,15 @@ const StoreScreen = () => {
         </View>
       </Animated.ScrollView>
       <Toast />
-    </View>
+    </SafeAreaView>
   );
 };
 
+// IMPROVED Styles for Android with better responsiveness and premium design
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.white, // Changed to white to match status bar
   },
   scrollContainer: {
     flex: 1,
@@ -2018,7 +2057,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
-    paddingBottom: 20,
+    paddingBottom: responsiveHeight(2),
   },
   centerContainer: {
     flex: 1,
@@ -2027,20 +2066,21 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   loadingText: {
-    marginTop: 16,
-    fontSize: 16,
+    marginTop: responsiveHeight(2),
+    fontSize: responsiveFont(16),
     color: COLORS.gray,
   },
-  // SIMPLIFIED Internet Status Bar Styles
+  // IMPROVED Internet Status Bar Styles for Android
   internetStatusBar: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     backgroundColor: COLORS.error,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingVertical: responsiveHeight(1.5),
+    paddingHorizontal: responsiveWidth(4),
     zIndex: 2000,
+    elevation: 8,
   },
   internetStatusContent: {
     flexDirection: 'row',
@@ -2049,48 +2089,60 @@ const styles = StyleSheet.create({
   },
   internetStatusText: {
     color: COLORS.white,
-    fontSize: 14,
-    fontWeight: '500',
-    marginLeft: 8,
+    fontSize: responsiveFont(15),
+    fontWeight: '600',
+    marginLeft: responsiveWidth(2),
+    marginRight: responsiveWidth(3),
+  },
+  retryButton: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    paddingHorizontal: responsiveWidth(3),
+    paddingVertical: responsiveHeight(0.5),
+    borderRadius: 8,
+  },
+  retryText: {
+    color: COLORS.white,
+    fontSize: responsiveFont(13),
+    fontWeight: '600',
   },
   // Offline Styles
   offlineContent: {
-    paddingTop: 40, // Extra padding to account for status bar
+    paddingTop: responsiveHeight(6), // Extra padding to account for status bar
   },
   offlineIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.warning + '20',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginHorizontal: 20,
-    marginTop: 10,
+    paddingHorizontal: responsiveWidth(4),
+    paddingVertical: responsiveHeight(1.5),
+    marginHorizontal: responsiveWidth(5),
+    marginTop: responsiveHeight(1),
     borderRadius: 12,
     borderLeftWidth: 4,
     borderLeftColor: COLORS.warning,
   },
   offlineIndicatorText: {
     color: COLORS.warning,
-    fontSize: 14,
+    fontSize: responsiveFont(14),
     fontWeight: '500',
-    marginLeft: 8,
+    marginLeft: responsiveWidth(2),
   },
   offlineDot: {
     backgroundColor: COLORS.error,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: responsiveWidth(5),
+    height: responsiveWidth(5),
+    borderRadius: responsiveWidth(2.5),
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: 8,
+    marginLeft: responsiveWidth(2),
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'ios' ? 60 : 40,
-    paddingBottom: 16,
+    paddingHorizontal: responsiveWidth(5),
+    paddingTop: Platform.OS === 'android' ? STATUS_BAR_HEIGHT + responsiveHeight(1) : responsiveHeight(8),
+    paddingBottom: responsiveHeight(2),
     backgroundColor: COLORS.background,
   },
   profileContainer: {
@@ -2098,14 +2150,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   welcomeContainer: {
-    marginLeft: 12,
+    marginLeft: responsiveWidth(3),
   },
   welcome: {
-    fontSize: 14,
+    fontSize: responsiveFont(14),
     color: COLORS.gray,
   },
   username: {
-    fontSize: 20,
+    fontSize: responsiveFont(20),
     fontWeight: 'bold',
     color: COLORS.dark,
   },
@@ -2114,8 +2166,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   bigHeaderCartButton: {
-    padding: 8,
-    marginLeft: 8,
+    padding: responsiveWidth(2),
+    marginLeft: responsiveWidth(2),
   },
   bigHeaderCartContainer: {
     position: 'relative',
@@ -2124,20 +2176,21 @@ const styles = StyleSheet.create({
   },
   badge: {
     position: 'absolute',
-    top: -2,
-    right: -2,
+    top: -responsiveWidth(0.5),
+    right: -responsiveWidth(0.5),
     backgroundColor: COLORS.error,
-    borderRadius: 12,
-    minWidth: 20,
-    height: 20,
+    borderRadius: responsiveWidth(3),
+    minWidth: responsiveWidth(5),
+    height: responsiveWidth(5),
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
     borderColor: COLORS.background,
+    elevation: 4,
   },
   badgeText: {
     color: COLORS.white,
-    fontSize: 11,
+    fontSize: responsiveFont(11),
     fontWeight: 'bold',
   },
   searchWrapper: {
@@ -2145,16 +2198,16 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
   searchContainer: {
-    paddingHorizontal: 20,
-    marginBottom: 8,
+    paddingHorizontal: responsiveWidth(5),
+    marginBottom: responsiveHeight(1),
   },
   searchInnerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.white,
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    borderRadius: responsiveWidth(4),
+    paddingHorizontal: responsiveWidth(4),
+    paddingVertical: responsiveHeight(1.5),
     shadowColor: COLORS.primary,
     shadowOffset: {
       width: 0,
@@ -2167,25 +2220,26 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(99, 102, 241, 0.1)',
   },
   searchIconContainer: {
-    marginRight: 12,
+    marginRight: responsiveWidth(3),
   },
   searchInput: {
     flex: 1,
-    fontSize: 16,
+    fontSize: responsiveFont(16),
     color: COLORS.dark,
     padding: 0,
+    includeFontPadding: false, // Better text alignment on Android
   },
   searchClearButton: {
-    padding: 4,
+    padding: responsiveWidth(1),
   },
   searchSuggestionsContainer: {
     position: 'absolute',
     top: '100%',
-    left: 20,
-    right: 20,
+    left: responsiveWidth(5),
+    right: responsiveWidth(5),
     backgroundColor: COLORS.white,
-    borderRadius: 16,
-    marginTop: 8,
+    borderRadius: responsiveWidth(4),
+    marginTop: responsiveHeight(1),
     shadowColor: COLORS.dark,
     shadowOffset: {
       width: 0,
@@ -2195,79 +2249,79 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 8,
     zIndex: 1001,
-    maxHeight: 400,
+    maxHeight: responsiveHeight(40),
   },
   searchSuggestionsContent: {
-    padding: 16,
+    padding: responsiveWidth(4),
   },
   resultsCountContainer: {
-    paddingVertical: 8,
+    paddingVertical: responsiveHeight(1),
     borderBottomWidth: 1,
     borderBottomColor: COLORS.light,
-    marginBottom: 12,
+    marginBottom: responsiveHeight(1.5),
   },
   resultsCountText: {
-    fontSize: 14,
+    fontSize: responsiveFont(14),
     color: COLORS.gray,
     fontWeight: '500',
   },
   suggestionSection: {
-    marginBottom: 16,
+    marginBottom: responsiveHeight(2),
   },
   suggestionSectionTitle: {
-    fontSize: 14,
+    fontSize: responsiveFont(14),
     fontWeight: '600',
     color: COLORS.dark,
-    marginBottom: 8,
+    marginBottom: responsiveHeight(1),
   },
   suggestionItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
+    paddingVertical: responsiveHeight(1.2),
     borderBottomWidth: 1,
     borderBottomColor: COLORS.light,
   },
   suggestionText: {
-    fontSize: 15,
+    fontSize: responsiveFont(15),
     color: COLORS.dark,
-    marginLeft: 12,
+    marginLeft: responsiveWidth(3),
     flex: 1,
   },
   popularSearchesContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: responsiveWidth(2),
   },
   popularSearchChip: {
     backgroundColor: COLORS.light,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
+    paddingHorizontal: responsiveWidth(3),
+    paddingVertical: responsiveHeight(1),
+    borderRadius: responsiveWidth(5),
   },
   popularSearchText: {
-    fontSize: 13,
+    fontSize: responsiveFont(13),
     color: COLORS.dark,
     fontWeight: '500',
   },
   noResultsContainer: {
     alignItems: 'center',
-    paddingVertical: 32,
+    paddingVertical: responsiveHeight(4),
   },
   noResultsText: {
-    fontSize: 18,
+    fontSize: responsiveFont(18),
     fontWeight: '600',
     color: COLORS.dark,
-    marginTop: 12,
-    marginBottom: 8,
+    marginTop: responsiveHeight(1.5),
+    marginBottom: responsiveHeight(1),
   },
   noResultsSubtext: {
-    fontSize: 14,
+    fontSize: responsiveFont(14),
     color: COLORS.gray,
     textAlign: 'center',
-    marginBottom: 4,
+    marginBottom: responsiveHeight(0.5),
   },
   noResultsTip: {
-    fontSize: 12,
+    fontSize: responsiveFont(12),
     color: COLORS.grayLight,
     textAlign: 'center',
   },
@@ -2275,60 +2329,60 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   searchResultsSection: {
-    paddingHorizontal: 20,
+    paddingHorizontal: responsiveWidth(5),
   },
   loadingState: {
     alignItems: 'center',
-    paddingVertical: 40,
+    paddingVertical: responsiveHeight(5),
   },
   noSearchResults: {
     alignItems: 'center',
-    paddingVertical: 60,
-    paddingHorizontal: 20,
+    paddingVertical: responsiveHeight(8),
+    paddingHorizontal: responsiveWidth(5),
   },
   noSearchResultsText: {
-    fontSize: 20,
+    fontSize: responsiveFont(20),
     fontWeight: '600',
     color: COLORS.dark,
-    marginTop: 16,
-    marginBottom: 8,
+    marginTop: responsiveHeight(2),
+    marginBottom: responsiveHeight(1),
   },
   noSearchResultsSubtext: {
-    fontSize: 15,
+    fontSize: responsiveFont(15),
     color: COLORS.gray,
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: responsiveHeight(1),
   },
   noSearchResultsTip: {
-    fontSize: 13,
+    fontSize: responsiveFont(13),
     color: COLORS.grayLight,
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: responsiveHeight(3),
   },
   tryAgainButton: {
     backgroundColor: COLORS.primary,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 12,
+    paddingHorizontal: responsiveWidth(6),
+    paddingVertical: responsiveHeight(1.5),
+    borderRadius: responsiveWidth(3),
   },
   tryAgainText: {
     color: COLORS.white,
-    fontSize: 15,
+    fontSize: responsiveFont(15),
     fontWeight: '600',
   },
   categoriesContainer: {
-    paddingHorizontal: 20,
-    marginBottom: 24,
+    paddingHorizontal: responsiveWidth(5),
+    marginBottom: responsiveHeight(3),
   },
   categoriesScroll: {
-    paddingRight: 20,
+    paddingRight: responsiveWidth(5),
   },
   categoryButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
+    paddingHorizontal: responsiveWidth(5),
+    paddingVertical: responsiveHeight(1.2),
     backgroundColor: COLORS.white,
-    borderRadius: 12,
-    marginRight: 12,
+    borderRadius: responsiveWidth(3),
+    marginRight: responsiveWidth(3),
     shadowColor: COLORS.dark,
     shadowOffset: {
       width: 0,
@@ -2342,7 +2396,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
   },
   categoryText: {
-    fontSize: 14,
+    fontSize: responsiveFont(14),
     fontWeight: '500',
     color: COLORS.gray,
   },
@@ -2350,17 +2404,17 @@ const styles = StyleSheet.create({
     color: COLORS.white,
   },
   section: {
-    marginBottom: 32,
+    marginBottom: responsiveHeight(4),
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    marginBottom: 16,
+    paddingHorizontal: responsiveWidth(5),
+    marginBottom: responsiveHeight(2),
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: responsiveFont(20),
     fontWeight: 'bold',
     color: COLORS.dark,
   },
@@ -2369,22 +2423,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   seeAll: {
-    fontSize: 14,
+    fontSize: responsiveFont(14),
     color: COLORS.primary,
     fontWeight: '500',
   },
   brandList: {
-    paddingHorizontal: 20,
-    gap: 16,
+    paddingHorizontal: responsiveWidth(5),
+    gap: responsiveWidth(4),
   },
   brandCard: {
-    width: 140,
-    marginRight: 16,
+    width: responsiveWidth(35),
+    marginRight: responsiveWidth(4),
   },
   brandCardInner: {
     backgroundColor: COLORS.white,
-    borderRadius: 16,
-    padding: 12,
+    borderRadius: responsiveWidth(4),
+    padding: responsiveWidth(3),
     shadowColor: COLORS.dark,
     shadowOffset: {
       width: 0,
@@ -2397,10 +2451,10 @@ const styles = StyleSheet.create({
   brandImageContainer: {
     position: 'relative',
     width: '100%',
-    height: 100,
-    borderRadius: 12,
+    height: responsiveHeight(12),
+    borderRadius: responsiveWidth(3),
     overflow: 'hidden',
-    marginBottom: 12,
+    marginBottom: responsiveHeight(1.5),
   },
   brandImage: {
     width: '100%',
@@ -2408,62 +2462,52 @@ const styles = StyleSheet.create({
   },
   brandDiscount: {
     position: 'absolute',
-    top: 8,
-    right: 8,
+    top: responsiveHeight(1),
+    right: responsiveWidth(2),
     backgroundColor: COLORS.secondary,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
+    paddingHorizontal: responsiveWidth(2),
+    paddingVertical: responsiveHeight(0.5),
+    borderRadius: responsiveWidth(2),
   },
   brandDiscountText: {
     color: COLORS.white,
-    fontSize: 10,
+    fontSize: responsiveFont(10),
     fontWeight: 'bold',
   },
   brandName: {
-    fontSize: 16,
+    fontSize: responsiveFont(16),
     fontWeight: '600',
     color: COLORS.dark,
-    marginBottom: 4,
+    marginBottom: responsiveHeight(0.5),
   },
   brandProducts: {
-    fontSize: 12,
+    fontSize: responsiveFont(12),
     color: COLORS.gray,
   },
   list: {
-    paddingHorizontal: 20,
+    paddingHorizontal: responsiveWidth(5),
   },
   columnWrapper: {
     justifyContent: 'space-between',
-    marginBottom: 16,
+    marginBottom: responsiveHeight(2),
   },
   // UPDATED Product Card Styles - Heart icon moved to top and NEW badge updated
   cardContainer: {
     width: '48%',
-    marginBottom: 16,
+    marginBottom: responsiveHeight(2),
   },
   card: {
     backgroundColor: COLORS.cardBackground,
-    borderRadius: 20,
+    borderRadius: responsiveWidth(5),
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: 'rgba(99, 102, 241, 0.08)',
-    ...Platform.select({
-      ios: {
-        shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.1,
-        shadowRadius: 12,
-      },
-      android: {
-        elevation: 6,
-      },
-    }),
+    elevation: 6,
   },
   imageContainer: {
     position: 'relative',
     width: '100%',
-    height: 180,
+    height: responsiveHeight(20),
     backgroundColor: COLORS.light,
   },
   imagePlaceholder: {
@@ -2480,24 +2524,14 @@ const styles = StyleSheet.create({
   // UPDATED: Heart container moved to top right
   heartContainer: {
     position: 'absolute',
-    top: 12,
-    right: 12,
+    top: responsiveHeight(1.5),
+    right: responsiveWidth(3),
   },
   heartIcon: {
     backgroundColor: 'rgba(0, 0, 0, 0.4)',
-    borderRadius: 20,
-    padding: 8,
-    ...Platform.select({
-      ios: {
-        shadowColor: COLORS.dark,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.3,
-        shadowRadius: 3,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
+    borderRadius: responsiveWidth(5),
+    padding: responsiveWidth(2),
+    elevation: 3,
   },
   heartIconActive: {
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
@@ -2505,43 +2539,43 @@ const styles = StyleSheet.create({
   // UPDATED: NEW badge with brand-like design - Only shown if isFeatured is true
   newBadge: {
     position: 'absolute',
-    top: 12,
-    left: 12,
+    top: responsiveHeight(1.5),
+    left: responsiveWidth(3),
     backgroundColor: COLORS.primary,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 50,
+    paddingHorizontal: responsiveWidth(2.5),
+    paddingVertical: responsiveHeight(0.5),
+    borderRadius: responsiveWidth(12.5),
     alignSelf: 'flex-start',
   },
   newBadgeText: {
-    fontSize: 11,
+    fontSize: responsiveFont(11),
     fontWeight: '700',
     color: COLORS.white,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   cardContent: {
-    padding: 16,
+    padding: responsiveWidth(4),
     backgroundColor: COLORS.cardBackground,
   },
   title: {
-    fontSize: 15,
+    fontSize: responsiveFont(15),
     fontWeight: '700',
     color: COLORS.dark,
-    marginBottom: 6,
-    height: 20,
-    lineHeight: 20,
+    marginBottom: responsiveHeight(0.7),
+    height: responsiveHeight(2.5),
+    lineHeight: responsiveHeight(2.5),
   },
   brandContainer: {
-    marginBottom: 8,
+    marginBottom: responsiveHeight(1),
     backgroundColor: 'rgba(99, 102, 241, 0.08)',
     alignSelf: 'flex-start',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 10,
+    paddingHorizontal: responsiveWidth(2.5),
+    paddingVertical: responsiveHeight(0.5),
+    borderRadius: responsiveWidth(2.5),
   },
   brandText: {
-    fontSize: 11,
+    fontSize: responsiveFont(11),
     fontWeight: '700',
     color: COLORS.primary,
     textTransform: 'uppercase',
@@ -2551,14 +2585,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    marginBottom: responsiveHeight(1.5),
   },
   stars: {
     flexDirection: 'row',
-    gap: 2,
+    gap: responsiveWidth(0.5),
   },
   ratingText: {
-    fontSize: 11,
+    fontSize: responsiveFont(11),
     color: COLORS.gray,
     fontWeight: '600',
   },
@@ -2568,7 +2602,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   price: {
-    fontSize: 17,
+    fontSize: responsiveFont(17),
     fontWeight: 'bold',
     color: COLORS.primary,
   },
@@ -2579,22 +2613,12 @@ const styles = StyleSheet.create({
   },
   cartButton: {
     backgroundColor: COLORS.primary,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: responsiveWidth(9),
+    height: responsiveWidth(9),
+    borderRadius: responsiveWidth(4.5),
     justifyContent: 'center',
     alignItems: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 6,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
+    elevation: 4,
   },
   cartButtonActive: {
     backgroundColor: COLORS.success,
@@ -2605,21 +2629,22 @@ const styles = StyleSheet.create({
   },
   quantityBadge: {
     position: 'absolute',
-    top: -8,
-    right: -8,
+    top: -responsiveHeight(1),
+    right: -responsiveWidth(2),
     backgroundColor: COLORS.error,
-    borderRadius: 10,
-    minWidth: 20,
-    height: 20,
+    borderRadius: responsiveWidth(2.5),
+    minWidth: responsiveWidth(5),
+    height: responsiveWidth(5),
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
     borderColor: COLORS.white,
     zIndex: 1,
+    elevation: 4,
   },
   quantityText: {
     color: COLORS.white,
-    fontSize: 10,
+    fontSize: responsiveFont(10),
     fontWeight: '800',
   },
   cartIconContainer: {
@@ -2627,16 +2652,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   bannerContainer: {
-    height: 200,
-    marginHorizontal: 20,
-    borderRadius: 16,
+    height: responsiveHeight(22),
+    marginHorizontal: responsiveWidth(5),
+    borderRadius: responsiveWidth(4),
     overflow: 'hidden',
     position: 'relative',
+    elevation: 4,
   },
   bannerItem: {
-    width: width - 40,
-    height: 200,
-    borderRadius: 16,
+    width: width - responsiveWidth(10),
+    height: responsiveHeight(22),
+    borderRadius: responsiveWidth(4),
     overflow: 'hidden',
     position: 'relative',
   },
@@ -2650,50 +2676,50 @@ const styles = StyleSheet.create({
   },
   bannerContent: {
     position: 'absolute',
-    bottom: 20,
-    left: 20,
-    right: 20,
+    bottom: responsiveHeight(2.5),
+    left: responsiveWidth(5),
+    right: responsiveWidth(5),
   },
   bannerBadge: {
     alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    marginBottom: 12,
+    paddingHorizontal: responsiveWidth(3),
+    paddingVertical: responsiveHeight(0.7),
+    borderRadius: responsiveWidth(2),
+    marginBottom: responsiveHeight(1.5),
   },
   bannerBadgeText: {
     color: COLORS.white,
-    fontSize: 12,
+    fontSize: responsiveFont(12),
     fontWeight: 'bold',
   },
   bannerTitle: {
-    fontSize: 24,
+    fontSize: responsiveFont(24),
     fontWeight: 'bold',
     color: COLORS.white,
-    marginBottom: 8,
+    marginBottom: responsiveHeight(1),
   },
   bannerSubtitle: {
-    fontSize: 16,
+    fontSize: responsiveFont(16),
     color: COLORS.white,
-    marginBottom: 16,
+    marginBottom: responsiveHeight(2),
   },
   bannerButton: {
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
     backgroundColor: COLORS.white,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 12,
+    paddingHorizontal: responsiveWidth(5),
+    paddingVertical: responsiveHeight(1.5),
+    borderRadius: responsiveWidth(3),
   },
   bannerButtonText: {
     color: COLORS.primary,
-    fontSize: 14,
+    fontSize: responsiveFont(14),
     fontWeight: '600',
   },
   bannerPagination: {
     position: 'absolute',
-    bottom: 16,
+    bottom: responsiveHeight(2),
     left: 0,
     right: 0,
     flexDirection: 'row',
@@ -2701,22 +2727,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   paginationDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginHorizontal: 4,
+    width: responsiveWidth(2),
+    height: responsiveWidth(2),
+    borderRadius: responsiveWidth(1),
+    marginHorizontal: responsiveWidth(1),
   },
   trendingList: {
-    paddingHorizontal: 20,
-    gap: 16,
+    paddingHorizontal: responsiveWidth(5),
+    gap: responsiveWidth(4),
   },
   trendingCard: {
-    width: 280,
-    marginRight: 16,
+    width: responsiveWidth(70),
+    marginRight: responsiveWidth(4),
   },
   trendingCardInner: {
     backgroundColor: COLORS.white,
-    borderRadius: 16,
+    borderRadius: responsiveWidth(4),
     overflow: 'hidden',
     shadowColor: COLORS.dark,
     shadowOffset: {
@@ -2729,40 +2755,40 @@ const styles = StyleSheet.create({
   },
   trendingImage: {
     width: '100%',
-    height: 160,
+    height: responsiveHeight(18),
   },
   trendingBadge: {
     position: 'absolute',
-    top: 12,
-    left: 12,
+    top: responsiveHeight(1.5),
+    left: responsiveWidth(3),
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.secondary,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    gap: 4,
+    paddingHorizontal: responsiveWidth(2),
+    paddingVertical: responsiveHeight(0.5),
+    borderRadius: responsiveWidth(1.5),
+    gap: responsiveWidth(1),
   },
   trendingBadgeText: {
     color: COLORS.white,
-    fontSize: 10,
+    fontSize: responsiveFont(10),
     fontWeight: 'bold',
   },
   trendingContent: {
-    padding: 16,
+    padding: responsiveWidth(4),
   },
   trendingBrand: {
-    fontSize: 12,
+    fontSize: responsiveFont(12),
     color: COLORS.gray,
     fontWeight: '500',
-    marginBottom: 4,
+    marginBottom: responsiveHeight(0.5),
   },
   trendingName: {
-    fontSize: 16,
+    fontSize: responsiveFont(16),
     fontWeight: '600',
     color: COLORS.dark,
-    marginBottom: 12,
-    lineHeight: 20,
+    marginBottom: responsiveHeight(1.5),
+    lineHeight: responsiveHeight(2.5),
   },
   trendingPriceContainer: {
     flexDirection: 'row',
@@ -2770,27 +2796,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   trendingPrice: {
-    fontSize: 18,
+    fontSize: responsiveFont(18),
     fontWeight: 'bold',
     color: COLORS.primary,
   },
   trendingCartButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: responsiveWidth(9),
+    height: responsiveWidth(9),
+    borderRadius: responsiveWidth(4.5),
     backgroundColor: COLORS.primary,
     justifyContent: 'center',
     alignItems: 'center',
   },
   middleBannerContainer: {
-    paddingHorizontal: 20,
-    marginBottom: 32,
+    paddingHorizontal: responsiveWidth(5),
+    marginBottom: responsiveHeight(4),
   },
   middleBanner: {
-    borderRadius: 16,
+    borderRadius: responsiveWidth(4),
     overflow: 'hidden',
     position: 'relative',
-    minHeight: 100,
+    minHeight: responsiveHeight(11),
+    elevation: 4,
   },
   middleBannerGradient: {
     ...StyleSheet.absoluteFillObject,
@@ -2798,22 +2825,22 @@ const styles = StyleSheet.create({
   middleBannerContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 20,
+    padding: responsiveWidth(5),
   },
   middleBannerIcon: {
-    marginRight: 16,
+    marginRight: responsiveWidth(4),
   },
   middleBannerText: {
     flex: 1,
   },
   middleBannerTitle: {
-    fontSize: 18,
+    fontSize: responsiveFont(18),
     fontWeight: 'bold',
     color: COLORS.white,
-    marginBottom: 4,
+    marginBottom: responsiveHeight(0.5),
   },
   middleBannerSubtitle: {
-    fontSize: 14,
+    fontSize: responsiveFont(14),
     color: COLORS.white,
     opacity: 0.9,
   },
@@ -2821,42 +2848,42 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    gap: 6,
+    paddingHorizontal: responsiveWidth(3),
+    paddingVertical: responsiveHeight(1),
+    borderRadius: responsiveWidth(2),
+    gap: responsiveWidth(1.5),
   },
   middleBannerCodeText: {
     color: COLORS.white,
-    fontSize: 14,
+    fontSize: responsiveFont(14),
     fontWeight: '600',
   },
   middleBannerPagination: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 12,
-    gap: 6,
+    marginTop: responsiveHeight(1.5),
+    gap: responsiveWidth(1.5),
   },
   middlePaginationDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    width: responsiveWidth(1.5),
+    height: responsiveWidth(1.5),
+    borderRadius: responsiveWidth(0.75),
   },
   emptyState: {
     alignItems: 'center',
-    paddingVertical: 60,
-    paddingHorizontal: 20,
+    paddingVertical: responsiveHeight(8),
+    paddingHorizontal: responsiveWidth(5),
   },
   emptyStateText: {
-    fontSize: 18,
+    fontSize: responsiveFont(18),
     fontWeight: '600',
     color: COLORS.dark,
-    marginTop: 16,
-    marginBottom: 8,
+    marginTop: responsiveHeight(2),
+    marginBottom: responsiveHeight(1),
   },
   emptyStateSubtext: {
-    fontSize: 14,
+    fontSize: responsiveFont(14),
     color: COLORS.gray,
     textAlign: 'center',
   },
@@ -2865,18 +2892,19 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    height: 80,
-    backgroundColor: COLORS.background,
+    height: responsiveHeight(10),
+    backgroundColor: COLORS.white, // Changed to white
     borderBottomWidth: 1,
     borderBottomColor: COLORS.light,
     zIndex: 1000,
-    paddingTop: Platform.OS === 'ios' ? 40 : 20,
+    paddingTop: Platform.OS === 'android' ? STATUS_BAR_HEIGHT : responsiveHeight(5),
+    elevation: 4,
   },
   stickyHeaderContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: responsiveWidth(5),
     flex: 1,
   },
   stickyProfile: {
@@ -2884,21 +2912,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   stickyProfileInitials: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: responsiveWidth(9),
+    height: responsiveWidth(9),
+    borderRadius: responsiveWidth(4.5),
     backgroundColor: COLORS.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: responsiveWidth(3),
+    elevation: 4,
   },
   stickyProfileInitialsText: {
     color: COLORS.white,
-    fontSize: 16,
+    fontSize: responsiveFont(16),
     fontWeight: 'bold',
   },
   stickyUsername: {
-    fontSize: 18,
+    fontSize: responsiveFont(18),
     fontWeight: 'bold',
     color: COLORS.dark,
   },
@@ -2907,7 +2936,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   stickyCartButton: {
-    padding: 8,
+    padding: responsiveWidth(2),
   },
   bigCartIconContainer: {
     position: 'relative',
@@ -2916,20 +2945,21 @@ const styles = StyleSheet.create({
   },
   stickyBadge: {
     position: 'absolute',
-    top: -4,
-    right: -4,
+    top: -responsiveHeight(0.5),
+    right: -responsiveWidth(1),
     backgroundColor: COLORS.error,
-    borderRadius: 12,
-    minWidth: 20,
-    height: 20,
+    borderRadius: responsiveWidth(3),
+    minWidth: responsiveWidth(5),
+    height: responsiveWidth(5),
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: COLORS.background,
+    borderColor: COLORS.white, // Changed to white
+    elevation: 4,
   },
   stickyBadgeText: {
     color: COLORS.white,
-    fontSize: 11,
+    fontSize: responsiveFont(11),
     fontWeight: 'bold',
   },
 });

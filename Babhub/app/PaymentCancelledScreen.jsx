@@ -1,5 +1,5 @@
 // app/screens/PaymentCancelledScreen.js
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { 
   View, 
   Text, 
@@ -11,15 +11,18 @@ import {
   StatusBar,
   BackHandler,
   Platform,
-  ScrollView,
-  Alert,
-  Linking
+  Modal
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width, height } = Dimensions.get('window');
+
+// Responsive scaling functions
+const scale = (size) => (width / 375) * size;
+const verticalScale = (size) => (height / 812) * size;
+const moderateScale = (size, factor = 0.5) => size + (scale(size) - size) * factor;
 
 // Consistent color palette
 const COLORS = {
@@ -43,22 +46,6 @@ const COLORS = {
   info: '#3B82F6',
 };
 
-// MenuItem Component
-const MenuItem = ({ icon, title, subtitle, color, onPress }) => {
-  return (
-    <TouchableOpacity style={styles.menuItem} onPress={onPress} activeOpacity={0.7}>
-      <View style={[styles.menuIconContainer, { backgroundColor: color + '20' }]}>
-        <Ionicons name={icon} size={22} color={color} />
-      </View>
-      <View style={styles.menuTextContainer}>
-        <Text style={styles.menuTitle}>{title}</Text>
-        <Text style={styles.menuSubtitle}>{subtitle}</Text>
-      </View>
-      <Ionicons name="chevron-forward" size={18} color={COLORS.gray} />
-    </TouchableOpacity>
-  );
-};
-
 const PaymentCancelledScreen = () => {
   const router = useRouter();
   const params = useLocalSearchParams();
@@ -67,6 +54,8 @@ const PaymentCancelledScreen = () => {
   const slideAnim = useRef(new Animated.Value(50)).current;
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
+  const [showBackModal, setShowBackModal] = useState(false);
+  const modalScaleAnim = useRef(new Animated.Value(0)).current;
   
   // Track if navigation has been initiated
   const navigationInitiated = useRef(false);
@@ -74,13 +63,38 @@ const PaymentCancelledScreen = () => {
   // Check if payment failed
   const isPaymentFailed = params.paymentFailed === 'true';
 
+  // Handle back button press
+  const handleBackPress = () => {
+    // When back button pressed, go back to checkout (same instance)
+    handleRetryPayment();
+    return true; // Prevent default back behavior
+  };
+
+  // Show modal animation
+  const showModal = () => {
+    setShowBackModal(true);
+    Animated.spring(modalScaleAnim, {
+      toValue: 1,
+      tension: 50,
+      friction: 7,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  // Hide modal animation
+  const hideModal = () => {
+    Animated.timing(modalScaleAnim, {
+      toValue: 0,
+      duration: 200,
+      useNativeDriver: true,
+    }).start(() => {
+      setShowBackModal(false);
+    });
+  };
+
   // Prevent going back to payment screen - UPDATED
   useEffect(() => {
-    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
-      // Completely reset to home when back button is pressed
-      handleGoHome();
-      return true; // Prevent default back behavior
-    });
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', handleBackPress);
 
     // Start animations
     Animated.parallel([
@@ -136,14 +150,14 @@ const PaymentCancelledScreen = () => {
     };
   }, []);
 
-  // Go back to Checkout screen - UPDATED with proper navigation reset
+  // Go back to Checkout screen - UPDATED to go back to existing instance
   const handleRetryPayment = () => {
     if (navigationInitiated.current) {
       return;
     }
     
     navigationInitiated.current = true;
-    console.log('Navigating back to Checkout screen');
+    console.log('Going back to existing Checkout screen');
 
     Animated.parallel([
       Animated.timing(fadeAnim, {
@@ -157,8 +171,8 @@ const PaymentCancelledScreen = () => {
         useNativeDriver: true,
       })
     ]).start(() => {
-      // Use replace to prevent going back to this screen
-      router.replace('/Checkout');
+      // Use back navigation to return to existing checkout instance
+      router.back();
     });
   };
 
@@ -183,159 +197,25 @@ const PaymentCancelledScreen = () => {
         useNativeDriver: true,
       })
     ]).start(() => {
-      // COMPLETELY reset navigation stack - this is the key fix
-      // Navigate to root first, then replace with home screen
-      router.dismissAll(); // Dismiss all modals and screens
+      // COMPLETELY reset navigation stack
+      router.dismissAll();
       router.replace('/(tabs)/HomeScreen');
     });
   };
 
-  // Navigate to Wishlist - UPDATED with proper reset
-  const handleWishlistPress = () => {
-    if (navigationInitiated.current) {
-      return;
-    }
-    
-    navigationInitiated.current = true;
-    console.log('Navigating to Wishlist with reset');
-
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: -50,
-        duration: 300,
-        useNativeDriver: true,
-      })
-    ]).start(() => {
-      // Reset navigation and go to wishlist
-      router.dismissAll();
-      router.replace('/WishlistScreen');
-    });
-  };
-
-  // Navigate to Store - UPDATED with proper reset
-  const handleStorePress = () => {
-    if (navigationInitiated.current) {
-      return;
-    }
-    
-    navigationInitiated.current = true;
-    console.log('Navigating to Store with reset');
-
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: -50,
-        duration: 300,
-        useNativeDriver: true,
-      })
-    ]).start(() => {
-      // Reset navigation and go to store
-      router.dismissAll();
-      router.replace('/(tabs)/StoreScreen');
-    });
-  };
-
-  // COMPLETELY RESET NAVIGATION - NEW FUNCTION
-  const completelyResetNavigation = (targetRoute) => {
-    if (navigationInitiated.current) return;
-    
-    navigationInitiated.current = true;
-    
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: -50,
-        duration: 300,
-        useNativeDriver: true,
-      })
-    ]).start(() => {
-      // Method 1: Using dismissAll and replace (most effective)
-      router.dismissAll(); // Clear all modals and stacked screens
-      
-      // Small delay to ensure dismiss completes
-      setTimeout(() => {
-        router.replace(targetRoute);
-      }, 50);
-    });
-  };
-
-  const handleContactSupport = async () => {
-    const email = 'babahubsa@gmail.com';
-    const subject = 'Payment Assistance Required';
-    const body = 'Hello BabaHub Support,\n\nI need assistance with my payment. Here are the details:\n\n- Order ID: [Please specify]\n- Issue faced: [Please describe]\n\nThank you.';
-    
-    const mailtoUrl = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    
-    try {
-      const canOpen = await Linking.canOpenURL(mailtoUrl);
-      if (canOpen) {
-        await Linking.openURL(mailtoUrl);
-      } else {
-        Alert.alert(
-          'Email Not Available',
-          'Please email us at: babahubsa@gmail.com',
-          [{ text: 'OK' }]
-        );
-      }
-    } catch (error) {
-      console.error('Error opening email:', error);
-      Alert.alert(
-        'Error',
-        'Could not open email app. Please contact us at: babahubsa@gmail.com',
-        [{ text: 'OK' }]
-      );
-    }
-  };
-
-  const handleCallSupport = async () => {
-    const phoneNumber = 'tel:0845000000';
-    
-    try {
-      const canOpen = await Linking.canOpenURL(phoneNumber);
-      if (canOpen) {
-        await Linking.openURL(phoneNumber);
-      } else {
-        Alert.alert(
-          'Call Not Available',
-          'Please call us at: 084 500 0000',
-          [{ text: 'OK' }]
-        );
-      }
-    } catch (error) {
-      console.error('Error making call:', error);
-      Alert.alert(
-        'Error',
-        'Could not make a call. Please contact us at: 084 500 0000',
-        [{ text: 'OK' }]
-      );
-    }
+  const handleContactSupport = () => {
+    // Show contact modal instead of email
+    showModal();
   };
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar backgroundColor={COLORS.background} barStyle="dark-content" />
       
-      <ScrollView 
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
+      <View style={styles.container}>
         <Animated.View 
           style={[
-            styles.container,
+            styles.content,
             {
               opacity: fadeAnim,
               transform: [
@@ -353,14 +233,10 @@ const PaymentCancelledScreen = () => {
             ]}>
               <Ionicons 
                 name={isPaymentFailed ? "alert-circle" : "close"} 
-                size={60} 
+                size={moderateScale(50)} 
                 color={COLORS.white} 
               />
             </View>
-            <View style={[
-              styles.iconRing,
-              isPaymentFailed ? styles.iconRingError : styles.iconRingWarning
-            ]} />
           </View>
 
           {/* Cancellation Title */}
@@ -371,63 +247,43 @@ const PaymentCancelledScreen = () => {
           {/* Cancellation Message */}
           <Text style={styles.cancelledMessage}>
             {isPaymentFailed 
-              ? 'We encountered an issue processing your payment. No charges have been made to your account. Please try again or use a different payment method.'
-              : 'Your payment process was cancelled. No charges have been made to your account.'
+              ? 'We encountered an issue processing your payment. No charges have been made.'
+              : 'Your payment was cancelled. No charges have been made.'
             }
           </Text>
 
-          {/* Reasons Card */}
+          {/* Quick Reasons */}
           <View style={styles.reasonsCard}>
-            <Text style={styles.reasonsTitle}>
-              {isPaymentFailed ? 'Common reasons for failure:' : 'Common reasons for cancellation:'}
-            </Text>
+            <Text style={styles.reasonsTitle}>Common issues:</Text>
             <View style={styles.reasonsList}>
               {isPaymentFailed ? (
                 <>
                   <View style={styles.reasonItem}>
-                    <Ionicons name="card-outline" size={18} color={COLORS.error} />
+                    <Ionicons name="card-outline" size={14} color={COLORS.error} />
                     <Text style={styles.reasonText}>Insufficient funds</Text>
                   </View>
                   <View style={styles.reasonItem}>
-                    <Ionicons name="warning-outline" size={18} color={COLORS.error} />
-                    <Text style={styles.reasonText}>Bank declined transaction</Text>
-                  </View>
-                  <View style={styles.reasonItem}>
-                    <Ionicons name="time-outline" size={18} color={COLORS.error} />
-                    <Text style={styles.reasonText}>Transaction timeout</Text>
-                  </View>
-                  <View style={styles.reasonItem}>
-                    <Ionicons name="build-outline" size={18} color={COLORS.error} />
-                    <Text style={styles.reasonText}>Technical issues</Text>
+                    <Ionicons name="warning-outline" size={14} color={COLORS.error} />
+                    <Text style={styles.reasonText}>Bank declined</Text>
                   </View>
                 </>
               ) : (
                 <>
                   <View style={styles.reasonItem}>
-                    <Ionicons name="time-outline" size={18} color={COLORS.info} />
+                    <Ionicons name="time-outline" size={14} color={COLORS.info} />
                     <Text style={styles.reasonText}>Changed your mind</Text>
                   </View>
                   <View style={styles.reasonItem}>
-                    <Ionicons name="card-outline" size={18} color={COLORS.info} />
-                    <Text style={styles.reasonText}>Payment method issues</Text>
-                  </View>
-                  <View style={styles.reasonItem}>
-                    <Ionicons name="information-circle-outline" size={18} color={COLORS.info} />
-                    <Text style={styles.reasonText}>Need more information</Text>
-                  </View>
-                  <View style={styles.reasonItem}>
-                    <Ionicons name="shield-checkmark-outline" size={18} color={COLORS.info} />
-                    <Text style={styles.reasonText}>Security concerns</Text>
+                    <Ionicons name="card-outline" size={14} color={COLORS.info} />
+                    <Text style={styles.reasonText}>Payment issues</Text>
                   </View>
                 </>
               )}
             </View>
           </View>
 
-          {/* Next Steps */}
-          <View style={styles.nextSteps}>
-            <Text style={styles.nextStepsTitle}>What would you like to do?</Text>
-            
+          {/* Action Buttons */}
+          <View style={styles.actionsContainer}>
             {/* Primary Action - Retry Payment */}
             <Animated.View 
               style={[
@@ -440,69 +296,96 @@ const PaymentCancelledScreen = () => {
                 onPress={handleRetryPayment}
                 activeOpacity={0.8}
               >
-                <Ionicons name="card" size={24} color={COLORS.white} />
-                <View style={styles.primaryActionContent}>
-                  <Text style={styles.primaryActionTitle}>
-                    {isPaymentFailed ? 'Try Payment Again' : 'Retry Payment'}
-                  </Text>
-                  <Text style={styles.primaryActionSubtitle}>
-                    Go back to checkout and try again
-                  </Text>
-                </View>
-                <Ionicons name="arrow-back" size={20} color={COLORS.white} />
+                <Ionicons name="card" size={20} color={COLORS.white} />
+                <Text style={styles.primaryActionText}>
+                  {isPaymentFailed ? 'Try Again' : 'Retry Payment'}
+                </Text>
               </TouchableOpacity>
             </Animated.View>
 
-            {/* Home Action - UPDATED with complete reset */}
+            {/* Home Action */}
             <TouchableOpacity 
               style={styles.homeAction}
-              onPress={() => completelyResetNavigation('/(tabs)/HomeScreen')}
+              onPress={handleGoHome}
               activeOpacity={0.7}
             >
-              <Ionicons name="home" size={22} color={COLORS.primary} />
-              <View style={styles.homeActionContent}>
-                <Text style={styles.homeActionTitle}>Go to Home</Text>
-                <Text style={styles.homeActionSubtitle}>Completely reset navigation - cannot go back</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color={COLORS.primary} />
+              <Ionicons name="home" size={20} color={COLORS.primary} />
+              <Text style={styles.homeActionText}>Go to Home</Text>
+            </TouchableOpacity>
+
+            {/* Support Action */}
+            <TouchableOpacity 
+              style={styles.supportAction}
+              onPress={handleContactSupport}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="help-circle" size={18} color={COLORS.gray} />
+              <Text style={styles.supportActionText}>Need Help?</Text>
             </TouchableOpacity>
           </View>
-
-         
-           
-
-          {/* Support Information */}
-          <View style={styles.supportContainer}>
-            <Text style={styles.supportTitle}>Need help with your payment?</Text>
-            <View style={styles.supportOptions}>
-              <TouchableOpacity 
-                style={styles.supportOption}
-                onPress={handleContactSupport}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="mail" size={16} color={COLORS.primary} />
-                <Text style={styles.supportText}>babahubsa@gmail.com</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.supportOption}
-                onPress={handleCallSupport}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="call" size={16} color={COLORS.primary} />
-                <Text style={styles.supportText}>084 500 0000</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* Additional Help Section */}
-          <View style={styles.helpSection}>
-            <Text style={styles.helpTitle}>Need Additional Help?</Text>
-            <Text style={styles.helpDescription}>
-              Our support team is available to assist you with any payment-related issues or questions you may have.
-            </Text>
-          </View>
         </Animated.View>
-      </ScrollView>
+      </View>
+
+      {/* Compact Support Modal */}
+      <Modal
+        visible={showBackModal}
+        transparent={true}
+        animationType="fade"
+        statusBarTranslucent={true}
+        onRequestClose={hideModal}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity 
+            style={styles.modalOverlayTouchable}
+            activeOpacity={1}
+            onPress={hideModal}
+          >
+            <Animated.View 
+              style={[
+                styles.modalContainer,
+                {
+                  transform: [{ scale: modalScaleAnim }]
+                }
+              ]}
+            >
+              {/* Modal Header */}
+              <View style={styles.modalHeader}>
+                <Ionicons name="headset" size={moderateScale(20)} color={COLORS.primary} />
+                <Text style={styles.modalTitle}>Contact Support</Text>
+              </View>
+
+              {/* Modal Body */}
+              <View style={styles.modalBody}>
+                <Text style={styles.modalMessage}>
+                  Our support team is here to help you with any payment issues.
+                </Text>
+                
+                <View style={styles.contactInfo}>
+                  <View style={styles.contactItem}>
+                    <Ionicons name="mail" size={14} color={COLORS.primary} />
+                    <Text style={styles.contactText}>babahubsa@gmail.com</Text>
+                  </View>
+                  <View style={styles.contactItem}>
+                    <Ionicons name="call" size={14} color={COLORS.primary} />
+                    <Text style={styles.contactText}>084 500 0000</Text>
+                  </View>
+                </View>
+              </View>
+
+              {/* Modal Actions */}
+              <View style={styles.modalActions}>
+                <TouchableOpacity 
+                  style={[styles.modalButton, styles.modalPrimaryButton]}
+                  onPress={hideModal}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.modalPrimaryButtonText}>Got It</Text>
+                </TouchableOpacity>
+              </View>
+            </Animated.View>
+          </TouchableOpacity>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -512,41 +395,36 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-  },
   container: {
     flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 20,
-    minHeight: height - 100,
+    paddingHorizontal: moderateScale(24),
+  },
+  content: {
+    width: '100%',
+    alignItems: 'center',
   },
   // Cancellation Icon
   iconContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 20,
-    position: 'relative',
+    marginBottom: verticalScale(20),
   },
   iconCircle: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: moderateScale(100),
+    height: moderateScale(100),
+    borderRadius: moderateScale(50),
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 2,
     ...Platform.select({
       ios: {
-        shadowOffset: { width: 0, height: 6 },
+        shadowOffset: { width: 0, height: moderateScale(4) },
         shadowOpacity: 0.3,
-        shadowRadius: 12,
+        shadowRadius: moderateScale(8),
       },
       android: {
-        elevation: 6,
+        elevation: 4,
       },
     }),
   },
@@ -558,261 +436,229 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.error,
     shadowColor: COLORS.error,
   },
-  iconRing: {
-    position: 'absolute',
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    zIndex: 1,
-  },
-  iconRingWarning: {
-    backgroundColor: COLORS.warning + '20',
-  },
-  iconRingError: {
-    backgroundColor: COLORS.error + '20',
-  },
   // Cancellation Text
   cancelledTitle: {
-    fontSize: 28,
+    fontSize: moderateScale(24),
     fontWeight: '800',
     color: COLORS.dark,
     textAlign: 'center',
-    marginBottom: 12,
-    letterSpacing: -0.5,
+    marginBottom: verticalScale(8),
+    includeFontPadding: false,
   },
   cancelledMessage: {
-    fontSize: 15,
+    fontSize: moderateScale(14),
     color: COLORS.gray,
     textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: 20,
-    paddingHorizontal: 16,
+    lineHeight: moderateScale(20),
+    marginBottom: verticalScale(20),
+    paddingHorizontal: moderateScale(10),
+    includeFontPadding: false,
   },
   // Reasons Card
   reasonsCard: {
     backgroundColor: COLORS.white,
-    padding: 16,
-    borderRadius: 12,
+    padding: moderateScale(12),
+    borderRadius: moderateScale(10),
     width: '100%',
-    marginBottom: 20,
+    marginBottom: verticalScale(20),
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
+        shadowOffset: { width: 0, height: moderateScale(1) },
         shadowOpacity: 0.1,
-        shadowRadius: 6,
+        shadowRadius: moderateScale(3),
       },
       android: {
-        elevation: 2,
+        elevation: 1,
       },
     }),
   },
   reasonsTitle: {
-    fontSize: 15,
+    fontSize: moderateScale(13),
     fontWeight: '700',
     color: COLORS.dark,
-    marginBottom: 12,
+    marginBottom: verticalScale(8),
+    textAlign: 'center',
+    includeFontPadding: false,
   },
   reasonsList: {
-    gap: 10,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: moderateScale(12),
   },
   reasonItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: moderateScale(6),
   },
   reasonText: {
-    fontSize: 13,
+    fontSize: moderateScale(12),
     color: COLORS.gray,
-    flex: 1,
+    includeFontPadding: false,
   },
-  // Next Steps
-  nextSteps: {
+  // Actions Container
+  actionsContainer: {
     width: '100%',
-    marginBottom: 20,
-  },
-  nextStepsTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: COLORS.dark,
-    marginBottom: 16,
-    textAlign: 'center',
+    gap: moderateScale(12),
   },
   primaryAction: {
-    marginBottom: 12,
+    width: '100%',
   },
   primaryActionButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: COLORS.primary,
-    padding: 16,
-    borderRadius: 12,
-    gap: 12,
+    paddingHorizontal: moderateScale(20),
+    paddingVertical: verticalScale(16),
+    borderRadius: moderateScale(12),
+    gap: moderateScale(8),
     ...Platform.select({
       ios: {
         shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 4 },
+        shadowOffset: { width: 0, height: moderateScale(3) },
         shadowOpacity: 0.3,
-        shadowRadius: 6,
+        shadowRadius: moderateScale(6),
       },
       android: {
-        elevation: 4,
+        elevation: 3,
       },
     }),
   },
-  primaryActionContent: {
-    flex: 1,
-  },
-  primaryActionTitle: {
+  primaryActionText: {
     color: COLORS.white,
-    fontSize: 16,
+    fontSize: moderateScale(16),
     fontWeight: '700',
-    marginBottom: 2,
+    includeFontPadding: false,
   },
-  primaryActionSubtitle: {
-    color: COLORS.white + 'CC',
-    fontSize: 12,
-  },
-  // Home Action
   homeAction: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: COLORS.white,
-    padding: 16,
-    borderRadius: 12,
-    gap: 12,
-    borderWidth: 1.5,
-    borderColor: COLORS.light,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
+    paddingHorizontal: moderateScale(20),
+    paddingVertical: verticalScale(14),
+    borderRadius: moderateScale(12),
+    gap: moderateScale(8),
+    borderWidth: moderateScale(1.5),
+    borderColor: COLORS.primary,
   },
-  homeActionContent: {
-    flex: 1,
-  },
-  homeActionTitle: {
+  homeActionText: {
     color: COLORS.primary,
-    fontSize: 16,
+    fontSize: moderateScale(15),
     fontWeight: '600',
-    marginBottom: 2,
+    includeFontPadding: false,
   },
-  homeActionSubtitle: {
-    color: COLORS.gray,
-    fontSize: 12,
-  },
-  // Quick Actions Section
-  quickActions: {
-    width: '100%',
-    marginBottom: 20,
-  },
-  quickActionsTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: COLORS.dark,
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  // Menu Item Styles
-  menuItem: {
+  supportAction: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.white,
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-    borderWidth: 1.5,
-    borderColor: COLORS.light,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
+    paddingVertical: verticalScale(12),
+    gap: moderateScale(6),
   },
-  menuIconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
+  supportActionText: {
+    color: COLORS.gray,
+    fontSize: moderateScale(13),
+    fontWeight: '500',
+    includeFontPadding: false,
+  },
+  // Compact Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    paddingHorizontal: moderateScale(40),
   },
-  menuTextContainer: {
-    flex: 1,
-  },
-  menuTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.dark,
-    marginBottom: 4,
-  },
-  menuSubtitle: {
-    fontSize: 12,
-    color: COLORS.gray,
-  },
-  // Support Information
-  supportContainer: {
+  modalOverlayTouchable: {
     width: '100%',
+    justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
-    paddingTop: 10,
   },
-  supportTitle: {
-    fontSize: 13,
-    color: COLORS.gray,
-    marginBottom: 10,
+  modalContainer: {
+    width: '100%',
+    maxWidth: moderateScale(280),
+    backgroundColor: COLORS.white,
+    borderRadius: moderateScale(14),
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: moderateScale(6) },
+        shadowOpacity: 0.25,
+        shadowRadius: moderateScale(10),
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: verticalScale(16),
+    paddingHorizontal: moderateScale(16),
+    backgroundColor: COLORS.background,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.light,
+    gap: moderateScale(8),
+  },
+  modalTitle: {
+    fontSize: moderateScale(16),
+    fontWeight: '700',
+    color: COLORS.dark,
     textAlign: 'center',
+    includeFontPadding: false,
   },
-  supportOptions: {
-    flexDirection: 'row',
-    gap: 20,
+  modalBody: {
+    paddingVertical: verticalScale(16),
+    paddingHorizontal: moderateScale(16),
   },
-  supportOption: {
+  modalMessage: {
+    fontSize: moderateScale(13),
+    color: COLORS.gray,
+    textAlign: 'center',
+    lineHeight: moderateScale(18),
+    marginBottom: verticalScale(12),
+    includeFontPadding: false,
+  },
+  contactInfo: {
+    gap: verticalScale(8),
+  },
+  contactItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    padding: 8,
-    borderRadius: 6,
+    justifyContent: 'center',
+    gap: moderateScale(6),
   },
-  supportText: {
-    fontSize: 11,
+  contactText: {
+    fontSize: moderateScale(12),
     color: COLORS.primary,
     fontWeight: '500',
+    includeFontPadding: false,
   },
-  // Help Section
-  helpSection: {
-    width: '100%',
+  modalActions: {
+    padding: moderateScale(12),
+    backgroundColor: COLORS.background,
+  },
+  modalButton: {
     alignItems: 'center',
-    marginTop: 'auto',
-    paddingTop: 20,
-    paddingBottom: 10,
+    justifyContent: 'center',
+    paddingHorizontal: moderateScale(16),
+    paddingVertical: verticalScale(12),
+    borderRadius: moderateScale(8),
   },
-  helpTitle: {
-    fontSize: 14,
+  modalPrimaryButton: {
+    backgroundColor: COLORS.primary,
+  },
+  modalPrimaryButtonText: {
+    color: COLORS.white,
+    fontSize: moderateScale(14),
     fontWeight: '600',
-    color: COLORS.dark,
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  helpDescription: {
-    fontSize: 12,
-    color: COLORS.gray,
-    textAlign: 'center',
-    lineHeight: 16,
-    paddingHorizontal: 20,
+    includeFontPadding: false,
   },
 });
 

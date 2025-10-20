@@ -8,7 +8,7 @@ import {
   Dimensions, 
   StatusBar, 
   Linking,
-  SafeAreaView 
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -70,214 +70,224 @@ const CustomerSupportScreen = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={styles.fullContainer}>
       <StatusBar backgroundColor={COLORS.primary} barStyle="light-content" />
       
-      {/* Premium Header */}
-      <View style={styles.header}>
-        <View style={styles.headerBackground}>
-          <View style={styles.headerContent}>
-            <TouchableOpacity 
-              style={styles.backButton}
-              onPress={handleBack}
-            >
-              <Ionicons name="arrow-back" size={24} color={COLORS.white} />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Customer Support</Text>
-            <View style={styles.placeholder} />
+      {/* Main Content */}
+      <View style={styles.container}>
+        {/* Premium Header */}
+        <View style={styles.header}>
+          <View style={styles.headerBackground}>
+            <View style={styles.headerContent}>
+              <TouchableOpacity 
+                style={styles.backButton}
+                onPress={handleBack}
+              >
+                <Ionicons name="arrow-back" size={24} color={COLORS.white} />
+              </TouchableOpacity>
+              <Text style={styles.headerTitle}>Customer Support</Text>
+              <View style={styles.placeholder} />
+            </View>
           </View>
         </View>
+
+        <ScrollView 
+          style={styles.scrollView} 
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
+          {/* Hero Section */}
+          <View style={styles.heroSection}>
+            <View style={styles.iconContainer}>
+              <Ionicons name="headset" size={40} color={COLORS.primary} />
+            </View>
+            <Text style={styles.heroTitle}>We're Here to Help! 👋</Text>
+            <Text style={styles.heroSubtitle}>
+              Your satisfaction is our priority. Get instant support for any questions or concerns.
+            </Text>
+          </View>
+
+          {/* Quick Contact Section */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="flash" size={22} color={COLORS.primary} />
+              <Text style={styles.sectionTitle}>Quick Contact</Text>
+            </View>
+            
+            {/* WhatsApp Support */}
+            <TouchableOpacity style={[styles.contactCard, styles.whatsappCard]} onPress={handleWhatsAppPress}>
+              <View style={styles.contactIconContainer}>
+                <Ionicons name="logo-whatsapp" size={28} color={COLORS.white} />
+              </View>
+              <View style={styles.contactInfo}>
+                <Text style={styles.contactMethod}>WhatsApp Support</Text>
+                <Text style={styles.contactDetail}>Instant messaging support</Text>
+                <Text style={styles.responseTime}>• Quick response • 24/7 available</Text>
+              </View>
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>Fastest</Text>
+              </View>
+            </TouchableOpacity>
+
+            {/* Email Support */}
+            <TouchableOpacity style={styles.contactCard} onPress={handleEmailPress}>
+              <View style={[styles.contactIconContainer, styles.emailIcon]}>
+                <Ionicons name="mail" size={24} color={COLORS.primary} />
+              </View>
+              <View style={styles.contactInfo}>
+                <Text style={styles.contactMethod}>Email Support</Text>
+                <Text style={styles.contactDetail}>babahubsa@gmail.com</Text>
+                <Text style={styles.responseTime}>Response time: Within 2 hours</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={COLORS.gray} />
+            </TouchableOpacity>
+
+            {/* Phone Support */}
+            <TouchableOpacity style={styles.contactCard} onPress={handleCallPress}>
+              <View style={[styles.contactIconContainer, styles.phoneIcon]}>
+                <Ionicons name="call" size={24} color={COLORS.primary} />
+              </View>
+              <View style={styles.contactInfo}>
+                <Text style={styles.contactMethod}>Phone Support</Text>
+                <Text style={styles.contactDetail}>084 500 0000</Text>
+                <Text style={styles.responseTime}>Mon-Fri: 8AM-6PM • Sat: 9AM-2PM</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={COLORS.gray} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Support Services */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="build" size={22} color={COLORS.primary} />
+              <Text style={styles.sectionTitle}>How We Can Help You</Text>
+            </View>
+            
+            <View style={styles.servicesGrid}>
+              <View style={styles.serviceCard}>
+                <View style={[styles.serviceIcon, { backgroundColor: COLORS.primary + '15' }]}>
+                  <Ionicons name="cart" size={24} color={COLORS.primary} />
+                </View>
+                <Text style={styles.serviceTitle}>Order Issues</Text>
+                <Text style={styles.serviceDesc}>Tracking, returns, refunds</Text>
+              </View>
+              
+              <View style={styles.serviceCard}>
+                <View style={[styles.serviceIcon, { backgroundColor: COLORS.accent + '15' }]}>
+                  <Ionicons name="card" size={24} color={COLORS.accent} />
+                </View>
+                <Text style={styles.serviceTitle}>Payment Help</Text>
+                <Text style={styles.serviceDesc}>Billing & payment issues</Text>
+              </View>
+              
+              <View style={styles.serviceCard}>
+                <View style={[styles.serviceIcon, { backgroundColor: COLORS.secondary + '15' }]}>
+                  <Ionicons name="person" size={24} color={COLORS.secondary} />
+                </View>
+                <Text style={styles.serviceTitle}>Account Help</Text>
+                <Text style={styles.serviceDesc}>Login & profile issues</Text>
+              </View>
+              
+              <View style={styles.serviceCard}>
+                <View style={[styles.serviceIcon, { backgroundColor: COLORS.warning + '15' }]}>
+                  <Ionicons name="cube" size={24} color={COLORS.warning} />
+                </View>
+                <Text style={styles.serviceTitle}>Product Info</Text>
+                <Text style={styles.serviceDesc}>Details & recommendations</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* FAQ Section */}
+          <TouchableOpacity style={styles.faqSection} onPress={handleFAQPress}>
+            <View style={styles.faqContent}>
+              <View style={styles.faqIconContainer}>
+                <Ionicons name="help-circle" size={32} color={COLORS.primary} />
+              </View>
+              <View style={styles.faqText}>
+                <Text style={styles.faqTitle}>Frequently Asked Questions</Text>
+                <Text style={styles.faqSubtitle}>Quick answers to common questions</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={24} color={COLORS.primary} />
+            </View>
+          </TouchableOpacity>
+
+          {/* Support Hours */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="time" size={22} color={COLORS.primary} />
+              <Text style={styles.sectionTitle}>Support Hours</Text>
+            </View>
+            
+            <View style={styles.hoursContainer}>
+              <View style={styles.hoursRow}>
+                <Text style={styles.hoursDay}>Monday - Friday</Text>
+                <View style={styles.hoursTimeBadge}>
+                  <Text style={styles.hoursTime}>8:00 AM - 6:00 PM</Text>
+                </View>
+              </View>
+              <View style={styles.hoursRow}>
+                <Text style={styles.hoursDay}>Saturday</Text>
+                <View style={styles.hoursTimeBadge}>
+                  <Text style={styles.hoursTime}>9:00 AM - 2:00 PM</Text>
+                </View>
+              </View>
+              <View style={styles.hoursRow}>
+                <Text style={styles.hoursDay}>Sunday & Holidays</Text>
+                <View style={[styles.hoursTimeBadge, styles.emergencyBadge]}>
+                  <Text style={styles.emergencyText}>Emergency Support</Text>
+                </View>
+              </View>
+            </View>
+          </View>
+
+          {/* Privacy & Security */}
+          <View style={styles.securitySection}>
+            <View style={styles.securityHeader}>
+              <Ionicons name="shield-checkmark" size={24} color={COLORS.white} />
+              <Text style={styles.securityTitle}>Your Privacy & Security</Text>
+            </View>
+            <Text style={styles.securityText}>
+              We protect your personal information and ensure secure communication. 
+              All your data is encrypted and never shared with third parties.
+            </Text>
+            <TouchableOpacity style={styles.privacyButton} onPress={handlePrivacyPolicy}>
+              <Text style={styles.privacyButtonText}>View Privacy Policy</Text>
+              <Ionicons name="lock-closed" size={16} color={COLORS.primary} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Final CTA */}
+          <View style={styles.ctaSection}>
+            <Text style={styles.ctaTitle}>Need Immediate Help?</Text>
+            <Text style={styles.ctaText}>
+              Don't hesitate to reach out. Our team is ready to assist you with any issues or questions.
+            </Text>
+            <View style={styles.ctaButtons}>
+              <TouchableOpacity style={[styles.ctaButton, styles.whatsappButton]} onPress={handleWhatsAppPress}>
+                <Ionicons name="logo-whatsapp" size={20} color={COLORS.white} />
+                <Text style={styles.ctaButtonText}>Chat on WhatsApp</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.ctaButton, styles.callButton]} onPress={handleCallPress}>
+                <Ionicons name="call" size={20} color={COLORS.white} />
+                <Text style={styles.ctaButtonText}>Call Now</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </ScrollView>
       </View>
 
-      <ScrollView 
-        style={styles.scrollView} 
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        {/* Hero Section */}
-        <View style={styles.heroSection}>
-          <View style={styles.iconContainer}>
-            <Ionicons name="headset" size={40} color={COLORS.primary} />
-          </View>
-          <Text style={styles.heroTitle}>We're Here to Help! 👋</Text>
-          <Text style={styles.heroSubtitle}>
-            Your satisfaction is our priority. Get instant support for any questions or concerns.
-          </Text>
-        </View>
-
-        {/* Quick Contact Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Ionicons name="flash" size={22} color={COLORS.primary} />
-            <Text style={styles.sectionTitle}>Quick Contact</Text>
-          </View>
-          
-          {/* WhatsApp Support */}
-          <TouchableOpacity style={[styles.contactCard, styles.whatsappCard]} onPress={handleWhatsAppPress}>
-            <View style={styles.contactIconContainer}>
-              <Ionicons name="logo-whatsapp" size={28} color={COLORS.white} />
-            </View>
-            <View style={styles.contactInfo}>
-              <Text style={styles.contactMethod}>WhatsApp Support</Text>
-              <Text style={styles.contactDetail}>Instant messaging support</Text>
-              <Text style={styles.responseTime}>• Quick response • 24/7 available</Text>
-            </View>
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>Fastest</Text>
-            </View>
-          </TouchableOpacity>
-
-          {/* Email Support */}
-          <TouchableOpacity style={styles.contactCard} onPress={handleEmailPress}>
-            <View style={[styles.contactIconContainer, styles.emailIcon]}>
-              <Ionicons name="mail" size={24} color={COLORS.primary} />
-            </View>
-            <View style={styles.contactInfo}>
-              <Text style={styles.contactMethod}>Email Support</Text>
-              <Text style={styles.contactDetail}>babahubsa@gmail.com</Text>
-              <Text style={styles.responseTime}>Response time: Within 2 hours</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color={COLORS.gray} />
-          </TouchableOpacity>
-
-          {/* Phone Support */}
-          <TouchableOpacity style={styles.contactCard} onPress={handleCallPress}>
-            <View style={[styles.contactIconContainer, styles.phoneIcon]}>
-              <Ionicons name="call" size={24} color={COLORS.primary} />
-            </View>
-            <View style={styles.contactInfo}>
-              <Text style={styles.contactMethod}>Phone Support</Text>
-              <Text style={styles.contactDetail}>084 500 0000</Text>
-              <Text style={styles.responseTime}>Mon-Fri: 8AM-6PM • Sat: 9AM-2PM</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color={COLORS.gray} />
-          </TouchableOpacity>
-        </View>
-
-        {/* Support Services */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Ionicons name="build" size={22} color={COLORS.primary} />
-            <Text style={styles.sectionTitle}>How We Can Help You</Text>
-          </View>
-          
-          <View style={styles.servicesGrid}>
-            <View style={styles.serviceCard}>
-              <View style={[styles.serviceIcon, { backgroundColor: COLORS.primary + '15' }]}>
-                <Ionicons name="cart" size={24} color={COLORS.primary} />
-              </View>
-              <Text style={styles.serviceTitle}>Order Issues</Text>
-              <Text style={styles.serviceDesc}>Tracking, returns, refunds</Text>
-            </View>
-            
-            <View style={styles.serviceCard}>
-              <View style={[styles.serviceIcon, { backgroundColor: COLORS.accent + '15' }]}>
-                <Ionicons name="card" size={24} color={COLORS.accent} />
-              </View>
-              <Text style={styles.serviceTitle}>Payment Help</Text>
-              <Text style={styles.serviceDesc}>Billing & payment issues</Text>
-            </View>
-            
-            <View style={styles.serviceCard}>
-              <View style={[styles.serviceIcon, { backgroundColor: COLORS.secondary + '15' }]}>
-                <Ionicons name="person" size={24} color={COLORS.secondary} />
-              </View>
-              <Text style={styles.serviceTitle}>Account Help</Text>
-              <Text style={styles.serviceDesc}>Login & profile issues</Text>
-            </View>
-            
-            <View style={styles.serviceCard}>
-              <View style={[styles.serviceIcon, { backgroundColor: COLORS.warning + '15' }]}>
-                <Ionicons name="cube" size={24} color={COLORS.warning} />
-              </View>
-              <Text style={styles.serviceTitle}>Product Info</Text>
-              <Text style={styles.serviceDesc}>Details & recommendations</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* FAQ Section */}
-        <TouchableOpacity style={styles.faqSection} onPress={handleFAQPress}>
-          <View style={styles.faqContent}>
-            <View style={styles.faqIconContainer}>
-              <Ionicons name="help-circle" size={32} color={COLORS.primary} />
-            </View>
-            <View style={styles.faqText}>
-              <Text style={styles.faqTitle}>Frequently Asked Questions</Text>
-              <Text style={styles.faqSubtitle}>Quick answers to common questions</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={24} color={COLORS.primary} />
-          </View>
-        </TouchableOpacity>
-
-        {/* Support Hours */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Ionicons name="time" size={22} color={COLORS.primary} />
-            <Text style={styles.sectionTitle}>Support Hours</Text>
-          </View>
-          
-          <View style={styles.hoursContainer}>
-            <View style={styles.hoursRow}>
-              <Text style={styles.hoursDay}>Monday - Friday</Text>
-              <View style={styles.hoursTimeBadge}>
-                <Text style={styles.hoursTime}>8:00 AM - 6:00 PM</Text>
-              </View>
-            </View>
-            <View style={styles.hoursRow}>
-              <Text style={styles.hoursDay}>Saturday</Text>
-              <View style={styles.hoursTimeBadge}>
-                <Text style={styles.hoursTime}>9:00 AM - 2:00 PM</Text>
-              </View>
-            </View>
-            <View style={styles.hoursRow}>
-              <Text style={styles.hoursDay}>Sunday & Holidays</Text>
-              <View style={[styles.hoursTimeBadge, styles.emergencyBadge]}>
-                <Text style={styles.emergencyText}>Emergency Support</Text>
-              </View>
-            </View>
-          </View>
-        </View>
-
-        {/* Privacy & Security */}
-        <View style={styles.securitySection}>
-          <View style={styles.securityHeader}>
-            <Ionicons name="shield-checkmark" size={24} color={COLORS.white} />
-            <Text style={styles.securityTitle}>Your Privacy & Security</Text>
-          </View>
-          <Text style={styles.securityText}>
-            We protect your personal information and ensure secure communication. 
-            All your data is encrypted and never shared with third parties.
-          </Text>
-          <TouchableOpacity style={styles.privacyButton} onPress={handlePrivacyPolicy}>
-            <Text style={styles.privacyButtonText}>View Privacy Policy</Text>
-            <Ionicons name="lock-closed" size={16} color={COLORS.primary} />
-          </TouchableOpacity>
-        </View>
-
-        {/* Final CTA */}
-        <View style={styles.ctaSection}>
-          <Text style={styles.ctaTitle}>Need Immediate Help?</Text>
-          <Text style={styles.ctaText}>
-            Don't hesitate to reach out. Our team is ready to assist you with any issues or questions.
-          </Text>
-          <View style={styles.ctaButtons}>
-            <TouchableOpacity style={[styles.ctaButton, styles.whatsappButton]} onPress={handleWhatsAppPress}>
-              <Ionicons name="logo-whatsapp" size={20} color={COLORS.white} />
-              <Text style={styles.ctaButtonText}>Chat on WhatsApp</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.ctaButton, styles.callButton]} onPress={handleCallPress}>
-              <Ionicons name="call" size={20} color={COLORS.white} />
-              <Text style={styles.ctaButtonText}>Call Now</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </ScrollView>
+      {/* White Navigation Bar Spacer for iOS */}
+      {Platform.OS === 'ios' && <View style={styles.navigationBarSpacer} />}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
+  fullContainer: {
+    flex: 1,
+    backgroundColor: COLORS.white,
+  },
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
@@ -645,6 +655,11 @@ const styles = StyleSheet.create({
     fontSize: width * 0.038,
     fontWeight: '700',
     color: COLORS.white,
+  },
+  // White Navigation Bar Spacer for iOS
+  navigationBarSpacer: {
+    height: Platform.OS === 'ios' ? 34 : 0, // Height of iOS home indicator
+    backgroundColor: COLORS.white,
   },
 });
 

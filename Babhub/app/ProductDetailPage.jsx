@@ -21,6 +21,35 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width, height } = Dimensions.get('window');
 
+// Responsive sizing functions - Optimized for all Android devices
+const responsiveWidth = (percentage) => (width * percentage) / 100;
+const responsiveHeight = (percentage) => (height * percentage) / 100;
+const responsiveFont = (size) => {
+  const scale = Math.min(width, height) / 400;
+  const scaledSize = size * scale;
+  // Ensure minimum font size for readability
+  return Math.max(scaledSize, 12);
+};
+
+// Safe area calculations for different devices
+const getSafeAreaBottom = () => {
+  if (Platform.OS === 'ios') {
+    return responsiveHeight(2);
+  } else {
+    // For Android devices including Huawei - increased padding for navigation bar
+    return responsiveHeight(4);
+  }
+};
+
+const getSafeAreaTop = () => {
+  if (Platform.OS === 'ios') {
+    return responsiveHeight(6);
+  } else {
+    // For Android devices including Huawei
+    return (StatusBar.currentHeight || responsiveHeight(4)) + responsiveHeight(1);
+  }
+};
+
 // Consistent color palette from homepage
 const COLORS = {
   primary: '#6366F1',
@@ -68,13 +97,11 @@ const ProductDetailPage = () => {
   const [selectedColorIndex, setSelectedColorIndex] = useState(0);
   const [selectedSizeIndex, setSelectedSizeIndex] = useState(0);
   const [imageLoaded, setImageLoaded] = useState(false);
-  const [isInWishlist, setIsInWishlist] = useState(false);
 
   // Animation values
   const fadeAnim = useState(new Animated.Value(0))[0];
   const slideAnim = useState(new Animated.Value(50))[0];
   const buttonScale = useState(new Animated.Value(1))[0];
-  const heartScale = useState(new Animated.Value(1))[0];
   const cartPulse = useState(new Animated.Value(1))[0];
   const successScale = useState(new Animated.Value(0.8))[0];
   const successOpacity = useState(new Animated.Value(0))[0];
@@ -85,6 +112,10 @@ const ProductDetailPage = () => {
 
   // Stock alert animation
   const stockAlertAnim = useState(new Animated.Value(0))[0];
+
+  // Safe area values
+  const safeAreaBottom = getSafeAreaBottom();
+  const safeAreaTop = getSafeAreaTop();
 
   useEffect(() => {
     if (id) {
@@ -136,78 +167,6 @@ const ProductDetailPage = () => {
         });
     }
   }, [id]);
-
-  // Check if product is in wishlist
-  useEffect(() => {
-    checkWishlistStatus();
-  }, [product]);
-
-  const checkWishlistStatus = async () => {
-    if (!product) return;
-    
-    try {
-      const wishlistData = await AsyncStorage.getItem('wishlist');
-      if (wishlistData) {
-        const wishlist = JSON.parse(wishlistData);
-        const isWishlisted = wishlist.some(item => item.id === product._id);
-        setIsInWishlist(isWishlisted);
-      }
-    } catch (error) {
-      console.error('Error checking wishlist:', error);
-    }
-  };
-
-  const toggleWishlist = async () => {
-    if (!product) return;
-
-    try {
-      const wishlistData = await AsyncStorage.getItem('wishlist');
-      let wishlist = wishlistData ? JSON.parse(wishlistData) : [];
-      
-      const productData = {
-        id: product._id,
-        title: product.name,
-        brand: product.brand,
-        image: product.image,
-        price: product.variants?.[0]?.sizes?.[0]?.price || product.price || 0
-      };
-
-      const existingIndex = wishlist.findIndex(item => item.id === product._id);
-      
-      if (existingIndex >= 0) {
-        // Remove from wishlist
-        wishlist.splice(existingIndex, 1);
-        setIsInWishlist(false);
-      } else {
-        // Add to wishlist
-        wishlist.push(productData);
-        setIsInWishlist(true);
-        
-        // Heart animation
-        Animated.sequence([
-          Animated.timing(heartScale, {
-            toValue: 1.3,
-            duration: 150,
-            useNativeDriver: true,
-          }),
-          Animated.timing(heartScale, {
-            toValue: 0.8,
-            duration: 100,
-            useNativeDriver: true,
-          }),
-          Animated.spring(heartScale, {
-            toValue: 1,
-            friction: 3,
-            useNativeDriver: true,
-          }),
-        ]).start();
-      }
-      
-      await AsyncStorage.setItem('wishlist', JSON.stringify(wishlist));
-    } catch (error) {
-      console.error('Error updating wishlist:', error);
-    }
-  };
 
   const playAddToCartAnimation = () => {
     // Button press animation
@@ -290,6 +249,7 @@ const ProductDetailPage = () => {
   if (loading) {
     return (
       <SafeAreaView style={styles.safeArea}>
+        <StatusBar backgroundColor={COLORS.white} barStyle="dark-content" />
         <View style={styles.loadingContainer}>
           <Animated.View style={[styles.loadingSpinner]} />
           <Text style={styles.loadingText}>Loading Product...</Text>
@@ -301,8 +261,9 @@ const ProductDetailPage = () => {
   if (!product) {
     return (
       <SafeAreaView style={styles.safeArea}>
+        <StatusBar backgroundColor={COLORS.white} barStyle="dark-content" />
         <View style={styles.errorContainer}>
-          <Ionicons name="sad-outline" size={60} color={COLORS.grayLight} />
+          <Ionicons name="sad-outline" size={responsiveFont(60)} color={COLORS.grayLight} />
           <Text style={styles.errorText}>Product not found</Text>
           <TouchableOpacity 
             style={styles.backHomeButton}
@@ -402,31 +363,36 @@ const ProductDetailPage = () => {
       text: 'Out of Stock', 
       color: COLORS.error, 
       icon: 'close-circle',
-      message: 'Currently unavailable'
+      message: 'Currently unavailable',
+      bgColor: '#FEE2E2'
     };
     if (stock === 1) return { 
       text: 'Only 1 Left!', 
       color: COLORS.error, 
       icon: 'warning',
-      message: 'Last item in stock'
+      message: 'Last item in stock',
+      bgColor: '#FEF3C7'
     };
     if (stock <= 5) return { 
       text: `Only ${stock} Left!`, 
       color: COLORS.warning, 
       icon: 'flash',
-      message: 'Selling fast'
+      message: 'Selling fast',
+      bgColor: '#FEF3C7'
     };
     if (stock <= 10) return { 
       text: `${stock} in Stock`, 
       color: COLORS.warning, 
       icon: 'trending-down',
-      message: 'Limited quantity'
+      message: 'Limited quantity',
+      bgColor: '#FEF3C7'
     };
     return { 
       text: `${stock}+ in Stock`, 
       color: COLORS.success, 
       icon: 'checkmark-circle',
-      message: 'Available now'
+      message: 'Available now',
+      bgColor: '#D1FAE5'
     };
   };
 
@@ -444,7 +410,7 @@ const ProductDetailPage = () => {
   // Floating cart animation interpolation
   const floatingCartTranslateY = floatingCartAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, -100],
+    outputRange: [0, -responsiveHeight(15)],
   });
 
   const floatingCartScale = floatingCartAnim.interpolate({
@@ -459,7 +425,9 @@ const ProductDetailPage = () => {
   });
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={styles.container}>
+      <StatusBar backgroundColor={COLORS.white} barStyle="dark-content" />
+      
       {/* Floating Cart Animation */}
       <Animated.View 
         style={[
@@ -473,7 +441,7 @@ const ProductDetailPage = () => {
           }
         ]}
       >
-        <Ionicons name="cart" size={30} color={COLORS.primary} />
+        <Ionicons name="cart" size={responsiveFont(30)} color={COLORS.primary} />
       </Animated.View>
 
       {/* Limit Modal */}
@@ -486,7 +454,7 @@ const ProductDetailPage = () => {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalIconContainer}>
-              <Ionicons name="alert-circle" size={50} color={COLORS.error} />
+              <Ionicons name="alert-circle" size={responsiveFont(50)} color={COLORS.error} />
             </View>
             <Text style={styles.modalTitle}>Cart Limit Reached</Text>
             <Text style={styles.modalText}>
@@ -506,7 +474,7 @@ const ProductDetailPage = () => {
                   router.push('/CartScreen');
                 }}
               >
-                <Ionicons name="cart" size={18} color={COLORS.white} style={styles.buttonIcon} />
+                <Ionicons name="cart" size={responsiveFont(18)} color={COLORS.white} style={styles.buttonIcon} />
                 <Text style={styles.modalButtonText}>View Cart</Text>
               </TouchableOpacity>
             </View>
@@ -533,7 +501,7 @@ const ProductDetailPage = () => {
             ]}
           >
             <View style={styles.successIconContainer}>
-              <Ionicons name="checkmark-circle" size={60} color={COLORS.success} />
+              <Ionicons name="checkmark-circle" size={responsiveFont(60)} color={COLORS.success} />
             </View>
             <Text style={styles.successModalTitle}>Added to Cart! 🎉</Text>
             <Text style={styles.successModalText}>
@@ -550,7 +518,7 @@ const ProductDetailPage = () => {
                 style={[styles.modalButton, styles.viewCartButton]}
                 onPress={handleViewCart}
               >
-                <Ionicons name="cart" size={18} color={COLORS.white} style={styles.buttonIcon} />
+                <Ionicons name="cart" size={responsiveFont(18)} color={COLORS.white} style={styles.buttonIcon} />
                 <Text style={styles.viewCartText}>View Cart</Text>
               </TouchableOpacity>
             </View>
@@ -564,6 +532,7 @@ const ProductDetailPage = () => {
           opacity: fadeAnim,
           transform: [{ translateY: slideAnim }]
         }}
+        contentContainerStyle={styles.scrollContent}
       >
         {/* Product Image */}
         <View style={styles.imageContainer}>
@@ -583,39 +552,20 @@ const ProductDetailPage = () => {
             </>
           ) : (
             <View style={styles.noImage}>
-              <Ionicons name="image-outline" size={60} color={COLORS.grayLight} />
+              <Ionicons name="image-outline" size={responsiveFont(60)} color={COLORS.grayLight} />
               <Text style={styles.noImageText}>No Image Available</Text>
             </View>
           )}
 
-          {/* Back Button - Updated with light purple background */}
+          {/* Back Button */}
           <TouchableOpacity 
-            style={styles.backButton}
+            style={[styles.backButton, { top: safeAreaTop }]}
             onPress={handleBack}
           >
             <View style={styles.backButtonInner}>
-              <Ionicons name="arrow-back" size={20} color={COLORS.primary} />
+              <Ionicons name="arrow-back" size={responsiveFont(20)} color={COLORS.primary} />
             </View>
           </TouchableOpacity>
-
-          {/* Wishlist Button */}
-          <Animated.View style={{ transform: [{ scale: heartScale }] }}>
-            <TouchableOpacity 
-              style={styles.wishlistButton}
-              onPress={toggleWishlist}
-            >
-              <View style={[
-                styles.wishlistButtonInner,
-                isInWishlist && styles.wishlistButtonActive
-              ]}>
-                <Ionicons 
-                  name={isInWishlist ? "heart" : "heart-outline"} 
-                  size={20} 
-                  color={isInWishlist ? COLORS.secondary : COLORS.primary} 
-                />
-              </View>
-            </TouchableOpacity>
-          </Animated.View>
 
           {/* Image Pagination Dots */}
           <View style={styles.imagePagination}>
@@ -638,13 +588,13 @@ const ProductDetailPage = () => {
             <View style={styles.titleRow}>
               <Text style={styles.productTitle}>{product.name}</Text>
               <View style={styles.ratingContainer}>
-                <Ionicons name="star" size={16} color={COLORS.warning} />
+                <Ionicons name="star" size={responsiveFont(16)} color={COLORS.warning} />
                 <Text style={styles.ratingText}>4.8</Text>
                 <Text style={styles.reviewsText}>(128 reviews)</Text>
               </View>
             </View>
             <View style={styles.brandContainer}>
-              <Ionicons name="business" size={16} color={COLORS.primary} />
+              <Ionicons name="business" size={responsiveFont(16)} color={COLORS.primary} />
               <Text style={styles.productBrand}>{product.brand}</Text>
             </View>
           </View>
@@ -656,7 +606,7 @@ const ProductDetailPage = () => {
             </View>
             {stock > 0 && (
               <View style={styles.deliveryInfo}>
-                <Ionicons name="rocket" size={16} color={COLORS.success} />
+                <Ionicons name="rocket" size={responsiveFont(16)} color={COLORS.success} />
                 <Text style={styles.deliveryText}>Free delivery</Text>
               </View>
             )}
@@ -690,7 +640,7 @@ const ProductDetailPage = () => {
                     <View style={styles.colorCheckmark}>
                       <Ionicons 
                         name="checkmark" 
-                        size={16} 
+                        size={responsiveFont(16)} 
                         color={isLightColor(color) ? COLORS.dark : COLORS.white} 
                       />
                     </View>
@@ -700,33 +650,34 @@ const ProductDetailPage = () => {
             </View>
           </View>
 
-          {/* Stock Status */}
-          <View style={styles.stockContainer}>
-            <Animated.View 
-              style={[
-                styles.stockBadge,
-                { 
-                  backgroundColor: stockStatus.color + '15',
-                  opacity: stockAlertOpacity 
-                }
-              ]}
-            >
-              <View style={styles.stockBadgeContent}>
-                <Ionicons 
-                  name={stockStatus.icon} 
-                  size={16} 
-                  color={stockStatus.color} 
-                />
-                <Text style={styles.stockBadgeText}>{stockStatus.text}</Text>
-              </View>
-            </Animated.View>
-          </View>
-
-          {/* Size Selection */}
+          {/* Size Selection with Stock Status Opposite */}
           <View style={styles.sizeSection}>
-            <View style={styles.optionHeader}>
+            <View style={styles.sizeHeader}>
               <Text style={styles.optionTitle}>Select Size</Text>
+              
+              {/* Stock Status - POSITIONED OPPOSITE TO SELECT SIZE */}
+              <Animated.View 
+                style={[
+                  styles.stockBadge,
+                  { 
+                    backgroundColor: stockStatus.bgColor,
+                    opacity: stockAlertOpacity 
+                  }
+                ]}
+              >
+                <View style={styles.stockBadgeContent}>
+                  <Ionicons 
+                    name={stockStatus.icon} 
+                    size={responsiveFont(16)} 
+                    color={stockStatus.color} 
+                  />
+                  <Text style={[styles.stockBadgeText, { color: stockStatus.color }]}>
+                    {stockStatus.text}
+                  </Text>
+                </View>
+              </Animated.View>
             </View>
+            
             <View style={styles.sizeOptions}>
               {sizes.map((sizeObj, index) => (
                 <TouchableOpacity
@@ -768,32 +719,32 @@ const ProductDetailPage = () => {
             <View style={styles.featuresList}>
               <View style={styles.featureItem}>
                 <View style={[styles.featureIcon, { backgroundColor: selectedColor + '20' }]}>
-                  <Ionicons name="checkmark-circle" size={20} color={selectedColor} />
+                  <Ionicons name="checkmark-circle" size={responsiveFont(20)} color={selectedColor} />
                 </View>
                 <Text style={styles.featureText}>Premium Quality Material</Text>
               </View>
               <View style={styles.featureItem}>
                 <View style={[styles.featureIcon, { backgroundColor: selectedColor + '20' }]}>
-                  <Ionicons name="checkmark-circle" size={20} color={selectedColor} />
+                  <Ionicons name="checkmark-circle" size={responsiveFont(20)} color={selectedColor} />
                 </View>
                 <Text style={styles.featureText}>Free Shipping & Returns</Text>
               </View>
               <View style={styles.featureItem}>
                 <View style={[styles.featureIcon, { backgroundColor: selectedColor + '20' }]}>
-                  <Ionicons name="checkmark-circle" size={20} color={selectedColor} />
+                  <Ionicons name="checkmark-circle" size={responsiveFont(20)} color={selectedColor} />
                 </View>
                 <Text style={styles.featureText}>30-Day Return Policy</Text>
               </View>
               <View style={styles.featureItem}>
                 <View style={[styles.featureIcon, { backgroundColor: selectedColor + '20' }]}>
-                  <Ionicons name="checkmark-circle" size={20} color={selectedColor} />
+                  <Ionicons name="checkmark-circle" size={responsiveFont(20)} color={selectedColor} />
                 </View>
                 <Text style={styles.featureText}>1 Year Warranty</Text>
               </View>
             </View>
           </View>
 
-          {/* Quantity Selector */}
+          {/* Quantity Selector - IMPROVED: Better spacing and border fix */}
           <View style={styles.quantityContainer}>
             <Text style={styles.quantityLabel}>Quantity</Text>
             <View style={styles.quantityControl}>
@@ -806,7 +757,7 @@ const ProductDetailPage = () => {
                   quantity <= 1 && styles.disabledQuantityButton
                 ]}
               >
-                <Ionicons name="remove" size={20} color={quantity <= 1 ? COLORS.grayLight : COLORS.white} />
+                <Ionicons name="remove" size={responsiveFont(20)} color={quantity <= 1 ? COLORS.grayLight : COLORS.white} />
               </TouchableOpacity>
               
               <View style={styles.quantityDisplay}>
@@ -822,16 +773,19 @@ const ProductDetailPage = () => {
                   quantity >= stock && styles.disabledQuantityButton
                 ]}
               >
-                <Ionicons name="add" size={20} color={quantity >= stock ? COLORS.grayLight : COLORS.white} />
+                <Ionicons name="add" size={responsiveFont(20)} color={quantity >= stock ? COLORS.grayLight : COLORS.white} />
               </TouchableOpacity>
             </View>
           </View>
+
+          {/* Reduced Spacer for Add to Cart Button */}
+          <View style={[styles.bottomSpacer, { height: responsiveHeight(12) + safeAreaBottom }]} />
         </View>
       </Animated.ScrollView>
 
-      {/* Add to Cart Button */}
-      <View style={styles.footer}>
-        <View style={styles.footerContainer}>
+      {/* Add to Cart Button - FIXED: Proper spacing for navigation bar */}
+      <View style={[styles.footer, { paddingBottom: safeAreaBottom }]}>
+        <View style={styles.footerContent}>
           <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
             <TouchableOpacity 
               onPress={handleAddToCart}
@@ -841,7 +795,7 @@ const ProductDetailPage = () => {
               <Animated.View style={{ transform: [{ scale: cartPulse }] }}>
                 <Ionicons 
                   name="cart" 
-                  size={22} 
+                  size={responsiveFont(22)} 
                   color={COLORS.white} 
                   style={styles.cartIcon} 
                 />
@@ -858,14 +812,22 @@ const ProductDetailPage = () => {
           </Animated.View>
         </View>
       </View>
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.white,
+  },
   safeArea: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.white,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: responsiveHeight(6), // Reduced padding
   },
   loadingContainer: {
     flex: 1,
@@ -874,19 +836,19 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   loadingSpinner: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: responsiveWidth(12),
+    height: responsiveWidth(12),
+    borderRadius: responsiveWidth(6),
     borderWidth: 3,
     borderColor: COLORS.primaryLight,
     borderTopColor: 'transparent',
-    marginBottom: 16,
+    marginBottom: responsiveHeight(3),
   },
   imageSpinner: {
     position: 'absolute',
   },
   loadingText: {
-    fontSize: 16,
+    fontSize: responsiveFont(18),
     color: COLORS.gray,
     fontWeight: '500',
   },
@@ -894,69 +856,70 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 40,
+    padding: responsiveWidth(8),
     backgroundColor: COLORS.background,
   },
   errorText: {
-    fontSize: 18,
+    fontSize: responsiveFont(20),
     color: COLORS.dark,
     fontWeight: '600',
-    marginTop: 16,
-    marginBottom: 24,
+    marginTop: responsiveHeight(3),
+    marginBottom: responsiveHeight(4),
+    textAlign: 'center',
   },
   backHomeButton: {
     backgroundColor: COLORS.primary,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 140,
+    paddingHorizontal: responsiveWidth(8),
+    paddingVertical: responsiveHeight(2),
+    borderRadius: responsiveWidth(35),
   },
   backHomeText: {
     color: COLORS.white,
-    fontSize: 16,
+    fontSize: responsiveFont(16),
     fontWeight: '600',
   },
   // Floating Cart Animation
   floatingCart: {
     position: 'absolute',
     top: height * 0.5,
-    right: 30,
+    right: responsiveWidth(7.5),
     zIndex: 1000,
     backgroundColor: COLORS.white,
-    borderRadius: 25,
-    padding: 12,
+    borderRadius: responsiveWidth(6.25),
+    padding: responsiveWidth(3),
     ...Platform.select({
       ios: {
         shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 4 },
+        shadowOffset: { width: 0, height: responsiveHeight(0.5) },
         shadowOpacity: 0.3,
-        shadowRadius: 8,
+        shadowRadius: responsiveWidth(2),
       },
       android: {
         elevation: 8,
       },
     }),
   },
-  // Modal Styles - Improved
+  // Modal Styles
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: responsiveWidth(5),
   },
   modalContent: {
     backgroundColor: COLORS.white,
-    borderRadius: 20,
-    padding: 25,
+    borderRadius: responsiveWidth(5),
+    padding: responsiveWidth(6.25),
     alignItems: 'center',
     width: '90%',
     maxWidth: 400,
     ...Platform.select({
       ios: {
         shadowColor: COLORS.dark,
-        shadowOffset: { width: 0, height: 4 },
+        shadowOffset: { width: 0, height: responsiveHeight(0.5) },
         shadowOpacity: 0.15,
-        shadowRadius: 12,
+        shadowRadius: responsiveWidth(3),
       },
       android: {
         elevation: 8,
@@ -964,60 +927,60 @@ const styles = StyleSheet.create({
     }),
   },
   successModalContent: {
-    padding: 25,
+    padding: responsiveWidth(6.25),
   },
   modalIconContainer: {
-    marginBottom: 16,
+    marginBottom: responsiveHeight(2),
   },
   successIconContainer: {
-    marginBottom: 20,
+    marginBottom: responsiveHeight(2.5),
   },
   modalTitle: {
-    fontSize: 20,
+    fontSize: responsiveFont(20),
     fontWeight: '700',
     color: COLORS.dark,
-    marginBottom: 12,
+    marginBottom: responsiveHeight(1.5),
     textAlign: 'center',
   },
   successModalTitle: {
-    fontSize: 22,
+    fontSize: responsiveFont(22),
     fontWeight: '700',
     color: COLORS.success,
-    marginBottom: 12,
+    marginBottom: responsiveHeight(1.5),
     textAlign: 'center',
   },
   modalText: {
-    fontSize: 14,
+    fontSize: responsiveFont(14),
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: responsiveHeight(3),
     color: COLORS.gray,
-    lineHeight: 20,
+    lineHeight: responsiveHeight(2.5),
   },
   successModalText: {
-    fontSize: 14,
+    fontSize: responsiveFont(14),
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: responsiveHeight(3),
     color: COLORS.gray,
-    lineHeight: 20,
+    lineHeight: responsiveHeight(2.5),
   },
   modalButtons: {
     flexDirection: 'row',
-    gap: 12,
+    gap: responsiveWidth(3),
     width: '100%',
   },
   successModalButtons: {
     flexDirection: 'row',
-    gap: 12,
+    gap: responsiveWidth(3),
     width: '100%',
   },
   modalButton: {
     flex: 1,
     backgroundColor: COLORS.primary,
-    paddingVertical: 12,
-    borderRadius: 140,
+    paddingVertical: responsiveHeight(1.5),
+    borderRadius: responsiveWidth(35),
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 44,
+    minHeight: responsiveHeight(5.5),
   },
   modalSecondaryButton: {
     backgroundColor: COLORS.light,
@@ -1035,43 +998,43 @@ const styles = StyleSheet.create({
   },
   modalButtonText: {
     color: COLORS.white,
-    fontSize: 14,
+    fontSize: responsiveFont(14),
     fontWeight: '600',
   },
   modalSecondaryButtonText: {
     color: COLORS.dark,
-    fontSize: 14,
+    fontSize: responsiveFont(14),
     fontWeight: '600',
   },
   continueShoppingText: {
     color: COLORS.dark,
-    fontSize: 14,
+    fontSize: responsiveFont(14),
     fontWeight: '600',
   },
   viewCartText: {
     color: COLORS.white,
-    fontSize: 14,
+    fontSize: responsiveFont(14),
     fontWeight: '600',
-    marginLeft: 6,
+    marginLeft: responsiveWidth(1.5),
   },
   buttonIcon: {
-    marginRight: 4,
+    marginRight: responsiveWidth(1),
   },
   // Image Container
   imageContainer: {
     position: 'relative',
     backgroundColor: COLORS.white,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
+    borderBottomLeftRadius: responsiveWidth(7.5),
+    borderBottomRightRadius: responsiveWidth(7.5),
     overflow: 'hidden',
-    marginBottom: 10,
+    marginBottom: responsiveHeight(1.25),
     height: width * 0.85,
     ...Platform.select({
       ios: {
         shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 8 },
+        shadowOffset: { width: 0, height: responsiveHeight(1) },
         shadowOpacity: 0.1,
-        shadowRadius: 16,
+        shadowRadius: responsiveWidth(4),
       },
       android: {
         elevation: 6,
@@ -1100,155 +1063,93 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.light,
   },
   noImageText: {
-    marginTop: 12,
-    fontSize: 16,
+    marginTop: responsiveHeight(1.5),
+    fontSize: responsiveFont(16),
     color: COLORS.gray,
     fontWeight: '500',
   },
-  // Updated Back Button with light purple background
+  // Back Button - IMPROVED: Dynamic positioning
   backButton: {
     position: 'absolute',
-    top: 50,
-    left: 20,
+    left: responsiveWidth(5),
     zIndex: 3,
   },
   backButtonInner: {
-    width: 36,
-    height: 36,
+    width: responsiveWidth(11),
+    height: responsiveWidth(11),
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(99, 102, 241, 0.1)', // Light purple background
-    borderRadius: 10,
-  },
-  wishlistButton: {
-    position: 'absolute',
-    top: 50,
-    right: 20,
-    zIndex: 3,
-  },
-  wishlistButtonInner: {
-    width: 36,
-    height: 36,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(99, 102, 241, 0.1)', // Light purple background
-    borderRadius: 10,
-    ...Platform.select({
-      ios: {
-        shadowColor: COLORS.dark,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
-  },
-  wishlistButtonActive: {
-    backgroundColor: COLORS.secondary + '20',
-  },
-  // Stock Badge
-  stockContainer: {
-    alignItems: 'flex-end',
-    marginBottom: 15,
-    marginTop: -15,
-  },
-  stockBadge: {
-    borderRadius: 140,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    alignSelf: 'flex-end',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
-  },
-  stockBadgeContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  stockBadgeText: {
-    color: COLORS.dark,
-    fontSize: 14,
-    fontWeight: '600',
+    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+    borderRadius: responsiveWidth(3),
   },
   imagePagination: {
     position: 'absolute',
-    bottom: 20,
+    bottom: responsiveHeight(2.5),
     left: 0,
     right: 0,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 8,
+    gap: responsiveWidth(2),
   },
   paginationDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 140,
+    width: responsiveWidth(2.5),
+    height: responsiveWidth(2.5),
+    borderRadius: responsiveWidth(35),
     backgroundColor: 'rgba(255,255,255,0.5)',
   },
   paginationDotActive: {
     backgroundColor: COLORS.white,
-    width: 20,
+    width: responsiveWidth(6),
   },
   // Content Container
   contentContainer: {
-    padding: 25,
-    paddingBottom: 120,
+    padding: responsiveWidth(5),
+    paddingBottom: responsiveHeight(6), // Reduced padding
   },
   header: {
-    marginBottom: 20,
+    marginBottom: responsiveHeight(2),
   },
   titleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 8,
+    marginBottom: responsiveHeight(1),
   },
   productTitle: {
-    fontSize: 28,
+    fontSize: responsiveFont(26),
     fontWeight: '700',
     color: COLORS.dark,
     flex: 1,
-    marginRight: 12,
-    lineHeight: 34,
+    marginRight: responsiveWidth(3),
+    lineHeight: responsiveHeight(3.5),
   },
   ratingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.light,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 140,
+    paddingHorizontal: responsiveWidth(3),
+    paddingVertical: responsiveHeight(0.75),
+    borderRadius: responsiveWidth(35),
   },
   ratingText: {
-    fontSize: 14,
+    fontSize: responsiveFont(14),
     fontWeight: '600',
     color: COLORS.dark,
-    marginLeft: 4,
+    marginLeft: responsiveWidth(1),
   },
   reviewsText: {
-    fontSize: 12,
+    fontSize: responsiveFont(12),
     color: COLORS.gray,
-    marginLeft: 4,
+    marginLeft: responsiveWidth(1),
   },
   brandContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: responsiveWidth(1.5),
   },
   productBrand: {
-    fontSize: 16,
+    fontSize: responsiveFont(16),
     color: COLORS.primary,
     fontWeight: '600',
     textTransform: 'uppercase',
@@ -1258,62 +1159,72 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: responsiveHeight(1.25),
   },
   price: {
-    fontSize: 32,
+    fontSize: responsiveFont(30),
     fontWeight: '700',
     color: COLORS.primary,
   },
   deliveryInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.success + '20',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 140,
+    backgroundColor: '#D1FAE5',
+    paddingHorizontal: responsiveWidth(3),
+    paddingVertical: responsiveHeight(0.75),
+    borderRadius: responsiveWidth(35),
+    borderWidth: 1,
+    borderColor: 'rgba(16, 185, 129, 0.2)',
   },
   deliveryText: {
-    fontSize: 14,
+    fontSize: responsiveFont(14),
     color: COLORS.success,
     fontWeight: '600',
-    marginLeft: 6,
+    marginLeft: responsiveWidth(1.5),
   },
   divider: {
     height: 1,
     backgroundColor: COLORS.light,
-    marginVertical: 20,
+    marginVertical: responsiveHeight(2),
   },
   // Option Sections
   optionSection: {
-    marginBottom: 20,
+    marginBottom: responsiveHeight(2),
   },
   sizeSection: {
-    marginBottom: 30,
+    marginBottom: responsiveHeight(3),
+  },
+  // Size Header with Stock Badge
+  sizeHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: responsiveHeight(1.5),
   },
   optionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: responsiveHeight(1.5),
   },
   optionTitle: {
-    fontSize: 18,
+    fontSize: responsiveFont(18),
     fontWeight: '600',
     color: COLORS.dark,
   },
   selectedColorText: {
-    fontSize: 14,
+    fontSize: responsiveFont(14),
     fontWeight: '500',
   },
   colorOptions: {
     flexDirection: 'row',
-    gap: 12,
+    gap: responsiveWidth(3),
+    flexWrap: 'wrap',
   },
   colorOption: {
-    width: 44,
-    height: 44,
-    borderRadius: 140,
+    width: responsiveWidth(12),
+    height: responsiveWidth(12),
+    borderRadius: responsiveWidth(35),
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
@@ -1321,9 +1232,9 @@ const styles = StyleSheet.create({
     ...Platform.select({
       ios: {
         shadowColor: COLORS.dark,
-        shadowOffset: { width: 0, height: 2 },
+        shadowOffset: { width: 0, height: responsiveHeight(0.25) },
         shadowOpacity: 0.1,
-        shadowRadius: 3,
+        shadowRadius: responsiveWidth(0.75),
       },
       android: {
         elevation: 2,
@@ -1335,34 +1246,63 @@ const styles = StyleSheet.create({
     borderWidth: 3,
   },
   colorCheckmark: {
-    width: 20,
-    height: 20,
-    borderRadius: 140,
+    width: responsiveWidth(5),
+    height: responsiveWidth(5),
+    borderRadius: responsiveWidth(35),
     backgroundColor: 'rgba(0,0,0,0.3)',
     justifyContent: 'center',
     alignItems: 'center',
   },
+  // Stock Badge - POSITIONED OPPOSITE TO SELECT SIZE
+  stockBadge: {
+    borderRadius: responsiveWidth(35),
+    paddingHorizontal: responsiveWidth(4),
+    paddingVertical: responsiveHeight(1),
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.05)',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: responsiveHeight(0.25) },
+        shadowOpacity: 0.1,
+        shadowRadius: responsiveWidth(1),
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  stockBadgeContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: responsiveWidth(1.5),
+  },
+  stockBadgeText: {
+    fontSize: responsiveFont(14),
+    fontWeight: '600',
+  },
   sizeOptions: {
     flexDirection: 'row',
-    gap: 12,
+    gap: responsiveWidth(3),
     flexWrap: 'wrap',
   },
   sizeOption: {
-    width: 60,
-    height: 50,
-    borderRadius: 140,
+    minWidth: responsiveWidth(16),
+    height: responsiveHeight(6.25),
+    borderRadius: responsiveWidth(35),
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: COLORS.white,
     borderWidth: 2,
     borderColor: COLORS.light,
     position: 'relative',
+    paddingHorizontal: responsiveWidth(3),
     ...Platform.select({
       ios: {
         shadowColor: COLORS.dark,
-        shadowOffset: { width: 0, height: 2 },
+        shadowOffset: { width: 0, height: responsiveHeight(0.25) },
         shadowOpacity: 0.05,
-        shadowRadius: 3,
+        shadowRadius: responsiveWidth(0.75),
       },
       android: {
         elevation: 1,
@@ -1376,7 +1316,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.light,
   },
   sizeText: {
-    fontSize: 16,
+    fontSize: responsiveFont(16),
     fontWeight: '600',
     color: COLORS.dark,
   },
@@ -1393,84 +1333,87 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: 'rgba(255,255,255,0.7)',
-    borderRadius: 140,
+    borderRadius: responsiveWidth(35),
   },
   // Sections
   section: {
-    marginBottom: 30,
+    marginBottom: responsiveHeight(2.5),
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: responsiveFont(20),
     fontWeight: '700',
     color: COLORS.dark,
-    marginBottom: 16,
+    marginBottom: responsiveHeight(1.5),
   },
   description: {
-    fontSize: 16,
+    fontSize: responsiveFont(16),
     color: COLORS.gray,
-    lineHeight: 24,
+    lineHeight: responsiveHeight(2.8),
   },
   featuresSection: {
-    marginBottom: 30,
+    marginBottom: responsiveHeight(2.5),
   },
   featuresList: {
-    gap: 12,
+    gap: responsiveHeight(1.2),
   },
   featureItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: responsiveWidth(2.5),
   },
   featureIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 140,
+    width: responsiveWidth(7),
+    height: responsiveWidth(7),
+    borderRadius: responsiveWidth(35),
     justifyContent: 'center',
     alignItems: 'center',
   },
   featureText: {
-    fontSize: 16,
+    fontSize: responsiveFont(15),
     color: COLORS.dark,
     fontWeight: '500',
   },
-  // Quantity Selector
+  // Quantity Selector - IMPROVED: Fixed borders and better spacing
   quantityContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 20,
-    paddingHorizontal: 5,
+    marginBottom: responsiveHeight(1.5), // Reduced margin
+    paddingHorizontal: responsiveWidth(1),
   },
   quantityLabel: {
-    fontSize: 18,
+    fontSize: responsiveFont(18),
     fontWeight: '600',
     color: COLORS.dark,
   },
   quantityControl: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 140,
+    borderRadius: responsiveWidth(35),
     overflow: 'hidden',
     backgroundColor: COLORS.white,
-    borderWidth: 2,
-    borderColor: COLORS.light,
+    // REMOVED borderWidth to fix white line issue on Android
     ...Platform.select({
       ios: {
+        borderWidth: 2,
+        borderColor: COLORS.light,
         shadowColor: COLORS.dark,
-        shadowOffset: { width: 0, height: 2 },
+        shadowOffset: { width: 0, height: responsiveHeight(0.25) },
         shadowOpacity: 0.1,
-        shadowRadius: 4,
+        shadowRadius: responsiveWidth(1),
       },
       android: {
-        elevation: 2,
+        elevation: 3,
+        // Using elevation instead of border for Android to avoid white line issue
       },
     }),
   },
   quantityButton: {
-    width: 50,
-    height: 50,
+    width: responsiveWidth(12),
+    height: responsiveHeight(5.5),
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: COLORS.primary,
   },
   quantityMinus: {
     backgroundColor: COLORS.primary,
@@ -1482,49 +1425,50 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.grayLight,
   },
   quantityDisplay: {
-    width: 70,
-    height: 50,
+    width: responsiveWidth(15),
+    height: responsiveHeight(5.5),
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: COLORS.white,
   },
   quantityText: {
-    fontSize: 20,
+    fontSize: responsiveFont(18),
     fontWeight: '700',
     color: COLORS.dark,
   },
-  // Footer & Add to Cart
+  // Reduced Bottom Spacer for Add to Cart Button
+  bottomSpacer: {
+    // Height is set dynamically in the component - reduced from 18 to 12
+  },
+  // Footer & Add to Cart - FIXED: Proper spacing for navigation bar
   footer: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'transparent',
-  },
-  footerContainer: {
     backgroundColor: COLORS.white,
-    borderTopLeftRadius: 25,
-    borderTopRightRadius: 25,
-    padding: 20,
-    paddingBottom: Platform.OS === 'ios' ? 30 : 20,
     borderTopWidth: 1,
     borderTopColor: COLORS.light,
     ...Platform.select({
       ios: {
         shadowColor: COLORS.dark,
-        shadowOffset: { width: 0, height: -2 },
+        shadowOffset: { width: 0, height: -responsiveHeight(0.5) },
         shadowOpacity: 0.1,
-        shadowRadius: 8,
+        shadowRadius: responsiveWidth(2),
       },
       android: {
         elevation: 8,
       },
     }),
   },
+  footerContent: {
+    paddingHorizontal: responsiveWidth(5),
+    paddingVertical: responsiveHeight(1.5), // Reduced padding
+  },
   addToCartButton: {
     backgroundColor: COLORS.primary,
-    padding: 18,
-    borderRadius: 140,
+    padding: responsiveHeight(1.8), // Reduced padding
+    borderRadius: responsiveWidth(35),
     flexDirection: 'row',
     justifyContent: 'flex-start',
     alignItems: 'center',
@@ -1532,9 +1476,9 @@ const styles = StyleSheet.create({
     ...Platform.select({
       ios: {
         shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 4 },
+        shadowOffset: { width: 0, height: responsiveHeight(0.5) },
         shadowOpacity: 0.3,
-        shadowRadius: 8,
+        shadowRadius: responsiveWidth(2),
       },
       android: {
         elevation: 6,
@@ -1545,28 +1489,28 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.grayLight,
   },
   cartIcon: {
-    marginRight: 12,
+    marginRight: responsiveWidth(2.5),
   },
   buttonText: {
     color: COLORS.white,
-    fontSize: 18,
+    fontSize: responsiveFont(17),
     fontWeight: '700',
     flex: 1,
   },
   buttonBadge: {
     backgroundColor: COLORS.secondary,
-    width: 24,
-    height: 24,
-    borderRadius: 140,
+    width: responsiveWidth(5.5),
+    height: responsiveWidth(5.5),
+    borderRadius: responsiveWidth(35),
     justifyContent: 'center',
     alignItems: 'center',
     position: 'absolute',
-    right: 16,
-    top: -8,
+    right: responsiveWidth(3.5),
+    top: -responsiveHeight(0.8),
   },
   buttonBadgeText: {
     color: COLORS.white,
-    fontSize: 12,
+    fontSize: responsiveFont(11),
     fontWeight: '800',
   },
 });

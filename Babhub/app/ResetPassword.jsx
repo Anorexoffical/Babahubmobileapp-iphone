@@ -13,6 +13,7 @@ import {
   Animated,
   BackHandler,
   Modal,
+  StatusBar,
 } from 'react-native';
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'expo-router';
@@ -317,231 +318,277 @@ const ResetPassword = () => {
   // If reset is completed, show a different UI that forces forward navigation
   if (resetCompleted && !showSuccessModal) {
     return (
-      <View style={styles.successContainer}>
-        <View style={styles.successContent}>
-          <View style={styles.successIcon}>
-            <MaterialIcons name="check-circle" size={80} color={COLORS.success} />
+      <View style={styles.fullContainer}>
+        {/* White Status Bar */}
+        <StatusBar 
+          barStyle="dark-content" 
+          backgroundColor={COLORS.white}
+          translucent={false}
+        />
+        <View style={styles.successContainer}>
+          <View style={styles.successContent}>
+            <View style={styles.successIcon}>
+              <MaterialIcons name="check-circle" size={80} color={COLORS.success} />
+            </View>
+            <Text style={styles.successTitle}>Password Reset Successfully!</Text>
+            <Text style={styles.successMessage}>
+              Your password has been updated. You can now sign in with your new password.
+            </Text>
+            <TouchableOpacity
+              style={styles.successButton}
+              onPress={handleGoToLogin}
+              activeOpacity={0.9}
+            >
+              <Text style={styles.successButtonText}>Go to Login</Text>
+              <MaterialIcons name="arrow-forward" size={20} color={COLORS.white} />
+            </TouchableOpacity>
           </View>
-          <Text style={styles.successTitle}>Password Reset Successfully!</Text>
-          <Text style={styles.successMessage}>
-            Your password has been updated. You can now sign in with your new password.
-          </Text>
-          <TouchableOpacity
-            style={styles.successButton}
-            onPress={handleGoToLogin}
-            activeOpacity={0.9}
-          >
-            <Text style={styles.successButtonText}>Go to Login</Text>
-            <MaterialIcons name="arrow-forward" size={20} color={COLORS.white} />
-          </TouchableOpacity>
         </View>
+        {/* White Navigation Bar Spacer for iOS */}
+        {Platform.OS === 'ios' && <View style={styles.navigationBarSpacer} />}
       </View>
     );
   }
 
   if (!sessionValid) {
     return (
-      <View style={styles.loadingContainer}>
-        <MaterialIcons name="hourglass-empty" size={48} color={COLORS.primary} />
-        <Text style={styles.loadingText}>Validating session...</Text>
-        <TouchableOpacity 
-          style={styles.retryButton}
-          onPress={() => router.push('/ForgetPassword')}
-        >
-          <Text style={styles.retryButtonText}>Start Recovery Again</Text>
-        </TouchableOpacity>
+      <View style={styles.fullContainer}>
+        {/* White Status Bar */}
+        <StatusBar 
+          barStyle="dark-content" 
+          backgroundColor={COLORS.white}
+          translucent={false}
+        />
+        <View style={styles.loadingContainer}>
+          <MaterialIcons name="hourglass-empty" size={48} color={COLORS.primary} />
+          <Text style={styles.loadingText}>Validating session...</Text>
+          <TouchableOpacity 
+            style={styles.retryButton}
+            onPress={() => router.push('/ForgetPassword')}
+          >
+            <Text style={styles.retryButtonText}>Start Recovery Again</Text>
+          </TouchableOpacity>
+        </View>
+        {/* White Navigation Bar Spacer for iOS */}
+        {Platform.OS === 'ios' && <View style={styles.navigationBarSpacer} />}
       </View>
     );
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <ScrollView 
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
+    <View style={styles.fullContainer}>
+      {/* White Status Bar */}
+      <StatusBar 
+        barStyle="dark-content" 
+        backgroundColor={COLORS.white}
+        translucent={false}
+      />
+      
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <Animated.View 
-          style={[
-            styles.content,
-            {
-              opacity: fadeAnim,
-              transform: [{ translateY: slideAnim }]
-            }
-          ]}
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
         >
-          {/* Header Section */}
-          <View style={styles.headerSection}>
-            <View style={styles.headerIcon}>
-              <MaterialIcons name="lock-open" size={32} color={COLORS.primary} />
-            </View>
-            <Text style={styles.header}>New Password</Text>
-            <Text style={styles.subHeader}>
-              Create your new password
-            </Text>
-          </View>
-
-          {/* Timer Section */}
-          <View style={[
-            styles.timerContainer,
-            timeLeft <= 30 && styles.timerContainerWarning
-          ]}>
-            <View style={styles.timerCircle}>
-              <Text style={[
-                styles.timerText,
-                timeLeft <= 30 && styles.timerTextWarning
-              ]}>
-                {formatTime(timeLeft)}
-              </Text>
-            </View>
-            <Text style={styles.timerLabel}>
-              {timeLeft <= 30 ? "Time running out" : "Time remaining"}
-            </Text>
-          </View>
-
-          {/* Form Section */}
-          <View style={styles.formSection}>
-            {/* New Password Input */}
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>
-                New Password
-                <Text style={styles.required}> *</Text>
-              </Text>
-              <View style={[
-                styles.inputWrapper,
-                errors.newPassword && styles.inputWrapperError,
-                (isLoading || timeLeft <= 0) && styles.inputDisabled
-              ]}>
-                <MaterialIcons 
-                  name="lock" 
-                  size={20} 
-                  color={errors.newPassword ? COLORS.error : COLORS.grayLight} 
-                  style={styles.inputIcon}
-                />
-                <TextInput
-                  placeholder="Enter new password"
-                  placeholderTextColor={COLORS.grayLight}
-                  style={styles.input}
-                  secureTextEntry={!showNewPassword}
-                  value={newPassword}
-                  onChangeText={(text) => {
-                    setNewPassword(text);
-                    if (errors.newPassword) setErrors({...errors, newPassword: ''});
-                  }}
-                  editable={!isLoading && timeLeft > 0}
-                  selectionColor={COLORS.primary}
-                />
-                <TouchableOpacity 
-                  style={styles.visibilityButton}
-                  onPress={() => setShowNewPassword(!showNewPassword)}
-                  disabled={isLoading || timeLeft <= 0}
-                >
-                  <MaterialIcons
-                    name={showNewPassword ? "visibility" : "visibility-off"}
-                    size={22}
-                    color={(isLoading || timeLeft <= 0) ? COLORS.grayLight : COLORS.gray}
-                  />
-                </TouchableOpacity>
+          <Animated.View 
+            style={[
+              styles.content,
+              {
+                opacity: fadeAnim,
+                transform: [{ translateY: slideAnim }]
+              }
+            ]}
+          >
+            {/* Header Section */}
+            <View style={styles.headerSection}>
+              <View style={styles.headerIcon}>
+                <MaterialIcons name="lock-open" size={32} color={COLORS.primary} />
               </View>
-              {errors.newPassword ? (
-                <View style={styles.errorContainer}>
-                  <MaterialIcons name="error-outline" size={16} color={COLORS.error} />
-                  <Text style={styles.errorText}>{errors.newPassword}</Text>
-                </View>
-              ) : null}
-            </View>
-
-            {/* Confirm Password Input */}
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>
-                Confirm Password
-                <Text style={styles.required}> *</Text>
+              <Text style={styles.header}>New Password</Text>
+              <Text style={styles.subHeader}>
+                Create your new password
               </Text>
-              <View style={[
-                styles.inputWrapper,
-                errors.confirmPassword && styles.inputWrapperError,
-                (isLoading || timeLeft <= 0) && styles.inputDisabled
-              ]}>
-                <MaterialIcons 
-                  name="lock-outline" 
-                  size={20} 
-                  color={errors.confirmPassword ? COLORS.error : COLORS.grayLight} 
-                  style={styles.inputIcon}
-                />
-                <TextInput
-                  placeholder="Confirm new password"
-                  placeholderTextColor={COLORS.grayLight}
-                  style={styles.input}
-                  secureTextEntry={!showConfirmPassword}
-                  value={confirmPassword}
-                  onChangeText={(text) => {
-                    setConfirmPassword(text);
-                    if (errors.confirmPassword) setErrors({...errors, confirmPassword: ''});
-                  }}
-                  editable={!isLoading && timeLeft > 0}
-                  selectionColor={COLORS.primary}
-                />
-                <TouchableOpacity 
-                  style={styles.visibilityButton}
-                  onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                  disabled={isLoading || timeLeft <= 0}
-                >
-                  <MaterialIcons
-                    name={showConfirmPassword ? "visibility" : "visibility-off"}
-                    size={22}
-                    color={(isLoading || timeLeft <= 0) ? COLORS.grayLight : COLORS.gray}
-                  />
-                </TouchableOpacity>
-              </View>
-              {errors.confirmPassword ? (
-                <View style={styles.errorContainer}>
-                  <MaterialIcons name="error-outline" size={16} color={COLORS.error} />
-                  <Text style={styles.errorText}>{errors.confirmPassword}</Text>
-                </View>
-              ) : null}
             </View>
 
-            {/* Reset Button */}
-            <TouchableOpacity
-              style={[
-                styles.resetButton,
-                (isLoading || timeLeft <= 0) && styles.resetButtonDisabled
-              ]}
-              onPress={handleResetPassword}
-              activeOpacity={0.9}
-              disabled={isLoading || timeLeft <= 0}
-            >
-              {isLoading ? (
-                <View style={styles.loadingContainer}>
-                  <MaterialIcons name="loop" size={20} color={COLORS.white} />
-                  <Text style={styles.resetButtonText}>Updating...</Text>
-                </View>
-              ) : (
-                <>
-                  <Text style={styles.resetButtonText}>
-                    {timeLeft <= 0 ? "Session Expired" : "Reset Password"}
-                  </Text>
-                  <MaterialIcons name="check-circle" size={20} color={COLORS.white} />
-                </>
-              )}
-            </TouchableOpacity>
+            {/* Timer Section */}
+            <View style={[
+              styles.timerContainer,
+              timeLeft <= 30 && styles.timerContainerWarning
+            ]}>
+              <View style={styles.timerCircle}>
+                <Text style={[
+                  styles.timerText,
+                  timeLeft <= 30 && styles.timerTextWarning
+                ]}>
+                  {formatTime(timeLeft)}
+                </Text>
+              </View>
+              <Text style={styles.timerLabel}>
+                {timeLeft <= 30 ? "Time running out" : "Time remaining"}
+              </Text>
+            </View>
 
-            {/* Back Link - Only show if reset is not completed */}
-            {!resetCompleted && (
-              <TouchableOpacity 
-                onPress={handleBackToRecovery} 
-                style={styles.backButtonContainer}
-                disabled={isLoading}
+            {/* Form Section */}
+            <View style={styles.formSection}>
+              {/* New Password Input */}
+              <View style={styles.inputContainer}>
+                <Text style={styles.label}>
+                  New Password
+                  <Text style={styles.required}> *</Text>
+                </Text>
+                <View style={[
+                  styles.inputWrapper,
+                  errors.newPassword && styles.inputWrapperError,
+                  (isLoading || timeLeft <= 0) && styles.inputDisabled
+                ]}>
+                  <MaterialIcons 
+                    name="lock" 
+                    size={20} 
+                    color={errors.newPassword ? COLORS.error : COLORS.grayLight} 
+                    style={styles.inputIcon}
+                  />
+                  <TextInput
+                    placeholder="Enter new password"
+                    placeholderTextColor={COLORS.grayLight}
+                    style={styles.input}
+                    secureTextEntry={!showNewPassword}
+                    value={newPassword}
+                    onChangeText={(text) => {
+                      setNewPassword(text);
+                      if (errors.newPassword) setErrors({...errors, newPassword: ''});
+                    }}
+                    editable={!isLoading && timeLeft > 0}
+                    selectionColor={COLORS.primary}
+                    // Props to prevent auto-capitalization and ensure lowercase start
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    autoComplete="password"
+                    keyboardType="default"
+                    textContentType="newPassword"
+                    importantForAutofill="yes"
+                  />
+                  <TouchableOpacity 
+                    style={styles.visibilityButton}
+                    onPress={() => setShowNewPassword(!showNewPassword)}
+                    disabled={isLoading || timeLeft <= 0}
+                  >
+                    <MaterialIcons
+                      name={showNewPassword ? "visibility" : "visibility-off"}
+                      size={22}
+                      color={(isLoading || timeLeft <= 0) ? COLORS.grayLight : COLORS.gray}
+                    />
+                  </TouchableOpacity>
+                </View>
+                {errors.newPassword ? (
+                  <View style={styles.errorContainer}>
+                    <MaterialIcons name="error-outline" size={16} color={COLORS.error} />
+                    <Text style={styles.errorText}>{errors.newPassword}</Text>
+                  </View>
+                ) : null}
+              </View>
+
+              {/* Confirm Password Input */}
+              <View style={styles.inputContainer}>
+                <Text style={styles.label}>
+                  Confirm Password
+                  <Text style={styles.required}> *</Text>
+                </Text>
+                <View style={[
+                  styles.inputWrapper,
+                  errors.confirmPassword && styles.inputWrapperError,
+                  (isLoading || timeLeft <= 0) && styles.inputDisabled
+                ]}>
+                  <MaterialIcons 
+                    name="lock-outline" 
+                    size={20} 
+                    color={errors.confirmPassword ? COLORS.error : COLORS.grayLight} 
+                    style={styles.inputIcon}
+                  />
+                  <TextInput
+                    placeholder="Confirm new password"
+                    placeholderTextColor={COLORS.grayLight}
+                    style={styles.input}
+                    secureTextEntry={!showConfirmPassword}
+                    value={confirmPassword}
+                    onChangeText={(text) => {
+                      setConfirmPassword(text);
+                      if (errors.confirmPassword) setErrors({...errors, confirmPassword: ''});
+                    }}
+                    editable={!isLoading && timeLeft > 0}
+                    selectionColor={COLORS.primary}
+                    // Props to prevent auto-capitalization and ensure lowercase start
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    autoComplete="password"
+                    keyboardType="default"
+                    textContentType="newPassword"
+                    importantForAutofill="yes"
+                  />
+                  <TouchableOpacity 
+                    style={styles.visibilityButton}
+                    onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                    disabled={isLoading || timeLeft <= 0}
+                  >
+                    <MaterialIcons
+                      name={showConfirmPassword ? "visibility" : "visibility-off"}
+                      size={22}
+                      color={(isLoading || timeLeft <= 0) ? COLORS.grayLight : COLORS.gray}
+                    />
+                  </TouchableOpacity>
+                </View>
+                {errors.confirmPassword ? (
+                  <View style={styles.errorContainer}>
+                    <MaterialIcons name="error-outline" size={16} color={COLORS.error} />
+                    <Text style={styles.errorText}>{errors.confirmPassword}</Text>
+                  </View>
+                ) : null}
+              </View>
+
+              {/* Reset Button */}
+              <TouchableOpacity
+                style={[
+                  styles.resetButton,
+                  (isLoading || timeLeft <= 0) && styles.resetButtonDisabled
+                ]}
+                onPress={handleResetPassword}
+                activeOpacity={0.9}
+                disabled={isLoading || timeLeft <= 0}
               >
-                <MaterialIcons name="arrow-back" size={16} color={COLORS.primary} />
-                <Text style={styles.backButtonText}>Back to Recovery</Text>
+                {isLoading ? (
+                  <View style={styles.loadingContainer}>
+                    <MaterialIcons name="loop" size={20} color={COLORS.white} />
+                    <Text style={styles.resetButtonText}>Updating...</Text>
+                  </View>
+                ) : (
+                  <>
+                    <Text style={styles.resetButtonText}>
+                      {timeLeft <= 0 ? "Session Expired" : "Reset Password"}
+                    </Text>
+                    <MaterialIcons name="check-circle" size={20} color={COLORS.white} />
+                  </>
+                )}
               </TouchableOpacity>
-            )}
-          </View>
-        </Animated.View>
-      </ScrollView>
+
+              {/* Back Link - Only show if reset is not completed */}
+              {!resetCompleted && (
+                <TouchableOpacity 
+                  onPress={handleBackToRecovery} 
+                  style={styles.backButtonContainer}
+                  disabled={isLoading}
+                >
+                  <MaterialIcons name="arrow-back" size={16} color={COLORS.primary} />
+                  <Text style={styles.backButtonText}>Back to Recovery</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </Animated.View>
+        </ScrollView>
+
+        {/* White Navigation Bar Spacer for iOS */}
+        {Platform.OS === 'ios' && <View style={styles.navigationBarSpacer} />}
+      </KeyboardAvoidingView>
 
       {/* Success Modal with Confetti */}
       <Modal
@@ -552,6 +599,13 @@ const ResetPassword = () => {
         onRequestClose={handleSuccessContinue}
       >
         <View style={styles.modalOverlay}>
+          {/* White Status Bar for Modal */}
+          <StatusBar 
+            barStyle="light-content" 
+            backgroundColor="transparent"
+            translucent={true}
+          />
+          
           {/* Confetti Background */}
           <LottieView
             ref={confettiRef}
@@ -583,13 +637,20 @@ const ResetPassword = () => {
               <MaterialIcons name="arrow-forward" size={20} color={COLORS.white} />
             </TouchableOpacity>
           </View>
+
+          {/* White Navigation Bar Spacer for iOS in Modal */}
+          {Platform.OS === 'ios' && <View style={styles.modalNavigationBarSpacer} />}
         </View>
       </Modal>
-    </KeyboardAvoidingView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  fullContainer: {
+    flex: 1,
+    backgroundColor: COLORS.white,
+  },
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
@@ -682,6 +743,15 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: COLORS.white,
     letterSpacing: 0.5,
+  },
+  // Navigation Bar Spacer for iOS
+  navigationBarSpacer: {
+    height: Platform.OS === 'ios' ? 34 : 0, // Height of iOS home indicator
+    backgroundColor: COLORS.white,
+  },
+  modalNavigationBarSpacer: {
+    height: Platform.OS === 'ios' ? 34 : 0, // Height of iOS home indicator
+    backgroundColor: 'transparent',
   },
   // Success Modal Styles
   modalOverlay: {

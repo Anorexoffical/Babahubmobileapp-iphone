@@ -1,5 +1,5 @@
 // app/screens/OrderSuccessScreen.js
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { 
   View, 
   Text, 
@@ -11,7 +11,7 @@ import {
   StatusBar,
   BackHandler,
   Platform,
-  Alert
+  Modal
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,6 +19,11 @@ import LottieView from 'lottie-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width, height } = Dimensions.get('window');
+
+// Responsive scaling functions
+const scale = (size) => (width / 375) * size;
+const verticalScale = (size) => (height / 812) * size;
+const moderateScale = (size, factor = 0.5) => size + (scale(size) - size) * factor;
 
 // Consistent color palette
 const COLORS = {
@@ -43,11 +48,41 @@ const COLORS = {
 
 const OrderSuccessScreen = () => {
   const router = useRouter();
+  const [showBackModal, setShowBackModal] = useState(false);
   
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
   const confettiAnim = useRef(null);
+  const modalScaleAnim = useRef(new Animated.Value(0)).current;
+
+  // Handle back button press - FIXED
+  const handleBackPress = () => {
+    showModal();
+    return true; // Prevent default back behavior
+  };
+
+  // Show modal animation - FIXED
+  const showModal = () => {
+    setShowBackModal(true);
+    Animated.spring(modalScaleAnim, {
+      toValue: 1,
+      tension: 50,
+      friction: 7,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  // Hide modal animation
+  const hideModal = () => {
+    Animated.timing(modalScaleAnim, {
+      toValue: 0,
+      duration: 200,
+      useNativeDriver: true,
+    }).start(() => {
+      setShowBackModal(false);
+    });
+  };
 
   // Clear cart and handle navigation reset
   useEffect(() => {
@@ -65,16 +100,8 @@ const OrderSuccessScreen = () => {
       }
     };
 
-    // Handle Android back button - completely disable
-    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
-      // Show message that back is disabled
-      Alert.alert(
-        "Order Completed",
-        "Your order has been successfully placed. Please use the buttons below to continue.",
-        [{ text: "OK" }]
-      );
-      return true; // Always prevent back navigation
-    });
+    // Handle Android back button - show custom modal - FIXED
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', handleBackPress);
 
     // Start animations
     Animated.parallel([
@@ -138,6 +165,16 @@ const OrderSuccessScreen = () => {
     navigateWithReset('orders');
   };
 
+  const handleModalContinueShopping = () => {
+    hideModal();
+    setTimeout(() => handleContinueShopping(), 200);
+  };
+
+  const handleModalViewOrders = () => {
+    hideModal();
+    setTimeout(() => handleViewOrders(), 200);
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar backgroundColor={COLORS.success} barStyle="light-content" />
@@ -153,102 +190,126 @@ const OrderSuccessScreen = () => {
         />
       </View>
 
-      <Animated.View 
-        style={[
-          styles.container,
-          {
-            opacity: fadeAnim,
-            transform: [
-              { translateY: slideAnim },
-              { scale: scaleAnim }
-            ]
-          }
-        ]}
-      >
-        {/* Success Icon */}
-        <View style={styles.iconContainer}>
-          <View style={styles.iconCircle}>
-            <Ionicons name="checkmark" size={60} color={COLORS.white} />
-          </View>
-          <View style={styles.iconRing} />
-        </View>
-
-        {/* Success Title */}
-        <Text style={styles.successTitle}>Payment Successful!</Text>
-        
-        {/* Success Message */}
-        <Text style={styles.successMessage}>
-          Thank you for your purchase! Your order has been confirmed and will be processed shortly.
-        </Text>
-
-        {/* Cart Cleared Message */}
-        <View style={styles.cartClearedCard}>
-          <Ionicons name="cart" size={24} color={COLORS.success} />
-          <View style={styles.cartClearedContent}>
-            <Text style={styles.cartClearedTitle}>Cart Cleared</Text>
-            <Text style={styles.cartClearedText}>
-              Your cart has been emptied and is ready for new products
-            </Text>
-          </View>
-        </View>
-
-        {/* Next Steps */}
-        <View style={styles.nextSteps}>
-          <Text style={styles.nextStepsTitle}>What's Next?</Text>
-          <View style={styles.stepsList}>
-            <View style={styles.stepItem}>
-              <View style={styles.stepNumber}>
-                <Text style={styles.stepNumberText}>1</Text>
-              </View>
-              <Text style={styles.stepText}>
-                Your order is being processed
-              </Text>
-            </View>
-            
-            <View style={styles.stepItem}>
-              <View style={styles.stepNumber}>
-                <Text style={styles.stepNumberText}>2</Text>
-              </View>
-              <Text style={styles.stepText}>
-                We'll notify you when your order ships
-              </Text>
-            </View>
-            
-            <View style={styles.stepItem}>
-              <View style={styles.stepNumber}>
-                <Text style={styles.stepNumberText}>3</Text>
-              </View>
-              <Text style={styles.stepText}>
-                Track your order from your account
-              </Text>
+      <View style={styles.container}>
+        <Animated.View 
+          style={[
+            styles.content,
+            {
+              opacity: fadeAnim,
+              transform: [
+                { translateY: slideAnim },
+                { scale: scaleAnim }
+              ]
+            }
+          ]}
+        >
+          {/* Success Icon */}
+          <View style={styles.iconContainer}>
+            <View style={styles.iconCircle}>
+              <Ionicons name="checkmark" size={moderateScale(50)} color={COLORS.white} />
             </View>
           </View>
-        </View>
 
-        {/* Action Buttons - Only way to navigate forward */}
-        <View style={styles.actionsContainer}>
-          <TouchableOpacity 
-            style={styles.primaryButton}
-            onPress={handleContinueShopping}
-          >
-            <Ionicons name="home" size={20} color={COLORS.white} />
-            <Text style={styles.primaryButtonText}>Continue Shopping</Text>
-          </TouchableOpacity>
+          {/* Success Title */}
+          <Text style={styles.successTitle}>Payment Successful!</Text>
           
+          {/* Success Message */}
+          <Text style={styles.successMessage}>
+            Thank you for your purchase! Your order has been confirmed.
+          </Text>
+
+          {/* Action Buttons */}
+          <View style={styles.actionsContainer}>
+            <TouchableOpacity 
+              style={styles.primaryButton}
+              onPress={handleContinueShopping}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="home" size={moderateScale(18)} color={COLORS.white} />
+              <Text style={styles.primaryButtonText}>Continue Shopping</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.secondaryButton}
+              onPress={handleViewOrders}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="bag-handle" size={moderateScale(18)} color={COLORS.primary} />
+              <Text style={styles.secondaryButtonText}>View My Orders</Text>
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
+      </View>
+
+      {/* Compact Square Back Press Modal */}
+      <Modal
+        visible={showBackModal}
+        transparent={true}
+        animationType="fade"
+        statusBarTranslucent={true}
+        onRequestClose={hideModal}
+      >
+        <View style={styles.modalOverlay}>
           <TouchableOpacity 
-            style={styles.secondaryButton}
-            onPress={handleViewOrders}
+            style={styles.modalOverlayTouchable}
+            activeOpacity={1}
+            onPress={hideModal}
           >
-            <Ionicons name="bag-handle" size={20} color={COLORS.primary} />
-            <Text style={styles.secondaryButtonText}>View My Orders</Text>
+            <Animated.View 
+              style={[
+                styles.modalContainer,
+                {
+                  transform: [{ scale: modalScaleAnim }]
+                }
+              ]}
+            >
+              {/* Modal Header */}
+              <View style={styles.modalHeader}>
+                <View style={styles.modalIconContainer}>
+                  <Ionicons name="exit-outline" size={moderateScale(22)} color={COLORS.primary} />
+                </View>
+                <Text style={styles.modalTitle}>Leave This Screen?</Text>
+              </View>
+
+              {/* Modal Body */}
+              <View style={styles.modalBody}>
+                <Text style={styles.modalMessage}>
+                  Your order is complete. Where would you like to go?
+                </Text>
+              </View>
+
+              {/* Modal Actions */}
+              <View style={styles.modalActions}>
+                <TouchableOpacity 
+                  style={[styles.modalButton, styles.modalPrimaryButton]}
+                  onPress={handleModalContinueShopping}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="home-outline" size={moderateScale(16)} color={COLORS.white} />
+                  <Text style={styles.modalPrimaryButtonText}>Home</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  style={[styles.modalButton, styles.modalSecondaryButton]}
+                  onPress={handleModalViewOrders}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="bag-handle-outline" size={moderateScale(16)} color={COLORS.primary} />
+                  <Text style={styles.modalSecondaryButtonText}>Orders</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity 
+                  style={[styles.modalButton, styles.modalCancelButton]}
+                  onPress={hideModal}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.modalCancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </Animated.View>
           </TouchableOpacity>
         </View>
-
-        {/* Instruction Text */}
-        <Text style={styles.instructionText}>
-          Please select an option to continue
-        </Text>
-      </Animated.View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -260,10 +321,13 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 40,
+    alignItems: 'center',
+    paddingHorizontal: moderateScale(24),
+  },
+  content: {
+    width: '100%',
+    alignItems: 'center',
   },
   confettiContainer: {
     position: 'absolute',
@@ -281,177 +345,215 @@ const styles = StyleSheet.create({
   iconContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 24,
-    position: 'relative',
+    marginBottom: verticalScale(20),
   },
   iconCircle: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: moderateScale(100),
+    height: moderateScale(100),
+    borderRadius: moderateScale(50),
     backgroundColor: COLORS.success,
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 2,
     ...Platform.select({
       ios: {
         shadowColor: COLORS.success,
-        shadowOffset: { width: 0, height: 8 },
+        shadowOffset: { width: 0, height: moderateScale(6) },
         shadowOpacity: 0.3,
-        shadowRadius: 16,
+        shadowRadius: moderateScale(12),
       },
       android: {
-        elevation: 8,
+        elevation: 6,
       },
     }),
   },
-  iconRing: {
-    position: 'absolute',
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    backgroundColor: COLORS.success + '20',
-    zIndex: 1,
-  },
   // Success Text
   successTitle: {
-    fontSize: 32,
+    fontSize: moderateScale(26),
     fontWeight: '800',
     color: COLORS.dark,
     textAlign: 'center',
-    marginBottom: 12,
-    letterSpacing: -0.5,
+    marginBottom: verticalScale(8),
+    includeFontPadding: false,
   },
   successMessage: {
-    fontSize: 16,
+    fontSize: moderateScale(14),
     color: COLORS.gray,
     textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: 24,
-    paddingHorizontal: 20,
-  },
-  // Cart Cleared Card
-  cartClearedCard: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    backgroundColor: COLORS.success + '08',
-    padding: 16,
-    borderRadius: 12,
-    gap: 12,
-    width: '100%',
-    marginBottom: 24,
-    borderLeftWidth: 4,
-    borderLeftColor: COLORS.success,
-  },
-  cartClearedContent: {
-    flex: 1,
-  },
-  cartClearedTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: COLORS.success,
-    marginBottom: 4,
-  },
-  cartClearedText: {
-    fontSize: 14,
-    color: COLORS.gray,
-    lineHeight: 20,
-  },
-  // Next Steps
-  nextSteps: {
-    width: '100%',
-    marginBottom: 32,
-  },
-  nextStepsTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: COLORS.dark,
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  stepsList: {
-    gap: 16,
-  },
-  stepItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-  },
-  stepNumber: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: COLORS.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 2,
-  },
-  stepNumberText: {
-    color: COLORS.white,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  stepText: {
-    flex: 1,
-    fontSize: 14,
-    color: COLORS.gray,
-    lineHeight: 20,
+    lineHeight: moderateScale(20),
+    marginBottom: verticalScale(30),
+    paddingHorizontal: moderateScale(10),
+    includeFontPadding: false,
   },
   // Action Buttons
   actionsContainer: {
     width: '100%',
-    gap: 12,
-    marginBottom: 16,
+    gap: moderateScale(12),
   },
   primaryButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: COLORS.primary,
-    paddingHorizontal: 24,
-    paddingVertical: 18,
-    borderRadius: 140,
-    gap: 8,
+    paddingHorizontal: moderateScale(20),
+    paddingVertical: verticalScale(16),
+    borderRadius: moderateScale(12),
+    gap: moderateScale(8),
     ...Platform.select({
       ios: {
         shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 4 },
+        shadowOffset: { width: 0, height: moderateScale(3) },
         shadowOpacity: 0.3,
-        shadowRadius: 8,
+        shadowRadius: moderateScale(6),
       },
       android: {
-        elevation: 4,
+        elevation: 3,
       },
     }),
   },
   primaryButtonText: {
     color: COLORS.white,
-    fontSize: 16,
+    fontSize: moderateScale(16),
     fontWeight: '700',
+    includeFontPadding: false,
   },
   secondaryButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'transparent',
-    paddingHorizontal: 24,
-    paddingVertical: 18,
-    borderRadius: 140,
-    borderWidth: 2,
+    paddingHorizontal: moderateScale(20),
+    paddingVertical: verticalScale(16),
+    borderRadius: moderateScale(12),
+    borderWidth: moderateScale(2),
     borderColor: COLORS.primary,
-    gap: 8,
+    gap: moderateScale(8),
   },
   secondaryButtonText: {
     color: COLORS.primary,
-    fontSize: 16,
+    fontSize: moderateScale(16),
     fontWeight: '700',
+    includeFontPadding: false,
   },
-  // Instruction Text
-  instructionText: {
-    fontSize: 14,
-    color: COLORS.grayLight,
+  // Compact Square Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: moderateScale(30),
+  },
+  modalOverlayTouchable: {
+    width: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    width: '100%',
+    maxWidth: moderateScale(280),
+    backgroundColor: COLORS.white,
+    borderRadius: moderateScale(16),
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: moderateScale(8) },
+        shadowOpacity: 0.25,
+        shadowRadius: moderateScale(12),
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
+  },
+  modalHeader: {
+    alignItems: 'center',
+    paddingVertical: verticalScale(20),
+    paddingHorizontal: moderateScale(20),
+    backgroundColor: COLORS.primary + '08',
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.primary + '20',
+  },
+  modalIconContainer: {
+    width: moderateScale(44),
+    height: moderateScale(44),
+    borderRadius: moderateScale(22),
+    backgroundColor: COLORS.primary + '15',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: verticalScale(12),
+  },
+  modalTitle: {
+    fontSize: moderateScale(18),
+    fontWeight: '700',
+    color: COLORS.dark,
     textAlign: 'center',
-    fontStyle: 'italic',
-    marginTop: 8,
+    includeFontPadding: false,
+  },
+  modalBody: {
+    paddingVertical: verticalScale(20),
+    paddingHorizontal: moderateScale(20),
+  },
+  modalMessage: {
+    fontSize: moderateScale(14),
+    color: COLORS.gray,
+    textAlign: 'center',
+    lineHeight: moderateScale(20),
+    includeFontPadding: false,
+  },
+  modalActions: {
+    padding: moderateScale(16),
+    gap: moderateScale(8),
+    backgroundColor: COLORS.background,
+  },
+  modalButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: moderateScale(16),
+    paddingVertical: verticalScale(12),
+    borderRadius: moderateScale(10),
+    gap: moderateScale(6),
+  },
+  modalPrimaryButton: {
+    backgroundColor: COLORS.primary,
+    ...Platform.select({
+      ios: {
+        shadowColor: COLORS.primary,
+        shadowOffset: { width: 0, height: moderateScale(2) },
+        shadowOpacity: 0.3,
+        shadowRadius: moderateScale(4),
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
+  },
+  modalPrimaryButtonText: {
+    color: COLORS.white,
+    fontSize: moderateScale(14),
+    fontWeight: '600',
+    includeFontPadding: false,
+  },
+  modalSecondaryButton: {
+    backgroundColor: COLORS.white,
+    borderWidth: moderateScale(1.5),
+    borderColor: COLORS.primary,
+  },
+  modalSecondaryButtonText: {
+    color: COLORS.primary,
+    fontSize: moderateScale(14),
+    fontWeight: '600',
+    includeFontPadding: false,
+  },
+  modalCancelButton: {
+    backgroundColor: 'transparent',
+    marginTop: moderateScale(4),
+  },
+  modalCancelButtonText: {
+    color: COLORS.gray,
+    fontSize: moderateScale(14),
+    fontWeight: '500',
+    includeFontPadding: false,
   },
 });
 

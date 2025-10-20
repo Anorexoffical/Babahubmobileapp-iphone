@@ -12,7 +12,8 @@ import {
   SafeAreaView,
   Animated,
   Dimensions,
-  StatusBar
+  StatusBar,
+  Modal
 } from "react-native";
 import { WebView } from 'react-native-webview';
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -20,6 +21,34 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 const { width, height } = Dimensions.get('window');
+
+// Responsive sizing functions
+const responsiveWidth = (percentage) => (width * percentage) / 100;
+const responsiveHeight = (percentage) => (height * percentage) / 100;
+const responsiveFont = (size) => {
+  const scale = Math.min(width, height) / 400;
+  const scaledSize = size * scale;
+  return Math.max(scaledSize, 12);
+};
+
+// Safe area calculations for different devices
+const getSafeAreaBottom = () => {
+  if (Platform.OS === 'ios') {
+    return responsiveHeight(2);
+  } else {
+    // For Android devices including Huawei - increased padding for navigation bar
+    return responsiveHeight(6);
+  }
+};
+
+const getSafeAreaTop = () => {
+  if (Platform.OS === 'ios') {
+    return responsiveHeight(6);
+  } else {
+    // For Android devices including Huawei
+    return (StatusBar.currentHeight || responsiveHeight(4)) + responsiveHeight(2);
+  }
+};
 
 // Consistent color palette matching your brand
 const COLORS = {
@@ -42,11 +71,103 @@ const COLORS = {
   error: '#DC2626',
 };
 
+// Custom Popup Component
+const CustomBackPopup = ({ visible, onContinue, onCancel }) => {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.8)).current;
+
+  useEffect(() => {
+    if (visible) {
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          tension: 70,
+          friction: 8,
+          useNativeDriver: true,
+        })
+      ]).start();
+    } else {
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [visible]);
+
+  if (!visible) return null;
+
+  return (
+    <Modal
+      transparent
+      visible={visible}
+      animationType="none"
+      onRequestClose={onContinue}
+    >
+      <View style={styles.popupOverlay}>
+        <TouchableOpacity 
+          style={styles.popupBackdrop}
+          activeOpacity={1}
+          onPress={onContinue}
+        />
+        <Animated.View 
+          style={[
+            styles.popupContainer,
+            {
+              opacity: fadeAnim,
+              transform: [{ scale: scaleAnim }]
+            }
+          ]}
+        >
+          <View style={styles.popupIconContainer}>
+            <View style={styles.popupIconCircle}>
+              <Ionicons name="help-circle" size={responsiveFont(24)} color={COLORS.white} />
+            </View>
+          </View>
+          
+          <View style={styles.popupTextContainer}>
+            <Text style={styles.popupTitle}>Cancel Payment?</Text>
+            <Text style={styles.popupMessage}>
+              Are you sure you want to cancel this payment? Your transaction will be interrupted and you'll be returned to checkout.
+            </Text>
+          </View>
+          
+          <View style={styles.popupActions}>
+            <TouchableOpacity 
+              style={styles.popupContinueButton}
+              onPress={onContinue}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="card" size={responsiveFont(16)} color={COLORS.primary} />
+              <Text style={styles.popupContinueText}>Continue Payment</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.popupCancelButton}
+              onPress={onCancel}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="arrow-back" size={responsiveFont(16)} color={COLORS.white} />
+              <Text style={styles.popupCancelText}>Yes, Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
+      </View>
+    </Modal>
+  );
+};
+
 const PaymentScreen = () => {
   const [loading, setLoading] = useState(true);
   const [paymentUrl, setPaymentUrl] = useState(null);
   const [hasError, setHasError] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [showBackPopup, setShowBackPopup] = useState(false);
   const webViewRef = useRef(null);
   const router = useRouter();
 
@@ -59,11 +180,15 @@ const PaymentScreen = () => {
   const slideAnim = useRef(new Animated.Value(20)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
 
+  // Safe area values
+  const safeAreaBottom = getSafeAreaBottom();
+  const safeAreaTop = getSafeAreaTop();
+
   // Handle Android back button
   useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
       if (paymentUrl) {
-        showCancelConfirmation();
+        handleBackButtonPress();
         return true;
       }
       return false;
@@ -72,26 +197,19 @@ const PaymentScreen = () => {
     return () => backHandler.remove();
   }, [paymentUrl, router]);
 
-  // Show confirmation popup for cancellation
+  // Handle back button press (both hardware and header back button)
+  const handleBackButtonPress = () => {
+    setShowBackPopup(true);
+  };
+
+  // Show custom popup for cancellation
   const showCancelConfirmation = () => {
-    Alert.alert(
-      "Cancel Payment?",
-      "Are you sure you want to cancel this payment? Your transaction will be interrupted.",
-      [
-        { 
-          text: "Continue Payment", 
-          style: "cancel",
-          onPress: () => {}
-        },
-        { 
-          text: "Yes, Cancel", 
-          style: "destructive",
-          onPress: () => {
-            handleBackToCheckout();
-          }
-        }
-      ]
-    );
+    setShowBackPopup(true);
+  };
+
+  // Handle continue payment (close popup)
+  const handleContinuePayment = () => {
+    setShowBackPopup(false);
   };
 
   // Handle back to checkout (without showing payment cancelled screen)
@@ -99,6 +217,7 @@ const PaymentScreen = () => {
     if (redirectInitiated.current) return;
     
     console.log("BACK BUTTON - Returning to checkout");
+    setShowBackPopup(false);
     redirectInitiated.current = true;
     paymentStatusDetected.current = true;
     setLoading(false);
@@ -425,8 +544,8 @@ const PaymentScreen = () => {
   // Enhanced Error UI
   if (hasError) {
     return (
-      <SafeAreaView style={styles.safeArea}>
-        <StatusBar backgroundColor={COLORS.primary} barStyle="light-content" />
+      <View style={styles.container}>
+        <StatusBar backgroundColor={COLORS.white} barStyle="dark-content" />
         <Animated.View 
           style={[
             styles.errorContainer,
@@ -436,13 +555,13 @@ const PaymentScreen = () => {
             }
           ]}
         >
-          <View style={styles.header}>
+          <View style={[styles.header, { paddingTop: safeAreaTop }]}>
             <TouchableOpacity 
               onPress={showCancelConfirmation}
               style={styles.backButton}
             >
               <View style={styles.backButtonInner}>
-                <Ionicons name="chevron-back" size={24} color={COLORS.dark} />
+                <Ionicons name="chevron-back" size={responsiveFont(18)} color={COLORS.primary} />
               </View>
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Payment Error</Text>
@@ -484,15 +603,22 @@ const PaymentScreen = () => {
             </View>
           </View>
         </Animated.View>
-      </SafeAreaView>
+
+        {/* Custom Back Popup */}
+        <CustomBackPopup
+          visible={showBackPopup}
+          onContinue={handleContinuePayment}
+          onCancel={handleBackToCheckout}
+        />
+      </View>
     );
   }
 
   // Enhanced Loader component
   if (!paymentUrl) {
     return (
-      <SafeAreaView style={styles.safeArea}>
-        <StatusBar backgroundColor={COLORS.primary} barStyle="light-content" />
+      <View style={styles.container}>
+        <StatusBar backgroundColor={COLORS.white} barStyle="dark-content" />
         <View style={styles.loaderContainer}>
           <View style={styles.loaderContent}>
             <ActivityIndicator size={60} color={COLORS.primary} />
@@ -502,17 +628,17 @@ const PaymentScreen = () => {
             </Text>
           </View>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar backgroundColor={COLORS.primary} barStyle="light-content" />
+    <View style={styles.container}>
+      <StatusBar backgroundColor={COLORS.white} barStyle="dark-content" />
       
       <Animated.View 
         style={[
-          styles.container,
+          styles.content,
           {
             opacity: fadeAnim,
             transform: [{ translateY: slideAnim }]
@@ -520,13 +646,13 @@ const PaymentScreen = () => {
         ]}
       >
         {/* Premium Header */}
-        <View style={styles.header}>
+        <View style={[styles.header, { paddingTop: safeAreaTop }]}>
           <TouchableOpacity 
-            onPress={showCancelConfirmation}
+            onPress={handleBackButtonPress}
             style={styles.backButton}
           >
             <View style={styles.backButtonInner}>
-              <Ionicons name="chevron-back" size={24} color={COLORS.dark} />
+              <Ionicons name="chevron-back" size={responsiveFont(18)} color={COLORS.primary} />
             </View>
           </TouchableOpacity>
           
@@ -536,7 +662,7 @@ const PaymentScreen = () => {
           </View>
           
           <View style={styles.secureBadge}>
-            <Ionicons name="lock-closed" size={16} color={COLORS.white} />
+            <Ionicons name="lock-closed" size={responsiveFont(14)} color={COLORS.white} />
             <Text style={styles.secureText}>Secure</Text>
           </View>
         </View>
@@ -560,7 +686,7 @@ const PaymentScreen = () => {
 
         {/* Security Status Bar */}
         <View style={styles.securityBar}>
-          <Ionicons name="shield-checkmark" size={16} color={COLORS.success} />
+          <Ionicons name="shield-checkmark" size={responsiveFont(14)} color={COLORS.success} />
           <Text style={styles.securityText}>
             Your payment is secured with 256-bit SSL encryption
           </Text>
@@ -802,9 +928,9 @@ const PaymentScreen = () => {
         </View>
 
         {/* Payment Tips Footer */}
-        <View style={styles.footer}>
+        <View style={[styles.footer, { paddingBottom: safeAreaBottom }]}>
           <View style={styles.tipsContainer}>
-            <Ionicons name="information-circle" size={18} color={COLORS.primary} />
+            <Ionicons name="information-circle" size={responsiveFont(16)} color={COLORS.primary} />
             <Text style={styles.tipsText}>
               • Ensure all payment details are correct{'\n'}
               • Do not close the app during payment{'\n'}
@@ -813,88 +939,89 @@ const PaymentScreen = () => {
           </View>
         </View>
       </Animated.View>
-    </SafeAreaView>
+
+      {/* Custom Back Popup */}
+      <CustomBackPopup
+        visible={showBackPopup}
+        onContinue={handleContinuePayment}
+        onCancel={handleBackToCheckout}
+      />
+    </View>
   );
 };
 
-// ... keep your existing styles exactly the same ...
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: COLORS.primary,
-  },
   container: {
+    flex: 1,
+    backgroundColor: COLORS.white,
+  },
+  content: {
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  // Header Styles
+  // Header Styles - White Background
   header: {
+    backgroundColor: COLORS.white,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: COLORS.white,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.light,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
+    paddingHorizontal: responsiveWidth(4),
+    paddingVertical: responsiveHeight(1.5),
+    borderBottomLeftRadius: responsiveWidth(5),
+    borderBottomRightRadius: responsiveWidth(5),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: responsiveHeight(0.5) },
+    shadowOpacity: 0.08,
+    shadowRadius: responsiveWidth(3),
+    elevation: 5,
+    marginBottom: responsiveHeight(1),
   },
   backButton: {
-    padding: 4,
+    padding: responsiveWidth(1.5),
   },
   backButtonInner: {
-    width: 40,
-    height: 40,
+    width: responsiveWidth(9),
+    height: responsiveWidth(9),
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: COLORS.light,
-    borderRadius: 12,
+    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+    borderRadius: responsiveWidth(2.5),
   },
   headerCenter: {
     alignItems: 'center',
     flex: 1,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: responsiveFont(18),
     fontWeight: '700',
     color: COLORS.dark,
     marginBottom: 2,
   },
   headerSubtitle: {
-    fontSize: 12,
+    fontSize: responsiveFont(13),
     color: COLORS.gray,
     fontWeight: '500',
   },
   headerRight: {
-    width: 40,
+    width: responsiveWidth(9),
   },
   secureBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.success,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 12,
-    gap: 4,
+    paddingHorizontal: responsiveWidth(2.5),
+    paddingVertical: responsiveHeight(0.5),
+    borderRadius: responsiveWidth(3),
+    gap: responsiveWidth(1),
   },
   secureText: {
-    fontSize: 11,
+    fontSize: responsiveFont(11),
     fontWeight: '700',
     color: COLORS.white,
   },
   // Progress Bar
   progressContainer: {
-    height: 3,
+    height: responsiveHeight(0.3),
     backgroundColor: COLORS.light,
     overflow: 'hidden',
   },
@@ -908,12 +1035,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: COLORS.success + '15',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    gap: 8,
+    paddingVertical: responsiveHeight(0.75),
+    paddingHorizontal: responsiveWidth(4),
+    gap: responsiveWidth(2),
   },
   securityText: {
-    fontSize: 12,
+    fontSize: responsiveFont(12),
     color: COLORS.success,
     fontWeight: '600',
   },
@@ -933,24 +1060,24 @@ const styles = StyleSheet.create({
   },
   loadingContent: {
     alignItems: 'center',
-    padding: 30,
+    padding: responsiveWidth(7.5),
   },
   loadingTitle: {
-    fontSize: 18,
+    fontSize: responsiveFont(18),
     fontWeight: '700',
     color: COLORS.dark,
-    marginTop: 20,
-    marginBottom: 8,
+    marginTop: responsiveHeight(2),
+    marginBottom: responsiveHeight(0.75),
   },
   loadingSubtitle: {
-    fontSize: 14,
+    fontSize: responsiveFont(14),
     color: COLORS.gray,
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: responsiveHeight(2.25),
   },
   // Footer Tips
   footer: {
-    padding: 16,
+    padding: responsiveWidth(4),
     backgroundColor: COLORS.white,
     borderTopWidth: 1,
     borderTopColor: COLORS.light,
@@ -958,92 +1085,92 @@ const styles = StyleSheet.create({
   tipsContainer: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 12,
+    gap: responsiveWidth(3),
   },
   tipsText: {
     flex: 1,
-    fontSize: 12,
+    fontSize: responsiveFont(12),
     color: COLORS.gray,
-    lineHeight: 16,
+    lineHeight: responsiveHeight(2),
   },
   // Loader Styles
   loaderContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.white,
   },
   loaderContent: {
     alignItems: 'center',
-    padding: 40,
+    padding: responsiveWidth(10),
   },
   loaderTitle: {
-    fontSize: 20,
+    fontSize: responsiveFont(20),
     fontWeight: '700',
     color: COLORS.dark,
-    marginTop: 20,
-    marginBottom: 8,
+    marginTop: responsiveHeight(2),
+    marginBottom: responsiveHeight(0.75),
   },
   loaderSubtitle: {
-    fontSize: 15,
+    fontSize: responsiveFont(15),
     color: COLORS.gray,
     textAlign: 'center',
-    lineHeight: 22,
+    lineHeight: responsiveHeight(2.5),
   },
   // Error Styles
   errorContainer: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.white,
   },
   errorContent: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 40,
-    paddingVertical: 60,
+    paddingHorizontal: responsiveWidth(10),
+    paddingVertical: responsiveHeight(7.5),
   },
   errorIllustration: {
-    marginBottom: 24,
+    marginBottom: responsiveHeight(3),
   },
   errorIconContainer: {
-    width: 120,
-    height: 120,
+    width: responsiveWidth(30),
+    height: responsiveWidth(30),
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(220, 38, 38, 0.05)',
-    borderRadius: 60,
+    borderRadius: responsiveWidth(15),
   },
   errorTitle: {
-    fontSize: 22,
+    fontSize: responsiveFont(22),
     fontWeight: '700',
     color: COLORS.dark,
-    marginBottom: 12,
+    marginBottom: responsiveHeight(1.5),
     textAlign: 'center',
   },
   errorDescription: {
-    fontSize: 15,
+    fontSize: responsiveFont(15),
     color: COLORS.gray,
     textAlign: 'center',
-    marginBottom: 32,
-    lineHeight: 22,
+    marginBottom: responsiveHeight(4),
+    lineHeight: responsiveHeight(2.5),
   },
   errorActions: {
     width: '100%',
-    gap: 12,
+    gap: responsiveHeight(1.5),
   },
   retryButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: COLORS.primary,
-    paddingHorizontal: 24,
-    paddingVertical: 16,
-    borderRadius: 12,
-    gap: 8,
+    paddingHorizontal: responsiveWidth(6),
+    paddingVertical: responsiveHeight(1.5),
+    borderRadius: responsiveWidth(3),
+    gap: responsiveWidth(2),
   },
   retryText: {
     color: COLORS.white,
-    fontSize: 16,
+    fontSize: responsiveFont(16),
     fontWeight: '600',
   },
   backButtonError: {
@@ -1051,16 +1178,107 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'transparent',
-    paddingHorizontal: 24,
-    paddingVertical: 16,
-    borderRadius: 12,
+    paddingHorizontal: responsiveWidth(6),
+    paddingVertical: responsiveHeight(1.5),
+    borderRadius: responsiveWidth(3),
     borderWidth: 1.5,
     borderColor: COLORS.primary,
-    gap: 8,
+    gap: responsiveWidth(2),
   },
   backText: {
     color: COLORS.primary,
-    fontSize: 16,
+    fontSize: responsiveFont(16),
+    fontWeight: '600',
+  },
+  // Custom Popup Styles
+  popupOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    padding: responsiveWidth(5),
+  },
+  popupBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  popupContainer: {
+    backgroundColor: COLORS.white,
+    borderRadius: responsiveWidth(4),
+    padding: responsiveWidth(6),
+    width: '100%',
+    maxWidth: responsiveWidth(85),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: responsiveHeight(1) },
+    shadowOpacity: 0.25,
+    shadowRadius: responsiveWidth(3),
+    elevation: 10,
+  },
+  popupIconContainer: {
+    alignItems: 'center',
+    marginBottom: responsiveHeight(2),
+  },
+  popupIconCircle: {
+    width: responsiveWidth(16),
+    height: responsiveWidth(16),
+    borderRadius: responsiveWidth(8),
+    backgroundColor: COLORS.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  popupTextContainer: {
+    alignItems: 'center',
+    marginBottom: responsiveHeight(3),
+  },
+  popupTitle: {
+    fontSize: responsiveFont(20),
+    fontWeight: '700',
+    color: COLORS.dark,
+    marginBottom: responsiveHeight(1),
+    textAlign: 'center',
+  },
+  popupMessage: {
+    fontSize: responsiveFont(14),
+    color: COLORS.gray,
+    textAlign: 'center',
+    lineHeight: responsiveHeight(2.25),
+  },
+  popupActions: {
+    gap: responsiveHeight(1.5),
+  },
+  popupContinueButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+    paddingHorizontal: responsiveWidth(4),
+    paddingVertical: responsiveHeight(1.5),
+    borderRadius: responsiveWidth(3),
+    borderWidth: 1.5,
+    borderColor: COLORS.primary,
+    gap: responsiveWidth(2),
+  },
+  popupContinueText: {
+    color: COLORS.primary,
+    fontSize: responsiveFont(16),
+    fontWeight: '600',
+  },
+  popupCancelButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: responsiveWidth(4),
+    paddingVertical: responsiveHeight(1.5),
+    borderRadius: responsiveWidth(3),
+    gap: responsiveWidth(2),
+  },
+  popupCancelText: {
+    color: COLORS.white,
+    fontSize: responsiveFont(16),
     fontWeight: '600',
   },
 });

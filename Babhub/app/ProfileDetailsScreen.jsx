@@ -7,6 +7,7 @@ import {
   ScrollView,
   Dimensions,
   StatusBar,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -83,101 +84,107 @@ const ProfileDetailsScreen = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={styles.fullContainer}>
       <StatusBar backgroundColor={COLORS.primary} barStyle="light-content" />
       
-      {/* Premium Header */}
-      <View style={styles.header}>
-        <View style={styles.headerBackground}>
-          <View style={styles.headerContent}>
-            <TouchableOpacity 
-              style={styles.backButton}
-              onPress={handleBack}
-            >
-              <Ionicons name="arrow-back" size={24} color={COLORS.white} />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Profile Details</Text>
-            <View style={styles.placeholder} />
-          </View>
-        </View>
-      </View>
-
-      <ScrollView 
-        style={styles.scrollView} 
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        {/* Profile Avatar Section */}
-        <View style={styles.avatarSection}>
-          <View style={styles.avatarContainer}>
-            <View style={styles.avatarGradient}>
-              <Text style={styles.monogram}>{getMonogram()}</Text>
+      {/* Main Content */}
+      <View style={styles.container}>
+        {/* Premium Header */}
+        <View style={styles.header}>
+          <View style={styles.headerBackground}>
+            <View style={styles.headerContent}>
+              <TouchableOpacity 
+                style={styles.backButton}
+                onPress={handleBack}
+              >
+                <Ionicons name="arrow-back" size={24} color={COLORS.white} />
+              </TouchableOpacity>
+              <Text style={styles.headerTitle}>Profile Details</Text>
+              <View style={styles.placeholder} />
             </View>
           </View>
-          <Text style={styles.userName}>{user?.name || "Not provided"}</Text>
-          <Text style={styles.userEmail}>{user?.email || "Not provided"}</Text>
         </View>
 
-        {/* Profile Information Card */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Ionicons name="person-circle-outline" size={22} color={COLORS.primary} />
-            <Text style={styles.sectionTitle}>Profile Information</Text>
+        <ScrollView 
+          style={styles.scrollView} 
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
+          {/* Profile Avatar Section */}
+          <View style={styles.avatarSection}>
+            <View style={styles.avatarContainer}>
+              <View style={styles.avatarGradient}>
+                <Text style={styles.monogram}>{getMonogram()}</Text>
+              </View>
+            </View>
+            <Text style={styles.userName}>{user?.name || "Not provided"}</Text>
+            <Text style={styles.userEmail}>{user?.email || "Not provided"}</Text>
           </View>
-          
-          <InfoItem 
-            label="Full Name" 
-            value={user?.name || "Not provided"} 
-            icon="person-outline"
-          />
-          <InfoItem 
-            label="Email Address" 
-            value={user?.email || "Not provided"} 
-            icon="mail-outline"
-            copyable 
-            onCopy={handleCopy}
-          />
-        </View>
 
-        {/* Personal Details Card */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Ionicons name="information-circle-outline" size={22} color={COLORS.primary} />
-            <Text style={styles.sectionTitle}>Personal Details</Text>
+          {/* Profile Information Card */}
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Ionicons name="person-circle-outline" size={22} color={COLORS.primary} />
+              <Text style={styles.sectionTitle}>Profile Information</Text>
+            </View>
+            
+            <InfoItem 
+              label="Full Name" 
+              value={user?.name || "Not provided"} 
+              icon="person-outline"
+            />
+            <InfoItem 
+              label="Email Address" 
+              value={user?.email || "Not provided"} 
+              icon="mail-outline"
+              copyable 
+              onCopy={handleCopy}
+            />
           </View>
-          
-          <InfoItem 
-            label="Date of Birth" 
-            value={formatDate(user?.dob)} 
-            icon="calendar-outline"
-          />
-        </View>
 
-        {/* Account Status Card */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Ionicons name="shield-checkmark-outline" size={22} color={COLORS.primary} />
-            <Text style={styles.sectionTitle}>Account Status</Text>
+          {/* Personal Details Card */}
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Ionicons name="information-circle-outline" size={22} color={COLORS.primary} />
+              <Text style={styles.sectionTitle}>Personal Details</Text>
+            </View>
+            
+            <InfoItem 
+              label="Date of Birth" 
+              value={formatDate(user?.dob)} 
+              icon="calendar-outline"
+            />
           </View>
-          
-          <InfoItem 
-            label="Account Status" 
-            value="Active" 
-            icon="checkmark-circle-outline"
-            valueColor={COLORS.success}
-          />
-          <InfoItem 
-            label="Member Since" 
-            value="2024" 
-            icon="calendar-outline"
-          />
-        </View>
 
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>BabaHub</Text>
-          <Text style={styles.footerSubtext}>Your trusted shopping companion</Text>
-        </View>
-      </ScrollView>
+          {/* Account Status Card */}
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Ionicons name="shield-checkmark-outline" size={22} color={COLORS.primary} />
+              <Text style={styles.sectionTitle}>Account Status</Text>
+            </View>
+            
+            <InfoItem 
+              label="Account Status" 
+              value="Active" 
+              icon="checkmark-circle-outline"
+              valueColor={COLORS.success}
+            />
+            <InfoItem 
+              label="Member Since" 
+              value="2024" 
+              icon="calendar-outline"
+            />
+          </View>
+
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>BabaHub</Text>
+            <Text style={styles.footerSubtext}>Your trusted shopping companion</Text>
+          </View>
+        </ScrollView>
+      </View>
+
+      {/* White Navigation Bar Spacer for iOS */}
+      {Platform.OS === 'ios' && <View style={styles.navigationBarSpacer} />}
     </View>
   );
 };
@@ -217,6 +224,10 @@ const InfoItem = ({
 export default ProfileDetailsScreen;
 
 const styles = StyleSheet.create({
+  fullContainer: {
+    flex: 1,
+    backgroundColor: COLORS.white,
+  },
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
@@ -393,5 +404,10 @@ const styles = StyleSheet.create({
     fontSize: width * 0.03,
     color: COLORS.grayLight,
     fontWeight: '500',
+  },
+  // White Navigation Bar Spacer for iOS
+  navigationBarSpacer: {
+    height: Platform.OS === 'ios' ? 34 : 0, // Height of iOS home indicator
+    backgroundColor: COLORS.white,
   },
 });

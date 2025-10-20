@@ -15,7 +15,8 @@ import {
   Platform,
   Alert,
   Animated,
-  Easing
+  Easing,
+  StatusBar
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -24,8 +25,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
 import Toast from 'react-native-toast-message';
+import NetInfo from '@react-native-community/netinfo';
 
 const { width, height } = Dimensions.get('window');
+
+// Get status bar height for different devices
+const STATUS_BAR_HEIGHT = Platform.OS === 'ios' ? 44 : StatusBar.currentHeight || 28;
 
 // Consistent color palette from store page
 const COLORS = {
@@ -170,28 +175,13 @@ const normalizeImageUrl = (imageUrl) => {
   return `https://account.babahub.co${normalizedPath}`;
 };
 
-// Internet connection check function
-const checkInternetConnection = () => {
-  return new Promise((resolve) => {
-    const timeout = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Timeout')), 5000)
-    );
-
-    const request = fetch('https://www.google.com', { method: 'HEAD' });
-
-    Promise.race([request, timeout])
-      .then(() => resolve(true))
-      .catch(() => resolve(false));
-  });
-};
-
-// SIMPLIFIED Internet Status Bar Component
+// IMPROVED Internet Status Bar Component for Android
 const InternetStatusBar = ({ isOnline, onRetry }) => {
-  const translateY = useRef(new Animated.Value(-50)).current;
+  const translateY = useRef(new Animated.Value(-60)).current;
 
   useEffect(() => {
     Animated.spring(translateY, {
-      toValue: isOnline ? -50 : 0,
+      toValue: isOnline ? -60 : 0,
       tension: 50,
       friction: 8,
       useNativeDriver: true,
@@ -210,8 +200,11 @@ const InternetStatusBar = ({ isOnline, onRetry }) => {
       ]}
     >
       <View style={styles.internetStatusContent}>
-        <Ionicons name="wifi-outline" size={16} color={COLORS.white} />
+        <Ionicons name="wifi-outline" size={18} color={COLORS.white} />
         <Text style={styles.internetStatusText}>No internet connection</Text>
+        <TouchableOpacity onPress={onRetry} style={styles.retryButton}>
+          <Text style={styles.retryText}>Retry</Text>
+        </TouchableOpacity>
       </View>
     </Animated.View>
   );
@@ -768,24 +761,51 @@ const HomeScreen = () => {
   // API base URL
   const API_BASE_URL = 'https://account.babahub.co';
 
-  // Check internet connection
-  const checkConnection = async () => {
+  // IMPROVED Internet connection check using NetInfo
+  const checkConnection = useCallback(async () => {
     setConnectionChecking(true);
-    const connected = await checkInternetConnection();
-    setIsOnline(connected);
-    setConnectionChecking(false);
-    
-    if (!connected && products.length > 0) {
-      setHasCachedData(true);
-      Toast.show({
-        type: 'info',
-        text1: 'Offline Mode',
-        text2: 'Showing cached products',
-      });
+    try {
+      const netInfoState = await NetInfo.fetch();
+      const connected = netInfoState.isConnected && netInfoState.isInternetReachable;
+      setIsOnline(connected);
+      
+      if (!connected && products.length > 0) {
+        setHasCachedData(true);
+        Toast.show({
+          type: 'info',
+          text1: 'Offline Mode',
+          text2: 'Showing cached products',
+        });
+      }
+      
+      return connected;
+    } catch (error) {
+      console.error('Error checking connection:', error);
+      setIsOnline(false);
+      return false;
+    } finally {
+      setConnectionChecking(false);
     }
-    
-    return connected;
-  };
+  }, [products.length]);
+
+  // Set up network listener
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener(state => {
+      const connected = state.isConnected && state.isInternetReachable;
+      setIsOnline(connected);
+      
+      if (!connected && products.length > 0) {
+        setHasCachedData(true);
+        Toast.show({
+          type: 'info',
+          text1: 'Offline Mode',
+          text2: 'Showing cached products',
+        });
+      }
+    });
+
+    return () => unsubscribe();
+  }, [products.length]);
 
   // Fetch wishlist and cart from AsyncStorage
   const fetchWishlistAndCart = async () => {
@@ -1228,6 +1248,12 @@ const HomeScreen = () => {
   if (loading) {
     return (
       <SafeAreaView style={styles.safeArea}>
+        {/* FIXED: Status bar with white background */}
+        <StatusBar 
+          backgroundColor={COLORS.white} 
+          barStyle="dark-content" 
+          translucent={false}
+        />
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color={COLORS.primary} />
           <Text style={styles.loadingText}>Loading home...</Text>
@@ -1237,8 +1263,15 @@ const HomeScreen = () => {
   }
 
   return (
-    <View style={styles.scrollContainer}>
-      {/* SIMPLIFIED Internet Status Bar */}
+    <SafeAreaView style={styles.safeArea}>
+      {/* FIXED: Status bar with white background */}
+      <StatusBar 
+        backgroundColor={COLORS.white} 
+        barStyle="dark-content" 
+        translucent={false}
+      />
+      
+      {/* IMPROVED Internet Status Bar */}
       <InternetStatusBar 
         isOnline={isOnline} 
         onRetry={checkConnection}
@@ -1524,15 +1557,15 @@ const HomeScreen = () => {
         </View>
       </Animated.ScrollView>
       <Toast />
-    </View>
+    </SafeAreaView>
   );
 };
 
-// Styles
+// IMPROVED Styles for Android with better responsiveness
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.white, // Changed to white to match status bar
   },
   scrollContainer: {
     flex: 1,
@@ -1554,16 +1587,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: COLORS.gray,
   },
-  // SIMPLIFIED Internet Status Bar Styles
+  // IMPROVED Internet Status Bar Styles for Android
   internetStatusBar: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     backgroundColor: COLORS.error,
-    paddingVertical: 12,
+    paddingVertical: 14,
     paddingHorizontal: 16,
     zIndex: 2000,
+    elevation: 8,
   },
   internetStatusContent: {
     flexDirection: 'row',
@@ -1572,13 +1606,25 @@ const styles = StyleSheet.create({
   },
   internetStatusText: {
     color: COLORS.white,
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: 15,
+    fontWeight: '600',
     marginLeft: 8,
+    marginRight: 12,
+  },
+  retryButton: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  retryText: {
+    color: COLORS.white,
+    fontSize: 13,
+    fontWeight: '600',
   },
   // Offline Styles
   offlineContent: {
-    paddingTop: 40, // Extra padding to account for status bar
+    paddingTop: 50, // Extra padding to account for status bar
   },
   offlineIndicator: {
     flexDirection: 'row',
@@ -1612,7 +1658,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'ios' ? 60 : 40,
+    paddingTop: Platform.OS === 'android' ? STATUS_BAR_HEIGHT + 10 : 60,
     paddingBottom: 16,
     backgroundColor: COLORS.background,
   },
@@ -1657,6 +1703,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 2,
     borderColor: COLORS.background,
+    elevation: 4,
   },
   badgeText: {
     color: COLORS.white,
@@ -1697,6 +1744,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: COLORS.dark,
     padding: 0,
+    includeFontPadding: false, // Better text alignment on Android
   },
   searchClearButton: {
     padding: 4,
@@ -1865,18 +1913,19 @@ const styles = StyleSheet.create({
   },
   quickAccessItem: {
     alignItems: 'center',
-    width: '23%',
+    width: width * 0.21, // Responsive width
   },
   quickAccessIcon: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: width * 0.14, // Responsive icon size
+    height: width * 0.14,
+    borderRadius: width * 0.07,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 8,
+    elevation: 4,
   },
   quickAccessText: {
-    fontSize: 12,
+    fontSize: width * 0.03, // Responsive font size
     fontWeight: '600',
     color: COLORS.dark,
     textAlign: 'center',
@@ -1887,16 +1936,17 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   categoryCard: {
-    width: 140,
+    width: width * 0.35, // Responsive width
     marginRight: 16,
   },
   categoryImageContainer: {
     position: 'relative',
     width: '100%',
-    height: 100,
+    height: width * 0.25, // Responsive height
     borderRadius: 12,
     overflow: 'hidden',
     marginBottom: 12,
+    elevation: 4,
   },
   categoryImage: {
     width: '100%',
@@ -1911,13 +1961,13 @@ const styles = StyleSheet.create({
     padding: 6,
   },
   categoryName: {
-    fontSize: 16,
+    fontSize: width * 0.04, // Responsive font size
     fontWeight: '600',
     color: COLORS.dark,
     marginBottom: 4,
   },
   categoryProducts: {
-    fontSize: 12,
+    fontSize: width * 0.03, // Responsive font size
     color: COLORS.gray,
   },
   // Special Offer Banner Styles
@@ -1927,36 +1977,27 @@ const styles = StyleSheet.create({
     marginVertical: 20,
     borderRadius: 16,
     overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.2,
-        shadowRadius: 12,
-      },
-      android: {
-        elevation: 8,
-      },
-    }),
+    elevation: 8,
   },
   specialOfferContent: {
-    flexDirection: 'row',
+    flexDirection: width > 400 ? 'row' : 'column', // Responsive layout
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 20,
   },
   specialOfferTextContainer: {
     flex: 1,
-    marginRight: 16,
+    marginRight: width > 400 ? 16 : 0,
+    marginBottom: width > 400 ? 0 : 12,
   },
   specialOfferTitle: {
-    fontSize: 18,
+    fontSize: width * 0.045, // Responsive font size
     fontWeight: 'bold',
     color: COLORS.white,
     marginBottom: 4,
   },
   specialOfferSubtitle: {
-    fontSize: 14,
+    fontSize: width * 0.035, // Responsive font size
     color: COLORS.white,
     opacity: 0.9,
     lineHeight: 18,
@@ -1985,22 +2026,12 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: 'rgba(99, 102, 241, 0.08)',
-    ...Platform.select({
-      ios: {
-        shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.1,
-        shadowRadius: 12,
-      },
-      android: {
-        elevation: 6,
-      },
-    }),
+    elevation: 6,
   },
   imageContainer: {
     position: 'relative',
     width: '100%',
-    height: 180,
+    height: width * 0.45, // Responsive height
     backgroundColor: COLORS.light,
   },
   imagePlaceholder: {
@@ -2023,17 +2054,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.4)',
     borderRadius: 20,
     padding: 8,
-    ...Platform.select({
-      ios: {
-        shadowColor: COLORS.dark,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.3,
-        shadowRadius: 3,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
+    elevation: 3,
   },
   heartIconActive: {
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
@@ -2060,7 +2081,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.cardBackground,
   },
   title: {
-    fontSize: 15,
+    fontSize: width * 0.035, // Responsive font size
     fontWeight: '700',
     color: COLORS.dark,
     marginBottom: 6,
@@ -2103,7 +2124,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   price: {
-    fontSize: 17,
+    fontSize: width * 0.04, // Responsive font size
     fontWeight: 'bold',
     color: COLORS.primary,
   },
@@ -2119,17 +2140,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 6,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
+    elevation: 4,
   },
   cartButtonActive: {
     backgroundColor: COLORS.success,
@@ -2151,6 +2162,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: COLORS.white,
     zIndex: 1,
+    elevation: 4,
   },
   quantityText: {
     color: COLORS.white,
@@ -2162,15 +2174,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   bannerContainer: {
-    height: 200,
+    height: width * 0.5, // Responsive height
     marginHorizontal: 20,
     borderRadius: 16,
     overflow: 'hidden',
     position: 'relative',
+    elevation: 4,
   },
   bannerItem: {
     width: width - 40,
-    height: 200,
+    height: width * 0.5,
     borderRadius: 16,
     overflow: 'hidden',
     position: 'relative',
@@ -2202,13 +2215,13 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   bannerTitle: {
-    fontSize: 24,
+    fontSize: width * 0.06, // Responsive font size
     fontWeight: 'bold',
     color: COLORS.white,
     marginBottom: 8,
   },
   bannerSubtitle: {
-    fontSize: 16,
+    fontSize: width * 0.04, // Responsive font size
     color: COLORS.white,
     marginBottom: 16,
   },
@@ -2271,11 +2284,12 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 80,
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.white, // Changed to white
     borderBottomWidth: 1,
     borderBottomColor: COLORS.light,
     zIndex: 1000,
-    paddingTop: Platform.OS === 'ios' ? 40 : 20,
+    paddingTop: Platform.OS === 'android' ? STATUS_BAR_HEIGHT : 40,
+    elevation: 4,
   },
   stickyHeaderContent: {
     flexDirection: 'row',
@@ -2296,6 +2310,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
+    elevation: 4,
   },
   stickyProfileInitialsText: {
     color: COLORS.white,
@@ -2330,7 +2345,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: COLORS.background,
+    borderColor: COLORS.white, // Changed to white
+    elevation: 4,
   },
   stickyBadgeText: {
     color: COLORS.white,

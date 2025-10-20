@@ -28,12 +28,41 @@ import {
   Platform,
   Dimensions,
   Modal,
+  StatusBar
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const { width, height } = Dimensions.get('window');
+
+// Responsive sizing functions
+const responsiveWidth = (percentage) => (width * percentage) / 100;
+const responsiveHeight = (percentage) => (height * percentage) / 100;
+const responsiveFont = (size) => {
+  const scale = Math.min(width, height) / 400;
+  const scaledSize = size * scale;
+  return Math.max(scaledSize, 12);
+};
+
+// Safe area calculations for different devices
+const getSafeAreaBottom = () => {
+  if (Platform.OS === 'ios') {
+    return responsiveHeight(2);
+  } else {
+    // For Android devices including Huawei - increased padding for navigation bar
+    return responsiveHeight(6);
+  }
+};
+
+const getSafeAreaTop = () => {
+  if (Platform.OS === 'ios') {
+    return responsiveHeight(6);
+  } else {
+    // For Android devices including Huawei
+    return (StatusBar.currentHeight || responsiveHeight(4)) + responsiveHeight(2);
+  }
+};
 
 // Premium brand color palette
 const COLORS = {
@@ -259,6 +288,10 @@ const Checkout = () => {
   const nameInputRef = useRef(null);
   const phoneInputRef = useRef(null);
   const addressInputRef = useRef(null);
+
+  // Safe area values
+  const safeAreaBottom = getSafeAreaBottom();
+  const safeAreaTop = getSafeAreaTop();
 
   // Check internet connection periodically
   useEffect(() => {
@@ -505,6 +538,7 @@ const Checkout = () => {
   if (cartItems.length === 0) {
     return (
       <SafeAreaView style={styles.safeArea}>
+        <StatusBar backgroundColor={COLORS.white} barStyle="dark-content" />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={COLORS.primary} />
           <Text style={styles.loadingText}>Loading your cart...</Text>
@@ -521,7 +555,9 @@ const Checkout = () => {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={styles.container}>
+      <StatusBar backgroundColor={COLORS.white} barStyle="dark-content" />
+      
       {/* Internet Connection Status Bar */}
       {!isConnected && (
         <View style={styles.offlineContainer}>
@@ -533,7 +569,7 @@ const Checkout = () => {
       <Animated.ScrollView 
         ref={scrollViewRef}
         style={[
-          styles.container,
+          styles.scrollView,
           {
             opacity: fadeAnim,
             transform: [{ translateY: slideAnim }]
@@ -543,13 +579,13 @@ const Checkout = () => {
         contentContainerStyle={styles.scrollContent}
       >
         {/* Header - Consistent with CartScreen */}
-        <View style={styles.header}>
+        <View style={[styles.header, { paddingTop: safeAreaTop }]}>
           <TouchableOpacity 
             style={styles.backButton}
             onPress={() => router.back()}
           >
             <View style={styles.backButtonInner}>
-              <Ionicons name="chevron-back" size={20} color={COLORS.primary} />
+              <Ionicons name="chevron-back" size={responsiveFont(18)} color={COLORS.primary} />
             </View>
           </TouchableOpacity>
           <View style={styles.headerCenter}>
@@ -775,15 +811,19 @@ const Checkout = () => {
             </View>
           </View>
         )}
+
+        {/* Extra Spacer for Footer */}
+        <View style={[styles.bottomSpacer, { height: responsiveHeight(12) + safeAreaBottom }]} />
       </Animated.ScrollView>
 
       {/* Premium Checkout Footer - Fixed Pay Button */}
-      <View style={styles.footer}>
-        <View style={styles.footerBackground}>
+      {cartItems.length > 0 && (
+        <View style={[styles.footer, { paddingBottom: safeAreaBottom }]}>
           <View style={styles.footerContent}>
             <View style={styles.footerSummary}>
+              <Text style={styles.footerTotalLabel}>Total Amount</Text>
               <Text style={styles.footerTotal}>R {calculateTotal().toFixed(2)}</Text>
-              <Text style={styles.footerItems}>{cartItems.length} items</Text>
+              <Text style={styles.footerItems}>{cartItems.length} {cartItems.length === 1 ? 'item' : 'items'}</Text>
             </View>
             <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
               <TouchableOpacity 
@@ -794,16 +834,16 @@ const Checkout = () => {
                 {loading ? (
                   <ActivityIndicator size="small" color={COLORS.white} />
                 ) : (
-                  <>
+                  <View style={styles.checkoutButtonContent}>
                     <Ionicons name="lock-closed" size={16} color={COLORS.white} />
                     <Text style={styles.checkoutText}>Pay Now</Text>
-                  </>
+                  </View>
                 )}
               </TouchableOpacity>
             </Animated.View>
           </View>
         </View>
-      </View>
+      )}
 
       {/* Custom Popup Modal */}
       <CustomPopup
@@ -813,22 +853,26 @@ const Checkout = () => {
         type={popupType}
         onClose={hidePopup}
       />
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: COLORS.white,
-  },
   container: {
     flex: 1,
     backgroundColor: COLORS.white,
   },
+  safeArea: {
+    flex: 1,
+    backgroundColor: COLORS.white,
+  },
+  scrollView: {
+    flex: 1,
+  },
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: 100, // Increased to accommodate the larger button
+    backgroundColor: COLORS.white,
+    paddingBottom: responsiveHeight(2),
   },
   loadingContainer: {
     flex: 1,
@@ -837,9 +881,10 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
   },
   loadingText: {
-    marginTop: 12,
-    fontSize: 14,
+    marginTop: responsiveHeight(2),
+    fontSize: responsiveFont(16),
     color: COLORS.gray,
+    fontWeight: '500',
   },
   // Offline Status Bar
   offlineContainer: {
@@ -926,7 +971,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 16, // Increased vertical padding
+    paddingVertical: 16,
     borderRadius: 140,
     gap: 8,
     shadowColor: '#000',
@@ -934,78 +979,77 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 4,
-    minHeight: 52, // Ensure minimum height
+    minHeight: 52,
   },
   popupButtonText: {
     color: COLORS.white,
-    fontSize: 16, // Increased font size
+    fontSize: 16,
     fontWeight: '700',
   },
-  // Header
+  // Header - White Background
   header: {
     backgroundColor: COLORS.white,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    paddingTop: Platform.OS === 'ios' ? 50 : 30,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
+    paddingHorizontal: responsiveWidth(4),
+    paddingVertical: responsiveHeight(1.5),
+    borderBottomLeftRadius: responsiveWidth(5),
+    borderBottomRightRadius: responsiveWidth(5),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: responsiveHeight(0.5) },
     shadowOpacity: 0.08,
-    shadowRadius: 12,
+    shadowRadius: responsiveWidth(3),
     elevation: 5,
-    marginBottom: 8,
+    marginBottom: responsiveHeight(1),
   },
   backButton: {
-    padding: 6,
+    padding: responsiveWidth(1.5),
   },
   backButtonInner: {
-    width: 36,
-    height: 36,
+    width: responsiveWidth(9),
+    height: responsiveWidth(9),
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(99, 102, 241, 0.1)',
-    borderRadius: 10,
+    borderRadius: responsiveWidth(2.5),
   },
   headerCenter: {
     alignItems: 'center',
     flex: 1,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: responsiveFont(18),
     fontWeight: '700',
     color: COLORS.dark,
     marginBottom: 2,
   },
   headerSubtitle: {
-    fontSize: 13,
+    fontSize: responsiveFont(13),
     color: COLORS.gray,
     fontWeight: '500',
   },
   headerRight: {
-    width: 36,
+    width: responsiveWidth(9),
   },
   // User Info Section
   userInfoSection: {
     backgroundColor: COLORS.white,
-    marginHorizontal: 16,
-    marginTop: 12,
-    borderRadius: 12,
-    padding: 16,
+    marginHorizontal: responsiveWidth(4),
+    marginTop: responsiveHeight(1),
+    borderRadius: responsiveWidth(3),
+    padding: responsiveWidth(4),
     borderWidth: 1,
     borderColor: COLORS.light,
   },
   userInfoHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
-    gap: 8,
+    marginBottom: responsiveHeight(1),
+    gap: responsiveWidth(2),
   },
   userInfoTitle: {
-    fontSize: 16,
+    fontSize: responsiveFont(16),
     fontWeight: '700',
     color: COLORS.dark,
   },
@@ -1013,12 +1057,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.primary + '08',
-    padding: 12,
-    borderRadius: 8,
-    gap: 8,
+    padding: responsiveWidth(3),
+    borderRadius: responsiveWidth(2),
+    gap: responsiveWidth(2),
   },
   userEmail: {
-    fontSize: 14,
+    fontSize: responsiveFont(14),
     color: COLORS.dark,
     fontWeight: '600',
     flex: 1,
@@ -1027,56 +1071,56 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.success + '15',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    gap: 4,
+    paddingHorizontal: responsiveWidth(2),
+    paddingVertical: responsiveHeight(0.5),
+    borderRadius: responsiveWidth(1.5),
+    gap: responsiveWidth(1),
   },
   verifiedText: {
-    fontSize: 10,
+    fontSize: responsiveFont(10),
     color: COLORS.success,
     fontWeight: '700',
   },
   // Sections
   section: {
     backgroundColor: COLORS.white,
-    marginHorizontal: 16,
-    marginTop: 12,
-    borderRadius: 12,
-    padding: 16,
+    marginHorizontal: responsiveWidth(4),
+    marginTop: responsiveHeight(1),
+    borderRadius: responsiveWidth(3),
+    padding: responsiveWidth(4),
     borderWidth: 1,
     borderColor: COLORS.light,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
-    gap: 8,
+    marginBottom: responsiveHeight(1.5),
+    gap: responsiveWidth(2),
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: responsiveFont(16),
     fontWeight: '700',
     color: COLORS.dark,
   },
   totalBadge: {
     backgroundColor: COLORS.primary,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 12,
+    paddingHorizontal: responsiveWidth(2.5),
+    paddingVertical: responsiveHeight(0.5),
+    borderRadius: responsiveWidth(3),
     marginLeft: 'auto',
   },
   totalBadgeText: {
-    fontSize: 12,
+    fontSize: responsiveFont(12),
     fontWeight: '700',
     color: COLORS.white,
   },
   // Two Column Form Layout
   twoColumnGrid: {
-    gap: 12,
+    gap: responsiveHeight(1),
   },
   formRow: {
     flexDirection: 'row',
-    gap: 12,
+    gap: responsiveWidth(3),
   },
   column: {
     flex: 1,
@@ -1086,28 +1130,28 @@ const styles = StyleSheet.create({
   },
   // Inputs
   inputGroup: {
-    gap: 8,
+    gap: responsiveHeight(0.5),
   },
   inputLabel: {
-    fontSize: 14,
+    fontSize: responsiveFont(14),
     fontWeight: '600',
     color: COLORS.dark,
-    marginBottom: 6,
+    marginBottom: responsiveHeight(0.5),
   },
   input: {
-    height: 44,
+    height: responsiveHeight(5.5),
     borderWidth: 1.5,
     borderColor: COLORS.light,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    fontSize: 14,
+    borderRadius: responsiveWidth(2.5),
+    paddingHorizontal: responsiveWidth(3),
+    fontSize: responsiveFont(14),
     color: COLORS.dark,
     backgroundColor: COLORS.white,
   },
   textArea: {
-    height: 80,
+    height: responsiveHeight(10),
     textAlignVertical: 'top',
-    paddingTop: 10,
+    paddingTop: responsiveHeight(1),
   },
   inputError: {
     borderColor: COLORS.error,
@@ -1116,74 +1160,74 @@ const styles = StyleSheet.create({
   errorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    marginTop: 4,
+    gap: responsiveWidth(1),
+    marginTop: responsiveHeight(0.5),
   },
   errorText: {
     color: COLORS.error,
-    fontSize: 11,
+    fontSize: responsiveFont(11),
     fontWeight: '500',
   },
   // Order Items
   orderItemsContainer: {
-    gap: 10,
-    marginBottom: 16,
+    gap: responsiveHeight(1),
+    marginBottom: responsiveHeight(1.5),
   },
   orderItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
+    padding: responsiveWidth(3),
     backgroundColor: COLORS.background,
-    borderRadius: 10,
+    borderRadius: responsiveWidth(2.5),
   },
   orderItemImage: {
-    width: 50,
-    height: 50,
-    borderRadius: 8,
-    marginRight: 12,
+    width: responsiveWidth(12.5),
+    height: responsiveWidth(12.5),
+    borderRadius: responsiveWidth(2),
+    marginRight: responsiveWidth(3),
   },
   placeholderContainer: {
     backgroundColor: COLORS.light,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 8,
+    borderRadius: responsiveWidth(2),
   },
   imageLoading: {
     backgroundColor: COLORS.light,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 8,
+    borderRadius: responsiveWidth(2),
   },
   productImage: {
-    borderRadius: 8,
+    borderRadius: responsiveWidth(2),
   },
   orderItemDetails: {
     flex: 1,
   },
   orderItemTitle: {
-    fontSize: 14,
+    fontSize: responsiveFont(14),
     fontWeight: '600',
     color: COLORS.dark,
-    marginBottom: 4,
+    marginBottom: responsiveHeight(0.5),
   },
   orderItemMeta: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginBottom: 6,
+    gap: responsiveWidth(1.5),
+    marginBottom: responsiveHeight(0.5),
   },
   variantContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: responsiveWidth(1),
   },
   colorDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: responsiveWidth(2),
+    height: responsiveWidth(2),
+    borderRadius: responsiveWidth(1),
   },
   variantText: {
-    fontSize: 11,
+    fontSize: responsiveFont(11),
     color: COLORS.gray,
     fontWeight: '500',
   },
@@ -1193,23 +1237,23 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   orderItemPrice: {
-    fontSize: 12,
+    fontSize: responsiveFont(12),
     color: COLORS.gray,
     fontWeight: '500',
   },
   orderItemTotal: {
-    fontSize: 14,
+    fontSize: responsiveFont(14),
     fontWeight: '700',
     color: COLORS.primary,
   },
   // Order Summary
   summaryCard: {
     backgroundColor: COLORS.background,
-    borderRadius: 10,
-    padding: 16,
+    borderRadius: responsiveWidth(2.5),
+    padding: responsiveWidth(4),
   },
   summaryGrid: {
-    gap: 8,
+    gap: responsiveHeight(0.75),
   },
   summaryRow: {
     flexDirection: 'row',
@@ -1217,12 +1261,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   summaryLabel: {
-    fontSize: 14,
+    fontSize: responsiveFont(14),
     color: COLORS.gray,
     fontWeight: '500',
   },
   summaryValue: {
-    fontSize: 14,
+    fontSize: responsiveFont(14),
     fontWeight: '600',
     color: COLORS.dark,
   },
@@ -1233,7 +1277,7 @@ const styles = StyleSheet.create({
   summaryDivider: {
     height: 1,
     backgroundColor: COLORS.light,
-    marginVertical: 8,
+    marginVertical: responsiveHeight(0.75),
   },
   totalRow: {
     flexDirection: 'row',
@@ -1241,125 +1285,147 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   totalLabel: {
-    fontSize: 15,
+    fontSize: responsiveFont(15),
     fontWeight: '700',
     color: COLORS.dark,
   },
   totalAmount: {
-    fontSize: 18,
+    fontSize: responsiveFont(18),
     fontWeight: '800',
     color: COLORS.primary,
   },
   // Security Note
   securityNote: {
     backgroundColor: COLORS.success + '08',
-    marginHorizontal: 16,
-    marginTop: 12,
-    padding: 14,
-    borderRadius: 10,
+    marginHorizontal: responsiveWidth(4),
+    marginTop: responsiveHeight(1),
+    padding: responsiveWidth(3.5),
+    borderRadius: responsiveWidth(2.5),
     borderLeftWidth: 3,
     borderLeftColor: COLORS.success,
   },
   securityHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 8,
+    gap: responsiveWidth(2),
+    marginBottom: responsiveHeight(0.75),
   },
   securityTitle: {
-    fontSize: 14,
+    fontSize: responsiveFont(14),
     fontWeight: '700',
     color: COLORS.success,
   },
   securityText: {
-    fontSize: 12,
+    fontSize: responsiveFont(12),
     color: COLORS.gray,
-    lineHeight: 16,
+    lineHeight: responsiveHeight(2),
   },
   // Shipping Progress
   shippingProgress: {
-    marginHorizontal: 16,
-    marginTop: 12,
-    padding: 12,
+    marginHorizontal: responsiveWidth(4),
+    marginTop: responsiveHeight(1),
+    padding: responsiveWidth(3),
     backgroundColor: COLORS.white,
-    borderRadius: 10,
+    borderRadius: responsiveWidth(2.5),
     borderWidth: 1,
     borderColor: COLORS.light,
   },
   progressHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginBottom: 8,
+    gap: responsiveWidth(1.5),
+    marginBottom: responsiveHeight(0.75),
   },
   progressText: {
-    fontSize: 12,
+    fontSize: responsiveFont(12),
     color: COLORS.dark,
     fontWeight: '500',
   },
   progressBar: {
-    height: 4,
+    height: responsiveHeight(0.5),
     backgroundColor: COLORS.light,
-    borderRadius: 2,
+    borderRadius: responsiveHeight(0.25),
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
     backgroundColor: COLORS.primary,
-    borderRadius: 2,
+    borderRadius: responsiveHeight(0.25),
   },
-  // Premium Footer - Fixed Pay Button
+  // Bottom Spacer for Footer
+  bottomSpacer: {
+    // Height is set dynamically in the component
+  },
+  // Premium Footer - Simplified with White Background
   footer: {
-    paddingTop: 12,
-  },
-  footerBackground: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     backgroundColor: COLORS.white,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: Platform.OS === 'ios' ? 30 : 20,
     borderTopWidth: 1,
-    borderLeftWidth: 1,
-    borderRightWidth: 1,
-    borderColor: COLORS.light,
+    borderTopColor: COLORS.light,
+    ...Platform.select({
+      ios: {
+        shadowColor: COLORS.dark,
+        shadowOffset: { width: 0, height: -responsiveHeight(0.5) },
+        shadowOpacity: 0.1,
+        shadowRadius: responsiveWidth(2),
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
   },
   footerContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingHorizontal: responsiveWidth(5),
+    paddingVertical: responsiveHeight(1.5),
   },
   footerSummary: {
     flex: 1,
   },
+  footerTotalLabel: {
+    fontSize: responsiveFont(12),
+    color: COLORS.gray,
+    fontWeight: '500',
+    marginBottom: responsiveHeight(0.25),
+  },
   footerTotal: {
-    fontSize: 20,
+    fontSize: responsiveFont(22),
     fontWeight: '800',
     color: COLORS.primary,
-    marginBottom: 2,
+    marginBottom: responsiveHeight(0.25),
   },
   footerItems: {
-    fontSize: 13,
+    fontSize: responsiveFont(13),
     color: COLORS.gray,
   },
   checkoutButton: {
+    backgroundColor: COLORS.primary,
+    borderRadius: responsiveWidth(35),
+    paddingHorizontal: responsiveWidth(5),
+    paddingVertical: responsiveHeight(1.5),
+    marginLeft: responsiveWidth(4),
+    ...Platform.select({
+      ios: {
+        shadowColor: COLORS.primary,
+        shadowOffset: { width: 0, height: responsiveHeight(0.5) },
+        shadowOpacity: 0.3,
+        shadowRadius: responsiveWidth(2),
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
+  },
+  checkoutButtonContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: 32, // Increased horizontal padding
-    paddingVertical: 18, // Increased vertical padding
-    borderRadius: 140,
-    gap: 8,
-    flex: 1,
-    marginLeft: 12,
     justifyContent: 'center',
-    minWidth: 140, // Increased minimum width
-    minHeight: 56, // Added minimum height
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 8,
+    gap: responsiveWidth(2),
   },
   checkoutButtonDisabled: {
     backgroundColor: COLORS.grayLight,
@@ -1367,11 +1433,8 @@ const styles = StyleSheet.create({
   },
   checkoutText: {
     color: COLORS.white,
-    fontSize: 17, // Slightly larger font
+    fontSize: responsiveFont(16),
     fontWeight: '700',
-    letterSpacing: 0.5,
-    includeFontPadding: false, // Prevents extra padding around text
-    textAlignVertical: 'center', // Ensures proper vertical alignment
   },
 });
 

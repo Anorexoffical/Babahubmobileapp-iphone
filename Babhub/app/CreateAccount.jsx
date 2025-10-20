@@ -12,6 +12,7 @@ import {
   KeyboardAvoidingView,
   Animated,
   Modal,
+  StatusBar,
 } from "react-native";
 import React, { useState, useRef, useEffect } from "react";
 import { useRouter } from "expo-router";
@@ -229,329 +230,362 @@ const CreateAccount = () => {
   const scrollViewRef = React.useRef();
 
   return (
-    <KeyboardAvoidingView
-      style={styles.keyboardAvoid}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
-      <ScrollView
-        ref={scrollViewRef}
-        contentContainerStyle={styles.container}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
+    <View style={styles.fullContainer}>
+      {/* White Status Bar */}
+      <StatusBar 
+        barStyle="dark-content" 
+        backgroundColor={COLORS.white}
+        translucent={false}
+      />
+      
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoid}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        <Animated.View 
-          style={[
-            styles.content,
-            {
-              opacity: fadeAnim,
-              transform: [{ translateY: slideAnim }]
-            }
-          ]}
+        <ScrollView
+          ref={scrollViewRef}
+          contentContainerStyle={styles.container}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          {/* Header Section */}
-          <View style={styles.headerSection}>
-            <View style={styles.headerIcon}>
-              <MaterialIcons name="person-add" size={32} color={COLORS.primary} />
-            </View>
-            <Text style={styles.header}>Join BabaHub</Text>
-            <Text style={styles.subHeader}>
-              Create your account and start your shopping journey
-            </Text>
-          </View>
-
-          {/* Form Section */}
-          <View style={styles.formSection}>
-            {/* Name Input */}
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>
-                Full Name
-                <Text style={styles.required}> *</Text>
-              </Text>
-              <View style={[
-                styles.inputWrapper,
-                nameFocus && styles.inputWrapperFocused,
-                errors.name && styles.inputWrapperError,
-                isLoading && styles.inputDisabled
-              ]}>
-                <MaterialIcons 
-                  name="person" 
-                  size={20} 
-                  color={nameFocus ? COLORS.primary : (errors.name ? COLORS.error : COLORS.grayLight)} 
-                  style={styles.inputIcon}
-                />
-                <TextInput
-                  placeholder="John Doe"
-                  placeholderTextColor={COLORS.grayLight}
-                  style={styles.input}
-                  value={name}
-                  onChangeText={(text) => {
-                    setName(text);
-                    if (errors.name && text.trim()) {
-                      setErrors((prev) => ({ ...prev, name: "" }));
-                    }
-                  }}
-                  onFocus={() => setNameFocus(true)}
-                  onBlur={() => setNameFocus(false)}
-                  underlineColorAndroid="transparent"
-                  selectionColor={COLORS.primary}
-                  editable={!isLoading}
-                />
+          <Animated.View 
+            style={[
+              styles.content,
+              {
+                opacity: fadeAnim,
+                transform: [{ translateY: slideAnim }]
+              }
+            ]}
+          >
+            {/* Header Section */}
+            <View style={styles.headerSection}>
+              <View style={styles.headerIcon}>
+                <MaterialIcons name="person-add" size={32} color={COLORS.primary} />
               </View>
-              {errors.name ? <Text style={styles.errorText}>{errors.name}</Text> : null}
-            </View>
-
-            {/* Email Input */}
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>
-                Email Address
-                <Text style={styles.required}> *</Text>
+              <Text style={styles.header}>Join BabaHub</Text>
+              <Text style={styles.subHeader}>
+                Create your account and start your shopping journey
               </Text>
-              <View style={[
-                styles.inputWrapper,
-                emailFocus && styles.inputWrapperFocused,
-                errors.email && styles.inputWrapperError,
-                isLoading && styles.inputDisabled
-              ]}>
-                <MaterialIcons 
-                  name="email" 
-                  size={20} 
-                  color={emailFocus ? COLORS.primary : (errors.email ? COLORS.error : COLORS.grayLight)} 
-                  style={styles.inputIcon}
-                />
-                <TextInput
-                  placeholder="hello@example.com"
-                  placeholderTextColor={COLORS.grayLight}
-                  style={styles.input}
-                  keyboardType="email-address"
-                  value={email}
-                  onChangeText={(text) => {
-                    setEmail(text);
-                    if (errors.email && text.trim()) {
-                      setErrors((prev) => ({ ...prev, email: "" }));
-                    }
-                  }}
-                  onFocus={() => setEmailFocus(true)}
-                  onBlur={() => setEmailFocus(false)}
-                  underlineColorAndroid="transparent"
-                  selectionColor={COLORS.primary}
-                  autoCapitalize="none"
-                  editable={!isLoading}
-                />
-              </View>
-              {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
             </View>
 
-            {/* DOB Input */}
-            <View style={styles.inputContainer}>
-              <View style={styles.dobHeader}>
+            {/* Form Section */}
+            <View style={styles.formSection}>
+              {/* Name Input */}
+              <View style={styles.inputContainer}>
                 <Text style={styles.label}>
-                  Date of Birth
+                  Full Name
                   <Text style={styles.required}> *</Text>
                 </Text>
-                <View style={styles.dobHelper}>
-                  <MaterialIcons name="info" size={14} color={COLORS.primary} />
-                  <Text style={styles.dobHelperText}>For account recovery</Text>
-                </View>
-              </View>
-              <TouchableOpacity 
-                onPress={showDatepicker}
-                disabled={isLoading}
-              >
                 <View style={[
                   styles.inputWrapper,
-                  dobFocus && styles.inputWrapperFocused,
-                  errors.dob && styles.inputWrapperError,
-                  isLoading && styles.inputDisabled,
-                  styles.dobInput,
+                  nameFocus && styles.inputWrapperFocused,
+                  errors.name && styles.inputWrapperError,
+                  isLoading && styles.inputDisabled
                 ]}>
                   <MaterialIcons 
-                    name="calendar-today" 
+                    name="person" 
                     size={20} 
-                    color={dobFocus ? COLORS.primary : (errors.dob ? COLORS.error : COLORS.grayLight)} 
+                    color={nameFocus ? COLORS.primary : (errors.name ? COLORS.error : COLORS.grayLight)} 
                     style={styles.inputIcon}
                   />
-                  <Text style={[dob ? styles.dobText : styles.placeholderText]}>
-                    {dob || "DD/MM/YYYY"}
-                  </Text>
+                  <TextInput
+                    placeholder="John Doe"
+                    placeholderTextColor={COLORS.grayLight}
+                    style={styles.input}
+                    value={name}
+                    onChangeText={(text) => {
+                      setName(text);
+                      if (errors.name && text.trim()) {
+                        setErrors((prev) => ({ ...prev, name: "" }));
+                      }
+                    }}
+                    onFocus={() => setNameFocus(true)}
+                    onBlur={() => setNameFocus(false)}
+                    underlineColorAndroid="transparent"
+                    selectionColor={COLORS.primary}
+                    editable={!isLoading}
+                    autoCapitalize="words"
+                    autoCorrect={false}
+                    autoComplete="name"
+                    textContentType="name"
+                  />
+                </View>
+                {errors.name ? <Text style={styles.errorText}>{errors.name}</Text> : null}
+              </View>
+
+              {/* Email Input */}
+              <View style={styles.inputContainer}>
+                <Text style={styles.label}>
+                  Email Address
+                  <Text style={styles.required}> *</Text>
+                </Text>
+                <View style={[
+                  styles.inputWrapper,
+                  emailFocus && styles.inputWrapperFocused,
+                  errors.email && styles.inputWrapperError,
+                  isLoading && styles.inputDisabled
+                ]}>
                   <MaterialIcons 
-                    name="arrow-drop-down" 
-                    size={24} 
-                    color={COLORS.gray} 
+                    name="email" 
+                    size={20} 
+                    color={emailFocus ? COLORS.primary : (errors.email ? COLORS.error : COLORS.grayLight)} 
+                    style={styles.inputIcon}
+                  />
+                  <TextInput
+                    placeholder="hello@example.com"
+                    placeholderTextColor={COLORS.grayLight}
+                    style={styles.input}
+                    keyboardType="email-address"
+                    value={email}
+                    onChangeText={(text) => {
+                      setEmail(text);
+                      if (errors.email && text.trim()) {
+                        setErrors((prev) => ({ ...prev, email: "" }));
+                      }
+                    }}
+                    onFocus={() => setEmailFocus(true)}
+                    onBlur={() => setEmailFocus(false)}
+                    underlineColorAndroid="transparent"
+                    selectionColor={COLORS.primary}
+                    autoCapitalize="none"
+                    editable={!isLoading}
+                    autoCorrect={false}
+                    autoComplete="email"
+                    textContentType="emailAddress"
                   />
                 </View>
-              </TouchableOpacity>
-              {errors.dob ? (
-                <Text style={styles.errorText}>{errors.dob}</Text>
-              ) : null}
-            </View>
+                {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
+              </View>
 
-            {/* Date Picker Modal */}
-            <DateTimePickerModal
-              isVisible={isDatePickerVisible}
-              mode="date"
-              maximumDate={new Date()}
-              date={selectedDate}
-              onConfirm={handleConfirmDate}
-              onCancel={() => setDatePickerVisibility(false)}
-              buttonTextColorIOS={COLORS.primary}
-              accentColor={COLORS.primary}
-            />
-
-            {/* Password Input */}
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>
-                Password
-                <Text style={styles.required}> *</Text>
-              </Text>
-              <View style={[
-                styles.inputWrapper,
-                passwordFocus && styles.inputWrapperFocused,
-                errors.password && styles.inputWrapperError,
-                isLoading && styles.inputDisabled
-              ]}>
-                <MaterialIcons 
-                  name="lock" 
-                  size={20} 
-                  color={passwordFocus ? COLORS.primary : (errors.password ? COLORS.error : COLORS.grayLight)} 
-                  style={styles.inputIcon}
-                />
-                <TextInput
-                  placeholder="••••••••"
-                  placeholderTextColor={COLORS.grayLight}
-                  style={styles.input}
-                  secureTextEntry={!passwordVisible}
-                  value={password}
-                  onChangeText={(text) => {
-                    setPassword(text);
-                    if (errors.password && text) {
-                      setErrors((prev) => ({ ...prev, password: "" }));
-                    }
-                    if (errors.confirmPassword && text === confirmPassword) {
-                      setErrors((prev) => ({ ...prev, confirmPassword: "" }));
-                    }
-                  }}
-                  onFocus={() => setPasswordFocus(true)}
-                  onBlur={() => setPasswordFocus(false)}
-                  underlineColorAndroid="transparent"
-                  selectionColor={COLORS.primary}
-                  editable={!isLoading}
-                />
+              {/* DOB Input */}
+              <View style={styles.inputContainer}>
+                <View style={styles.dobHeader}>
+                  <Text style={styles.label}>
+                    Date of Birth
+                    <Text style={styles.required}> *</Text>
+                  </Text>
+                  <View style={styles.dobHelper}>
+                    <MaterialIcons name="info" size={14} color={COLORS.primary} />
+                    <Text style={styles.dobHelperText}>For account recovery</Text>
+                  </View>
+                </View>
                 <TouchableOpacity 
-                  onPress={() => setPasswordVisible(!passwordVisible)}
-                  style={styles.visibilityButton}
+                  onPress={showDatepicker}
                   disabled={isLoading}
                 >
-                  <MaterialIcons
-                    name={passwordVisible ? "visibility" : "visibility-off"}
-                    size={22}
-                    color={COLORS.gray}
-                  />
+                  <View style={[
+                    styles.inputWrapper,
+                    dobFocus && styles.inputWrapperFocused,
+                    errors.dob && styles.inputWrapperError,
+                    isLoading && styles.inputDisabled,
+                    styles.dobInput,
+                  ]}>
+                    <MaterialIcons 
+                      name="calendar-today" 
+                      size={20} 
+                      color={dobFocus ? COLORS.primary : (errors.dob ? COLORS.error : COLORS.grayLight)} 
+                      style={styles.inputIcon}
+                    />
+                    <Text style={[dob ? styles.dobText : styles.placeholderText]}>
+                      {dob || "DD/MM/YYYY"}
+                    </Text>
+                    <MaterialIcons 
+                      name="arrow-drop-down" 
+                      size={24} 
+                      color={COLORS.gray} 
+                    />
+                  </View>
                 </TouchableOpacity>
+                {errors.dob ? (
+                  <Text style={styles.errorText}>{errors.dob}</Text>
+                ) : null}
               </View>
-              {errors.password ? (
-                <Text style={styles.errorText}>{errors.password}</Text>
-              ) : (
-                <Text style={styles.helperText}>Must be at least 6 characters</Text>
-              )}
-            </View>
 
-            {/* Confirm Password Input */}
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>
-                Confirm Password
-                <Text style={styles.required}> *</Text>
-              </Text>
-              <View style={[
-                styles.inputWrapper,
-                confirmPasswordFocus && styles.inputWrapperFocused,
-                errors.confirmPassword && styles.inputWrapperError,
-                isLoading && styles.inputDisabled
-              ]}>
-                <MaterialIcons 
-                  name="lock-outline" 
-                  size={20} 
-                  color={confirmPasswordFocus ? COLORS.primary : (errors.confirmPassword ? COLORS.error : COLORS.grayLight)} 
-                  style={styles.inputIcon}
-                />
-                <TextInput
-                  placeholder="••••••••"
-                  placeholderTextColor={COLORS.grayLight}
-                  style={styles.input}
-                  secureTextEntry={!confirmPasswordVisible}
-                  value={confirmPassword}
-                  onChangeText={(text) => {
-                    setConfirmPassword(text);
-                    if (errors.confirmPassword && text) {
-                      setErrors((prev) => ({ ...prev, confirmPassword: "" }));
-                    }
-                  }}
-                  onFocus={() => setConfirmPasswordFocus(true)}
-                  onBlur={() => setConfirmPasswordFocus(false)}
-                  underlineColorAndroid="transparent"
-                  selectionColor={COLORS.primary}
-                  editable={!isLoading}
-                />
-                <TouchableOpacity
-                  onPress={() => setConfirmPasswordVisible(!confirmPasswordVisible)}
-                  style={styles.visibilityButton}
-                  disabled={isLoading}
-                >
-                  <MaterialIcons
-                    name={confirmPasswordVisible ? "visibility" : "visibility-off"}
-                    size={22}
-                    color={COLORS.gray}
+              {/* Date Picker Modal */}
+              <DateTimePickerModal
+                isVisible={isDatePickerVisible}
+                mode="date"
+                maximumDate={new Date()}
+                date={selectedDate}
+                onConfirm={handleConfirmDate}
+                onCancel={() => setDatePickerVisibility(false)}
+                buttonTextColorIOS={COLORS.primary}
+                accentColor={COLORS.primary}
+              />
+
+              {/* Password Input */}
+              <View style={styles.inputContainer}>
+                <Text style={styles.label}>
+                  Password
+                  <Text style={styles.required}> *</Text>
+                </Text>
+                <View style={[
+                  styles.inputWrapper,
+                  passwordFocus && styles.inputWrapperFocused,
+                  errors.password && styles.inputWrapperError,
+                  isLoading && styles.inputDisabled
+                ]}>
+                  <MaterialIcons 
+                    name="lock" 
+                    size={20} 
+                    color={passwordFocus ? COLORS.primary : (errors.password ? COLORS.error : COLORS.grayLight)} 
+                    style={styles.inputIcon}
                   />
-                </TouchableOpacity>
-              </View>
-              {errors.confirmPassword ? (
-                <Text style={styles.errorText}>{errors.confirmPassword}</Text>
-              ) : null}
-            </View>
-
-            {/* Create Account Button */}
-            <TouchableOpacity
-              style={[
-                styles.createAccountButton,
-                isLoading && styles.createAccountButtonDisabled
-              ]}
-              onPress={handleCreateAccount}
-              activeOpacity={0.9}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <View style={styles.loadingContainer}>
-                  <MaterialIcons name="loop" size={20} color={COLORS.white} />
-                  <Text style={styles.createAccountButtonText}>Creating Account...</Text>
+                  <TextInput
+                    placeholder="••••••••"
+                    placeholderTextColor={COLORS.grayLight}
+                    style={styles.input}
+                    secureTextEntry={!passwordVisible}
+                    value={password}
+                    onChangeText={(text) => {
+                      setPassword(text);
+                      if (errors.password && text) {
+                        setErrors((prev) => ({ ...prev, password: "" }));
+                      }
+                      if (errors.confirmPassword && text === confirmPassword) {
+                        setErrors((prev) => ({ ...prev, confirmPassword: "" }));
+                      }
+                    }}
+                    onFocus={() => setPasswordFocus(true)}
+                    onBlur={() => setPasswordFocus(false)}
+                    underlineColorAndroid="transparent"
+                    selectionColor={COLORS.primary}
+                    editable={!isLoading}
+                    // Props to prevent auto-capitalization and ensure lowercase start
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    autoComplete="password"
+                    keyboardType="default"
+                    textContentType="newPassword"
+                    importantForAutofill="yes"
+                  />
+                  <TouchableOpacity 
+                    onPress={() => setPasswordVisible(!passwordVisible)}
+                    style={styles.visibilityButton}
+                    disabled={isLoading}
+                  >
+                    <MaterialIcons
+                      name={passwordVisible ? "visibility" : "visibility-off"}
+                      size={22}
+                      color={COLORS.gray}
+                    />
+                  </TouchableOpacity>
                 </View>
-              ) : (
-                <>
-                  <Text style={styles.createAccountButtonText}>Create Account</Text>
-                  <MaterialIcons name="arrow-forward" size={20} color={COLORS.white} />
-                </>
-              )}
-            </TouchableOpacity>
+                {errors.password ? (
+                  <Text style={styles.errorText}>{errors.password}</Text>
+                ) : (
+                  <Text style={styles.helperText}>Must be at least 6 characters</Text>
+                )}
+              </View>
 
-            {/* Back to Login */}
-            <TouchableOpacity 
-              onPress={handleBackToLogin}
-              style={styles.backToLoginContainer}
-              disabled={isLoading}
-            >
-              <MaterialIcons name="arrow-back" size={16} color={COLORS.primary} />
-              <Text style={styles.backToLoginText}>Back to Login</Text>
-            </TouchableOpacity>
-          </View>
+              {/* Confirm Password Input */}
+              <View style={styles.inputContainer}>
+                <Text style={styles.label}>
+                  Confirm Password
+                  <Text style={styles.required}> *</Text>
+                </Text>
+                <View style={[
+                  styles.inputWrapper,
+                  confirmPasswordFocus && styles.inputWrapperFocused,
+                  errors.confirmPassword && styles.inputWrapperError,
+                  isLoading && styles.inputDisabled
+                ]}>
+                  <MaterialIcons 
+                    name="lock-outline" 
+                    size={20} 
+                    color={confirmPasswordFocus ? COLORS.primary : (errors.confirmPassword ? COLORS.error : COLORS.grayLight)} 
+                    style={styles.inputIcon}
+                  />
+                  <TextInput
+                    placeholder="••••••••"
+                    placeholderTextColor={COLORS.grayLight}
+                    style={styles.input}
+                    secureTextEntry={!confirmPasswordVisible}
+                    value={confirmPassword}
+                    onChangeText={(text) => {
+                      setConfirmPassword(text);
+                      if (errors.confirmPassword && text) {
+                        setErrors((prev) => ({ ...prev, confirmPassword: "" }));
+                      }
+                    }}
+                    onFocus={() => setConfirmPasswordFocus(true)}
+                    onBlur={() => setConfirmPasswordFocus(false)}
+                    underlineColorAndroid="transparent"
+                    selectionColor={COLORS.primary}
+                    editable={!isLoading}
+                    // Props to prevent auto-capitalization and ensure lowercase start
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    autoComplete="password"
+                    keyboardType="default"
+                    textContentType="newPassword"
+                    importantForAutofill="yes"
+                  />
+                  <TouchableOpacity
+                    onPress={() => setConfirmPasswordVisible(!confirmPasswordVisible)}
+                    style={styles.visibilityButton}
+                    disabled={isLoading}
+                  >
+                    <MaterialIcons
+                      name={confirmPasswordVisible ? "visibility" : "visibility-off"}
+                      size={22}
+                      color={COLORS.gray}
+                    />
+                  </TouchableOpacity>
+                </View>
+                {errors.confirmPassword ? (
+                  <Text style={styles.errorText}>{errors.confirmPassword}</Text>
+                ) : null}
+              </View>
 
-          {/* Footer */}
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>
-              By creating an account, you agree to our{" "}
-              <Text style={styles.footerLink}>Terms of Service</Text> and{" "}
-              <Text style={styles.footerLink}>Privacy Policy</Text>
-            </Text>
-          </View>
-        </Animated.View>
-      </ScrollView>
+              {/* Create Account Button */}
+              <TouchableOpacity
+                style={[
+                  styles.createAccountButton,
+                  isLoading && styles.createAccountButtonDisabled
+                ]}
+                onPress={handleCreateAccount}
+                activeOpacity={0.9}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <View style={styles.loadingContainer}>
+                    <MaterialIcons name="loop" size={20} color={COLORS.white} />
+                    <Text style={styles.createAccountButtonText}>Creating Account...</Text>
+                  </View>
+                ) : (
+                  <>
+                    <Text style={styles.createAccountButtonText}>Create Account</Text>
+                    <MaterialIcons name="arrow-forward" size={20} color={COLORS.white} />
+                  </>
+                )}
+              </TouchableOpacity>
+
+              {/* Back to Login */}
+              <TouchableOpacity 
+                onPress={handleBackToLogin}
+                style={styles.backToLoginContainer}
+                disabled={isLoading}
+              >
+                <MaterialIcons name="arrow-back" size={16} color={COLORS.primary} />
+                <Text style={styles.backToLoginText}>Back to Login</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Footer */}
+            <View style={styles.footer}>
+              <Text style={styles.footerText}>
+                By creating an account, you agree to our{" "}
+                <Text style={styles.footerLink}>Terms of Service</Text> and{" "}
+                <Text style={styles.footerLink}>Privacy Policy</Text>
+              </Text>
+            </View>
+          </Animated.View>
+        </ScrollView>
+
+        {/* White Navigation Bar Spacer for iOS */}
+        {Platform.OS === 'ios' && <View style={styles.navigationBarSpacer} />}
+      </KeyboardAvoidingView>
 
       {/* Success Modal with Confetti */}
       <Modal
@@ -562,6 +596,13 @@ const CreateAccount = () => {
         onRequestClose={handleSuccessContinue}
       >
         <View style={styles.modalOverlay}>
+          {/* White Status Bar for Modal */}
+          <StatusBar 
+            barStyle="light-content" 
+            backgroundColor="transparent"
+            translucent={true}
+          />
+          
           {/* Confetti Background */}
           <LottieView
             ref={confettiRef}
@@ -597,13 +638,20 @@ const CreateAccount = () => {
               <MaterialIcons name="arrow-back" size={20} color={COLORS.white} />
             </TouchableOpacity>
           </View>
+
+          {/* White Navigation Bar Spacer for iOS in Modal */}
+          {Platform.OS === 'ios' && <View style={styles.modalNavigationBarSpacer} />}
         </View>
       </Modal>
-    </KeyboardAvoidingView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  fullContainer: {
+    flex: 1,
+    backgroundColor: COLORS.white,
+  },
   keyboardAvoid: {
     flex: 1,
     backgroundColor: COLORS.background,
@@ -829,6 +877,15 @@ const styles = StyleSheet.create({
   footerLink: {
     color: COLORS.primary,
     fontWeight: '500',
+  },
+  // Navigation Bar Spacer for iOS
+  navigationBarSpacer: {
+    height: Platform.OS === 'ios' ? 34 : 0, // Height of iOS home indicator
+    backgroundColor: COLORS.white,
+  },
+  modalNavigationBarSpacer: {
+    height: Platform.OS === 'ios' ? 34 : 0, // Height of iOS home indicator
+    backgroundColor: 'transparent',
   },
   // Success Modal Styles
   modalOverlay: {
