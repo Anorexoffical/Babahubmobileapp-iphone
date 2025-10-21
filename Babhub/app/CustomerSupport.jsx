@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   View, 
   Text, 
@@ -9,6 +9,8 @@ import {
   StatusBar, 
   Linking,
   Platform,
+  Modal,
+  TouchableWithoutFeedback
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -34,8 +36,43 @@ const COLORS = {
   error: '#DC2626',
 };
 
+const FAQ_DATA = [
+  {
+    id: '1',
+    question: 'Do you save cart data?',
+    answer: 'No, we do not save your cart data permanently. Your cart items are temporarily stored during your current session but will be cleared when you close the app.'
+  },
+  {
+    id: '2',
+    question: 'How many days does it take to receive my order?',
+    answer: 'Most orders are delivered within 3-4 business days. Delivery times may vary depending on your location and product availability.'
+  },
+  {
+    id: '3',
+    question: 'Where can I check my order status?',
+    answer: 'You can check your order status in the "Profile" section under "My Orders". You will receive real-time updates about your order delivery status.'
+  },
+  {
+    id: '4',
+    question: 'What payment methods do you accept?',
+    answer: 'We accept various payment methods including credit/debit cards, mobile money, and cash on delivery. All payments are securely processed.'
+  },
+  {
+    id: '5',
+    question: 'Can I cancel my order after placing it?',
+    answer: 'Yes, you can cancel your order within 1 hour of placing it. After that, the order enters processing and cannot be cancelled.'
+  },
+  {
+    id: '6',
+    question: 'Do you offer refunds for returned items?',
+    answer: 'Yes, we offer full refunds for returned items within 7 days of delivery, provided the items are in original condition with tags attached.'
+  }
+];
+
 const CustomerSupportScreen = () => {
   const navigation = useNavigation();
+  const [faqModalVisible, setFaqModalVisible] = useState(false);
+  const [expandedQuestion, setExpandedQuestion] = useState(null);
 
   const handleBack = () => {
     if (navigation.canGoBack()) {
@@ -61,13 +98,75 @@ const CustomerSupportScreen = () => {
     });
   };
 
-  const handleFAQPress = () => {
-    navigation.navigate('FAQScreen');
+  const toggleQuestion = (id) => {
+    setExpandedQuestion(expandedQuestion === id ? null : id);
   };
 
-  const handlePrivacyPolicy = () => {
-    navigation.navigate('PrivacyPolicyScreen');
-  };
+  const renderFAQModal = () => (
+    <Modal
+      animationType="slide"
+      transparent={true}
+      visible={faqModalVisible}
+      onRequestClose={() => setFaqModalVisible(false)}
+    >
+      <TouchableWithoutFeedback onPress={() => setFaqModalVisible(false)}>
+        <View style={styles.modalOverlay}>
+          <TouchableWithoutFeedback>
+            <View style={styles.modalContent}>
+              {/* Modal Header */}
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Frequently Asked Questions</Text>
+                <TouchableOpacity 
+                  style={styles.closeButton}
+                  onPress={() => setFaqModalVisible(false)}
+                >
+                  <Ionicons name="close" size={24} color={COLORS.dark} />
+                </TouchableOpacity>
+              </View>
+
+              {/* FAQ List */}
+              <ScrollView 
+                style={styles.faqList}
+                showsVerticalScrollIndicator={false}
+              >
+                {FAQ_DATA.map((item) => (
+                  <View key={item.id} style={styles.faqItem}>
+                    <TouchableOpacity 
+                      style={styles.faqQuestion}
+                      onPress={() => toggleQuestion(item.id)}
+                    >
+                      <Text style={styles.faqQuestionText}>{item.question}</Text>
+                      <Ionicons 
+                        name={expandedQuestion === item.id ? "chevron-up" : "chevron-down"} 
+                        size={20} 
+                        color={COLORS.primary} 
+                      />
+                    </TouchableOpacity>
+                    
+                    {expandedQuestion === item.id && (
+                      <View style={styles.faqAnswer}>
+                        <Text style={styles.faqAnswerText}>{item.answer}</Text>
+                      </View>
+                    )}
+                  </View>
+                ))}
+              </ScrollView>
+
+              {/* Modal Footer */}
+              <View style={styles.modalFooter}>
+                <TouchableOpacity 
+                  style={styles.cancelButton}
+                  onPress={() => setFaqModalVisible(false)}
+                >
+                  <Text style={styles.cancelButtonText}>Close</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </TouchableWithoutFeedback>
+        </View>
+      </TouchableWithoutFeedback>
+    </Modal>
+  );
 
   return (
     <View style={styles.fullContainer}>
@@ -199,7 +298,7 @@ const CustomerSupportScreen = () => {
           </View>
 
           {/* FAQ Section */}
-          <TouchableOpacity style={styles.faqSection} onPress={handleFAQPress}>
+          <TouchableOpacity style={styles.faqSection} onPress={() => setFaqModalVisible(true)}>
             <View style={styles.faqContent}>
               <View style={styles.faqIconContainer}>
                 <Ionicons name="help-circle" size={32} color={COLORS.primary} />
@@ -241,22 +340,6 @@ const CustomerSupportScreen = () => {
             </View>
           </View>
 
-          {/* Privacy & Security */}
-          <View style={styles.securitySection}>
-            <View style={styles.securityHeader}>
-              <Ionicons name="shield-checkmark" size={24} color={COLORS.white} />
-              <Text style={styles.securityTitle}>Your Privacy & Security</Text>
-            </View>
-            <Text style={styles.securityText}>
-              We protect your personal information and ensure secure communication. 
-              All your data is encrypted and never shared with third parties.
-            </Text>
-            <TouchableOpacity style={styles.privacyButton} onPress={handlePrivacyPolicy}>
-              <Text style={styles.privacyButtonText}>View Privacy Policy</Text>
-              <Ionicons name="lock-closed" size={16} color={COLORS.primary} />
-            </TouchableOpacity>
-          </View>
-
           {/* Final CTA */}
           <View style={styles.ctaSection}>
             <Text style={styles.ctaTitle}>Need Immediate Help?</Text>
@@ -276,6 +359,9 @@ const CustomerSupportScreen = () => {
           </View>
         </ScrollView>
       </View>
+
+      {/* FAQ Modal */}
+      {renderFAQModal()}
 
       {/* White Navigation Bar Spacer for iOS */}
       {Platform.OS === 'ios' && <View style={styles.navigationBarSpacer} />}
@@ -393,7 +479,6 @@ const styles = StyleSheet.create({
     fontSize: width * 0.04,
     fontWeight: '700',
     color: COLORS.dark,
-    paddingTop: 20,
   },
   contactCard: {
     flexDirection: 'row',
@@ -564,46 +649,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.warning,
   },
-  securitySection: {
-    backgroundColor: COLORS.primary,
-    marginHorizontal: width * 0.05,
-    marginBottom: width * 0.04,
-    borderRadius: 20,
-    padding: width * 0.05,
-  },
-  securityHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-    gap: 10,
-  },
-  securityTitle: {
-    fontSize: width * 0.04,
-    fontWeight: '700',
-    color: COLORS.white,
-  },
-  securityText: {
-    fontSize: width * 0.035,
-    color: COLORS.white,
-    opacity: 0.9,
-    lineHeight: 20,
-    marginBottom: 15,
-  },
-  privacyButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.white,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 12,
-    alignSelf: 'flex-start',
-    gap: 8,
-  },
-  privacyButtonText: {
-    fontSize: width * 0.035,
-    fontWeight: '600',
-    color: COLORS.primary,
-  },
   ctaSection: {
     backgroundColor: COLORS.white,
     marginHorizontal: width * 0.05,
@@ -631,7 +676,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   ctaButtons: {
-    flexDirection: 'row',
+    flexDirection: width < 400 ? 'column' : 'row',
     gap: 12,
     width: '100%',
   },
@@ -642,8 +687,9 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 20,
     borderRadius: 16,
-    flex: 1,
+    flex: width < 400 ? 0 : 1,
     gap: 8,
+    minHeight: 56,
   },
   whatsappButton: {
     backgroundColor: '#25D366',
@@ -656,9 +702,102 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: COLORS.white,
   },
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: COLORS.white,
+    borderRadius: 25,
+    width: '100%',
+    maxWidth: 500,
+    maxHeight: height * 0.8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 10,
+    overflow: 'hidden',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.light,
+    backgroundColor: COLORS.background,
+  },
+  modalTitle: {
+    fontSize: width * 0.045,
+    fontWeight: '800',
+    color: COLORS.dark,
+    flex: 1,
+  },
+  closeButton: {
+    padding: 4,
+    borderRadius: 12,
+  },
+  faqList: {
+    maxHeight: height * 0.5,
+    padding: 16,
+  },
+  faqItem: {
+    marginBottom: 12,
+    borderRadius: 12,
+    backgroundColor: COLORS.background,
+    overflow: 'hidden',
+  },
+  faqQuestion: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+  },
+  faqQuestionText: {
+    fontSize: width * 0.038,
+    fontWeight: '600',
+    color: COLORS.dark,
+    flex: 1,
+    marginRight: 12,
+  },
+  faqAnswer: {
+    padding: 16,
+    paddingTop: 0,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.light,
+  },
+  faqAnswerText: {
+    fontSize: width * 0.035,
+    color: COLORS.gray,
+    lineHeight: 20,
+  },
+  modalFooter: {
+    padding: 20,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.light,
+    alignItems: 'center',
+  },
+  cancelButton: {
+    backgroundColor: COLORS.primary,
+    paddingVertical: 14,
+    paddingHorizontal: 40,
+    borderRadius: 16,
+    minWidth: 120,
+  },
+  cancelButtonText: {
+    fontSize: width * 0.038,
+    fontWeight: '700',
+    color: COLORS.white,
+    textAlign: 'center',
+  },
   // White Navigation Bar Spacer for iOS
   navigationBarSpacer: {
-    height: Platform.OS === 'ios' ? 34 : 0, // Height of iOS home indicator
+    height: Platform.OS === 'ios' ? 34 : 0,
     backgroundColor: COLORS.white,
   },
 });

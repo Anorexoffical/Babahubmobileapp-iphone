@@ -1,17 +1,3 @@
-const checkInternetConnection = () => {
-  return new Promise((resolve) => {
-    const timeout = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Timeout')), 5000)
-    );
-
-    const request = fetch('https://www.google.com', { method: 'HEAD' });
-
-    Promise.race([request, timeout])
-      .then(() => resolve(true))
-      .catch(() => resolve(false));
-  });
-};
-
 import React, { useState, useEffect, useRef } from 'react';
 import {
   StyleSheet,
@@ -30,8 +16,7 @@ import {
   Modal,
   StatusBar,
   KeyboardAvoidingView,
-  Keyboard,
-  TouchableWithoutFeedback
+  Keyboard
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -39,49 +24,56 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const { width, height } = Dimensions.get('window');
 
-// Enhanced responsive sizing for Android/Huawei
-const isSmallScreen = width < 375;
-const isLargeScreen = width > 414;
+const checkInternetConnection = () => {
+  return new Promise((resolve) => {
+    const timeout = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Timeout')), 5000)
+    );
 
+    const request = fetch('https://www.google.com', { method: 'HEAD' });
+
+    Promise.race([request, timeout])
+      .then(() => resolve(true))
+      .catch(() => resolve(false));
+  });
+};
+
+// Enhanced responsive sizing functions for all devices
 const responsiveWidth = (percentage) => {
-  const baseWidth = isSmallScreen ? 360 : 375;
+  const baseWidth = 375; // iPhone 6/7/8 as base
   const scale = width / baseWidth;
-  return Math.min((width * percentage) / 100, (baseWidth * percentage) / 100 * scale);
+  return (percentage / 100) * baseWidth * Math.min(scale, 1.8); // Limit maximum scaling
 };
 
 const responsiveHeight = (percentage) => {
-  const baseHeight = isSmallScreen ? 640 : 812;
+  const baseHeight = 667; // iPhone 6/7/8 as base
   const scale = height / baseHeight;
-  let result = (height * percentage) / 100;
-  
-  // Ensure minimum touch target size for Android (44px minimum)
-  if (percentage < 5 && result < 44) {
-    return 44;
-  }
-  return result;
+  return (percentage / 100) * baseHeight * Math.min(scale, 1.8);
 };
 
 const responsiveFont = (size) => {
-  const scale = width / 375;
-  let scaledSize = size * scale;
+  const scale = Math.min(width, height) / 400;
+  const scaledSize = size * scale;
   
-  // Limit scaling for very small and very large screens
-  if (isSmallScreen) {
-    scaledSize = size * 0.9;
-  } else if (isLargeScreen) {
-    scaledSize = size * 1.1;
+  // Set minimum and maximum font sizes for readability
+  if (Platform.OS === 'android') {
+    return Math.max(Math.min(scaledSize, size * 1.3), size * 0.9);
   }
-  
-  return Math.max(scaledSize, 12); // Minimum font size
+  return Math.max(Math.min(scaledSize, size * 1.2), size * 0.8);
 };
 
-// Safe area calculations optimized for Android/Huawei
+// Safe area calculations optimized for all Android devices including Huawei
 const getSafeAreaBottom = () => {
   if (Platform.OS === 'ios') {
     return responsiveHeight(2);
   } else {
-    // For Android devices including Huawei - more space for navigation gestures
-    return responsiveHeight(8);
+    // Enhanced for Android devices including Huawei with navigation bars
+    const hasPhysicalNavigation = height / width > 1.9; // Detect devices with physical navigation
+    if (hasPhysicalNavigation) {
+      return responsiveHeight(3);
+    } else {
+      return responsiveHeight(4);
+    }
   }
 };
 
@@ -89,8 +81,9 @@ const getSafeAreaTop = () => {
   if (Platform.OS === 'ios') {
     return responsiveHeight(6);
   } else {
-    // For Android devices including Huawei - account for status bar and notch
-    return (StatusBar.currentHeight || responsiveHeight(6)) + responsiveHeight(2);
+    // Enhanced for Android with status bar consideration
+    const statusBarHeight = StatusBar.currentHeight || responsiveHeight(3);
+    return statusBarHeight + responsiveHeight(1.5);
   }
 };
 
@@ -119,7 +112,7 @@ const COLORS = {
 
 const BASE_URL = 'https://account.babahub.co';
 
-// Premium Brand-Aligned Popup Modal Component
+// Enhanced Premium Brand-Aligned Popup Modal Component
 const CustomPopup = ({ visible, title, message, type = 'info', onClose, showCloseButton = true }) => {
   const fadeAnim = useState(new Animated.Value(0))[0];
   const scaleAnim = useState(new Animated.Value(0.9))[0];
@@ -169,7 +162,7 @@ const CustomPopup = ({ visible, title, message, type = 'info', onClose, showClos
           icon: 'warning', 
           color: COLORS.warning,
           bgColor: COLORS.white,
-          borderColor: COLORS.ashwhite,
+          borderColor: COLORS.warning,
           iconColor: COLORS.warning
         };
       case 'info':
@@ -185,7 +178,7 @@ const CustomPopup = ({ visible, title, message, type = 'info', onClose, showClos
           icon: 'alert-circle', 
           color: COLORS.error,
           bgColor: COLORS.white,
-          borderColor: COLORS.white,
+          borderColor: COLORS.error,
           iconColor: COLORS.error
         };
     }
@@ -201,6 +194,7 @@ const CustomPopup = ({ visible, title, message, type = 'info', onClose, showClos
       visible={visible}
       animationType="none"
       onRequestClose={onClose}
+      statusBarTranslucent={true}
     >
       <View style={styles.popupOverlay}>
         <TouchableOpacity 
@@ -252,7 +246,7 @@ const CustomPopup = ({ visible, title, message, type = 'info', onClose, showClos
   );
 };
 
-// Premium Product Image Component
+// Enhanced Premium Product Image Component
 const ProductImage = ({ imageUrl, style }) => {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
@@ -308,9 +302,6 @@ const Checkout = () => {
   // Internet connection state
   const [isConnected, setIsConnected] = useState(true);
 
-  // Keyboard state
-  const [keyboardVisible, setKeyboardVisible] = useState(false);
-
   // Animation values
   const fadeAnim = useState(new Animated.Value(0))[0];
   const slideAnim = useState(new Animated.Value(30))[0];
@@ -326,25 +317,23 @@ const Checkout = () => {
   const safeAreaBottom = getSafeAreaBottom();
   const safeAreaTop = getSafeAreaTop();
 
-  // Keyboard listeners for Android optimization
+  // Keyboard state
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
-      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      Platform.OS === 'android' ? 'keyboardDidShow' : 'keyboardWillShow',
       (e) => {
         setKeyboardVisible(true);
-        // For Android, adjust scroll position when keyboard appears
-        if (Platform.OS === 'android') {
-          setTimeout(() => {
-            scrollViewRef.current?.scrollTo({ y: 100, animated: true });
-          }, 100);
-        }
+        setKeyboardHeight(e.endCoordinates.height);
       }
     );
-    
     const keyboardDidHideListener = Keyboard.addListener(
-      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      Platform.OS === 'android' ? 'keyboardDidHide' : 'keyboardWillHide',
       () => {
         setKeyboardVisible(false);
+        setKeyboardHeight(0);
       }
     );
 
@@ -357,8 +346,12 @@ const Checkout = () => {
   // Check internet connection periodically
   useEffect(() => {
     const checkConnection = async () => {
-      const connected = await checkInternetConnection();
-      setIsConnected(connected);
+      try {
+        const connected = await checkInternetConnection();
+        setIsConnected(connected);
+      } catch (error) {
+        setIsConnected(false);
+      }
     };
 
     // Check immediately
@@ -440,10 +433,20 @@ const Checkout = () => {
             // Handle different user data structures
             if (parsedUserData.user && parsedUserData.user.email) {
               setUser(parsedUserData.user);
+              // Pre-fill name if available
+              if (parsedUserData.user.name) {
+                setName(parsedUserData.user.name);
+              }
             } else if (parsedUserData.email) {
               setUser(parsedUserData);
+              if (parsedUserData.name) {
+                setName(parsedUserData.name);
+              }
             } else if (parsedUserData.data && parsedUserData.data.email) {
               setUser(parsedUserData.data);
+              if (parsedUserData.data.name) {
+                setName(parsedUserData.data.name);
+              }
             } else {
               setUser({ email: 'user@example.com' });
             }
@@ -482,48 +485,73 @@ const Checkout = () => {
     loadCartAndUser();
   }, []);
 
-  // Calculate order totals (TAX REMOVED)
-  const calculateSubtotal = () => cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
-  const calculateShipping = () => calculateSubtotal() > 50 ? 0 : 9.99;
-  const calculateTotal = () => calculateSubtotal() + calculateShipping();
+  // Calculate order totals with proper decimal formatting
+  const calculateSubtotal = () => {
+    const subtotal = cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
+    return parseFloat(subtotal.toFixed(2));
+  };
 
-  // Phone validation
+  const calculateTax = () => {
+    const subtotal = calculateSubtotal();
+    const tax = subtotal * 0.1; // 10% tax
+    return parseFloat(tax.toFixed(2));
+  };
+
+  const calculateShipping = () => {
+    const subtotal = calculateSubtotal();
+    return subtotal > 50 ? 0 : 9.99;
+  };
+
+  const calculateTotal = () => {
+    return calculateSubtotal() + calculateTax() + calculateShipping();
+  };
+
+  // Enhanced Phone validation for international numbers
   const validatePhone = (text) => {
     setPhone(text);
-    const phoneRegex = /^[+]?[\d\s-()]{10,}$/;
+    const phoneRegex = /^[+]?[\d\s-()]{10,15}$/;
     if (text && !phoneRegex.test(text)) {
-      setErrors(prev => ({ ...prev, phone: 'Please enter a valid phone number' }));
+      setErrors(prev => ({ ...prev, phone: 'Please enter a valid phone number (10-15 digits)' }));
     } else {
       setErrors(prev => ({ ...prev, phone: '' }));
     }
   };
 
-  // Scroll to the first error field
+  // Enhanced scroll to the first error field
   const scrollToFirstError = () => {
-    if (errors.name && nameInputRef.current) {
-      nameInputRef.current.focus();
-      scrollViewRef.current?.scrollTo({ y: 0, animated: true });
-    } else if (errors.phone && phoneInputRef.current) {
-      phoneInputRef.current.focus();
-      scrollViewRef.current?.scrollTo({ y: 0, animated: true });
-    } else if (errors.address && addressInputRef.current) {
-      addressInputRef.current.focus();
-      scrollViewRef.current?.scrollTo({ y: 200, animated: true });
-    }
+    setTimeout(() => {
+      if (errors.name && nameInputRef.current) {
+        nameInputRef.current.focus();
+        scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+      } else if (errors.phone && phoneInputRef.current) {
+        phoneInputRef.current.focus();
+        scrollViewRef.current?.scrollTo({ y: responsiveHeight(10), animated: true });
+      } else if (errors.address && addressInputRef.current) {
+        addressInputRef.current.focus();
+        scrollViewRef.current?.scrollTo({ y: responsiveHeight(20), animated: true });
+      }
+    }, 100);
   };
 
-  // Handle checkout submission
+  // Enhanced Handle checkout submission
   const handleCheckout = async () => {
+    // Clear previous errors
+    setErrors({});
+
     const newErrors = {};
     if (!user?.email) newErrors.email = 'Email address is required';
-    if (!name) newErrors.name = 'Full name is required';
-    if (!address) newErrors.address = 'Delivery address is required';
-    if (!phone) newErrors.phone = 'Phone number is required';
+    if (!name.trim()) newErrors.name = 'Full name is required';
+    if (!address.trim()) newErrors.address = 'Delivery address is required';
+    if (!phone.trim()) newErrors.phone = 'Phone number is required';
 
-    setErrors(newErrors);
+    // Enhanced phone validation
+    const phoneRegex = /^[+]?[\d\s-()]{10,15}$/;
+    if (phone.trim() && !phoneRegex.test(phone.trim())) {
+      newErrors.phone = 'Please enter a valid phone number (10-15 digits)';
+    }
 
     if (Object.keys(newErrors).length > 0) {
-      // Show custom popup instead of default alert
+      setErrors(newErrors);
       showPopup(
         'Missing Information',
         'Please fill in all required fields to continue with your order. All fields marked with * are required.',
@@ -550,12 +578,13 @@ const Checkout = () => {
     ]).start();
 
     const orderData = {
-      name,
+      name: name.trim(),
       email: user?.email,
-      phone,
-      address,
+      phone: phone.trim(),
+      address: address.trim(),
       items: cartItems,
       subtotal: calculateSubtotal().toFixed(2),
+      tax: calculateTax().toFixed(2),
       shipping: calculateShipping().toFixed(2),
       total: calculateTotal().toFixed(2),
     };
@@ -563,39 +592,45 @@ const Checkout = () => {
     try {
       const response = await fetch("https://account.babahub.co/api/order/payfast/initiate-payment", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
         body: JSON.stringify(orderData),
       });
 
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
       const data = await response.json();
+      
       if (data.paymentUrl) {
         await AsyncStorage.setItem("latestPaymentUrl", data.paymentUrl);
         
-        // Navigate directly to payment screen without showing popup
-        router.push("PaymentScreen");
+        // Clear cart on successful order creation
+        await AsyncStorage.removeItem('cart');
+        
+        // Navigate directly to payment screen
+        router.push("/PaymentScreen");
         
       } else {
         showPopup(
           'Payment Error',
-          'Payment initiation failed. Please check your information and try again. If the problem persists, contact our support team.',
+          data.message || 'Payment initiation failed. Please check your information and try again.',
           'error'
         );
       }
     } catch (error) {
+      console.error('Checkout error:', error);
       showPopup(
         'Connection Error',
-        'There was an error processing your order. Please check your internet connection and try again. If the problem continues, please contact support.',
+        'There was an error processing your order. Please check your internet connection and try again.',
         'error'
       );
-      console.error('Checkout error:', error);
     } finally {
       setLoading(false);
     }
-  };
-
-  // Dismiss keyboard when tapping outside
-  const dismissKeyboard = () => {
-    Keyboard.dismiss();
   };
 
   // If cart is empty, show nothing (will automatically navigate back)
@@ -619,11 +654,7 @@ const Checkout = () => {
   }
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : responsiveHeight(2)}
-    >
+    <View style={styles.container}>
       <StatusBar backgroundColor={COLORS.white} barStyle="dark-content" />
       
       {/* Internet Connection Status Bar */}
@@ -634,20 +665,25 @@ const Checkout = () => {
         </View>
       )}
 
-      <TouchableWithoutFeedback onPress={dismissKeyboard}>
+      {/* Main Content Area */}
+      <KeyboardAvoidingView 
+        style={styles.keyboardAvoid}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+      >
         <Animated.ScrollView 
           ref={scrollViewRef}
           style={[
             styles.scrollView,
             {
               opacity: fadeAnim,
-              transform: [{ translateY: slideAnim }]
+              transform: [{ translateY: slideAnim }],
             }
           ]}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[
             styles.scrollContent,
-            keyboardVisible && styles.scrollContentKeyboardOpen
+            { paddingBottom: keyboardVisible ? keyboardHeight + responsiveHeight(15) : responsiveHeight(15) }
           ]}
           keyboardShouldPersistTaps="handled"
         >
@@ -656,6 +692,7 @@ const Checkout = () => {
             <TouchableOpacity 
               style={styles.backButton}
               onPress={() => router.back()}
+              activeOpacity={0.7}
             >
               <View style={styles.backButtonInner}>
                 <Ionicons name="chevron-back" size={responsiveFont(18)} color={COLORS.primary} />
@@ -678,7 +715,9 @@ const Checkout = () => {
             </View>
             <View style={styles.userEmailContainer}>
               <Ionicons name="mail-outline" size={responsiveFont(14)} color={COLORS.gray} />
-              <Text style={styles.userEmail}>{user?.email || "Not logged in"}</Text>
+              <Text style={styles.userEmail} numberOfLines={1}>
+                {user?.email || "Not logged in"}
+              </Text>
               <View style={styles.verifiedBadge}>
                 <Ionicons name="checkmark-circle" size={responsiveFont(12)} color={COLORS.success} />
                 <Text style={styles.verifiedText}>Verified</Text>
@@ -705,13 +744,14 @@ const Checkout = () => {
                     value={name}
                     onChangeText={(text) => {
                       setName(text);
-                      if (text) {
+                      if (text.trim()) {
                         setErrors(prev => ({ ...prev, name: '' }));
                       }
                     }}
                     placeholderTextColor={COLORS.grayLight}
                     returnKeyType="next"
                     onSubmitEditing={() => phoneInputRef.current?.focus()}
+                    blurOnSubmit={false}
                   />
                   {errors.name && (
                     <View style={styles.errorContainer}>
@@ -733,6 +773,7 @@ const Checkout = () => {
                     placeholderTextColor={COLORS.grayLight}
                     returnKeyType="next"
                     onSubmitEditing={() => addressInputRef.current?.focus()}
+                    blurOnSubmit={false}
                   />
                   {errors.phone && (
                     <View style={styles.errorContainer}>
@@ -754,7 +795,7 @@ const Checkout = () => {
                     value={address}
                     onChangeText={(text) => {
                       setAddress(text);
-                      if (text) {
+                      if (text.trim()) {
                         setErrors(prev => ({ ...prev, address: '' }));
                       }
                     }}
@@ -762,7 +803,6 @@ const Checkout = () => {
                     numberOfLines={3}
                     placeholderTextColor={COLORS.grayLight}
                     returnKeyType="done"
-                    blurOnSubmit={true}
                   />
                   {errors.address && (
                     <View style={styles.errorContainer}>
@@ -794,18 +834,26 @@ const Checkout = () => {
                   />
                   
                   <View style={styles.orderItemDetails}>
-                    <Text style={styles.orderItemTitle} numberOfLines={1}>
+                    <Text style={styles.orderItemTitle} numberOfLines={2}>
                       {item.title}
                     </Text>
                     
                     <View style={styles.orderItemMeta}>
-                      <View style={styles.variantContainer}>
-                        <View style={[styles.colorDot, { backgroundColor: item.color }]} />
-                        <Text style={styles.variantText}>{item.color}</Text>
-                      </View>
-                      <Text style={styles.variantText}>•</Text>
-                      <Text style={styles.variantText}>Size: {item.size}</Text>
-                      <Text style={styles.variantText}>•</Text>
+                      {item.color && (
+                        <>
+                          <View style={styles.variantContainer}>
+                            <View style={[styles.colorDot, { backgroundColor: item.color }]} />
+                            <Text style={styles.variantText}>{item.color}</Text>
+                          </View>
+                          <Text style={styles.variantText}>•</Text>
+                        </>
+                      )}
+                      {item.size && (
+                        <>
+                          <Text style={styles.variantText}>Size: {item.size}</Text>
+                          <Text style={styles.variantText}>•</Text>
+                        </>
+                      )}
                       <Text style={styles.variantText}>Qty: {item.quantity}</Text>
                     </View>
 
@@ -822,7 +870,7 @@ const Checkout = () => {
               ))}
             </View>
 
-            {/* Premium Order Totals - TAX REMOVED */}
+            {/* Premium Order Totals */}
             <View style={styles.summaryCard}>
               <View style={styles.summaryGrid}>
                 <View style={styles.summaryRow}>
@@ -838,6 +886,11 @@ const Checkout = () => {
                   ]}>
                     {calculateShipping() === 0 ? 'FREE' : `R ${calculateShipping().toFixed(2)}`}
                   </Text>
+                </View>
+
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Tax (10%)</Text>
+                  <Text style={styles.summaryValue}>R {calculateTax().toFixed(2)}</Text>
                 </View>
 
                 <View style={styles.summaryDivider} />
@@ -876,30 +929,22 @@ const Checkout = () => {
                 <View 
                   style={[
                     styles.progressFill,
-                    { width: `${(calculateSubtotal() / 50) * 100}%` }
+                    { width: `${Math.min((calculateSubtotal() / 50) * 100, 100)}%` }
                   ]} 
                 />
               </View>
             </View>
           )}
-
-          {/* Extra Spacer for Footer */}
-          <View style={[styles.bottomSpacer, { 
-            height: keyboardVisible 
-              ? responsiveHeight(8) + safeAreaBottom 
-              : responsiveHeight(12) + safeAreaBottom 
-          }]} />
         </Animated.ScrollView>
-      </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
 
       {/* Premium Checkout Footer - Fixed Pay Button */}
       {cartItems.length > 0 && (
         <View style={[
           styles.footer, 
           { 
-            paddingBottom: keyboardVisible 
-              ? Math.max(safeAreaBottom, responsiveHeight(2)) 
-              : safeAreaBottom 
+            paddingBottom: safeAreaBottom,
+            bottom: keyboardVisible ? keyboardHeight : 0
           }
         ]}>
           <View style={styles.footerContent}>
@@ -937,7 +982,7 @@ const Checkout = () => {
         type={popupType}
         onClose={hidePopup}
       />
-    </KeyboardAvoidingView>
+    </View>
   );
 };
 
@@ -945,6 +990,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.white,
+  },
+  keyboardAvoid: {
+    flex: 1,
   },
   safeArea: {
     flex: 1,
@@ -957,9 +1005,6 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     backgroundColor: COLORS.white,
     paddingBottom: responsiveHeight(2),
-  },
-  scrollContentKeyboardOpen: {
-    paddingBottom: responsiveHeight(6),
   },
   loadingContainer: {
     flex: 1,
@@ -978,16 +1023,15 @@ const styles = StyleSheet.create({
   // Offline Status Bar
   offlineContainer: {
     backgroundColor: COLORS.error,
-    paddingVertical: responsiveHeight(1.2),
-    paddingHorizontal: responsiveWidth(4),
+    padding: responsiveHeight(1),
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: responsiveWidth(2),
+    gap: responsiveWidth(1.5),
   },
   offlineText: {
     color: COLORS.white,
-    fontSize: responsiveFont(13),
+    fontSize: responsiveFont(12),
     fontWeight: '600',
   },
   // Premium Popup Styles
@@ -995,7 +1039,8 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: responsiveWidth(5),
+    padding: responsiveWidth(5),
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
   },
   popupBackdrop: {
     position: 'absolute',
@@ -1003,32 +1048,31 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
   },
   popupContainer: {
     backgroundColor: COLORS.white,
-    borderRadius: responsiveWidth(4),
+    borderRadius: responsiveWidth(5),
     width: '100%',
     maxWidth: responsiveWidth(90),
     shadowColor: COLORS.black,
     shadowOffset: { width: 0, height: responsiveHeight(1) },
     shadowOpacity: 0.3,
-    shadowRadius: responsiveWidth(4),
+    shadowRadius: responsiveWidth(3),
     elevation: 15,
     overflow: 'hidden',
   },
   popupContent: {
     flexDirection: 'row',
-    padding: responsiveWidth(5),
-    paddingBottom: responsiveWidth(3),
+    padding: responsiveWidth(6),
+    paddingBottom: responsiveWidth(4),
   },
   popupIconContainer: {
     marginRight: responsiveWidth(4),
   },
   popupIconCircle: {
-    width: responsiveWidth(12),
-    height: responsiveWidth(12),
-    borderRadius: responsiveWidth(6),
+    width: responsiveWidth(11),
+    height: responsiveWidth(11),
+    borderRadius: responsiveWidth(5.5),
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
@@ -1043,14 +1087,14 @@ const styles = StyleSheet.create({
   popupTitle: {
     fontSize: responsiveFont(18),
     fontWeight: '700',
-    color: COLORS.black,
+    color: COLORS.dark,
     marginBottom: responsiveHeight(1),
-    lineHeight: responsiveHeight(2.5),
+    lineHeight: responsiveFont(22),
   },
   popupMessage: {
     fontSize: responsiveFont(14),
-    color: COLORS.dark,
-    lineHeight: responsiveHeight(2.2),
+    color: COLORS.darkLight,
+    lineHeight: responsiveFont(20),
   },
   popupActions: {
     padding: responsiveWidth(4),
@@ -1061,15 +1105,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: responsiveWidth(5),
-    paddingVertical: responsiveHeight(1.8),
-    borderRadius: responsiveWidth(35),
+    paddingVertical: responsiveHeight(1.5),
+    borderRadius: responsiveWidth(10),
     gap: responsiveWidth(2),
     shadowColor: '#000',
     shadowOffset: { width: 0, height: responsiveHeight(0.5) },
     shadowOpacity: 0.2,
     shadowRadius: responsiveWidth(2),
     elevation: 4,
-    minHeight: responsiveHeight(5.5),
+    minHeight: responsiveHeight(6),
   },
   popupButtonText: {
     color: COLORS.white,
@@ -1084,8 +1128,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: responsiveWidth(4),
     paddingVertical: responsiveHeight(1.5),
-    borderBottomLeftRadius: responsiveWidth(4),
-    borderBottomRightRadius: responsiveWidth(4),
+    borderBottomLeftRadius: responsiveWidth(3),
+    borderBottomRightRadius: responsiveWidth(3),
     shadowColor: '#000',
     shadowOffset: { width: 0, height: responsiveHeight(0.3) },
     shadowOpacity: 0.08,
@@ -1095,36 +1139,32 @@ const styles = StyleSheet.create({
   },
   backButton: {
     padding: responsiveWidth(2),
-    marginLeft: -responsiveWidth(1),
   },
   backButtonInner: {
-    width: responsiveWidth(10),
-    height: responsiveWidth(10),
+    width: responsiveWidth(9),
+    height: responsiveWidth(9),
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(99, 102, 241, 0.1)',
-    borderRadius: responsiveWidth(3),
+    borderRadius: responsiveWidth(2.5),
   },
   headerCenter: {
     alignItems: 'center',
     flex: 1,
-    paddingHorizontal: responsiveWidth(2),
   },
   headerTitle: {
     fontSize: responsiveFont(18),
     fontWeight: '700',
     color: COLORS.dark,
     marginBottom: responsiveHeight(0.3),
-    textAlign: 'center',
   },
   headerSubtitle: {
     fontSize: responsiveFont(13),
     color: COLORS.gray,
     fontWeight: '500',
-    textAlign: 'center',
   },
   headerRight: {
-    width: responsiveWidth(10),
+    width: responsiveWidth(9),
   },
   // User Info Section
   userInfoSection: {
@@ -1144,8 +1184,8 @@ const styles = StyleSheet.create({
   userInfoHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: responsiveHeight(1.2),
-    gap: responsiveWidth(2.5),
+    marginBottom: responsiveHeight(1),
+    gap: responsiveWidth(2),
   },
   userInfoTitle: {
     fontSize: responsiveFont(16),
@@ -1156,10 +1196,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.primary + '08',
-    paddingHorizontal: responsiveWidth(3),
-    paddingVertical: responsiveHeight(1.5),
-    borderRadius: responsiveWidth(2.5),
-    gap: responsiveWidth(2.5),
+    padding: responsiveWidth(3),
+    borderRadius: responsiveWidth(2),
+    gap: responsiveWidth(2),
   },
   userEmail: {
     fontSize: responsiveFont(14),
@@ -1171,10 +1210,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.success + '15',
-    paddingHorizontal: responsiveWidth(2.5),
-    paddingVertical: responsiveHeight(0.8),
-    borderRadius: responsiveWidth(2),
-    gap: responsiveWidth(1.2),
+    paddingHorizontal: responsiveWidth(2),
+    paddingVertical: responsiveHeight(0.5),
+    borderRadius: responsiveWidth(1.5),
+    gap: responsiveWidth(1),
   },
   verifiedText: {
     fontSize: responsiveFont(10),
@@ -1199,20 +1238,20 @@ const styles = StyleSheet.create({
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: responsiveHeight(2),
-    gap: responsiveWidth(2.5),
+    marginBottom: responsiveHeight(1.5),
+    gap: responsiveWidth(2),
   },
   sectionTitle: {
     fontSize: responsiveFont(16),
     fontWeight: '700',
     color: COLORS.dark,
-    flex: 1,
   },
   totalBadge: {
     backgroundColor: COLORS.primary,
     paddingHorizontal: responsiveWidth(3),
-    paddingVertical: responsiveHeight(0.8),
+    paddingVertical: responsiveHeight(0.7),
     borderRadius: responsiveWidth(3),
+    marginLeft: 'auto',
   },
   totalBadgeText: {
     fontSize: responsiveFont(12),
@@ -1221,15 +1260,15 @@ const styles = StyleSheet.create({
   },
   // Two Column Form Layout
   twoColumnGrid: {
-    gap: responsiveHeight(2),
+    gap: responsiveHeight(1.5),
   },
   formRow: {
-    flexDirection: width < 400 ? 'column' : 'row',
+    flexDirection: Platform.OS === 'ios' ? 'row' : 'column',
     gap: responsiveWidth(3),
   },
   column: {
     flex: 1,
-    marginBottom: width < 400 ? responsiveHeight(1.5) : 0,
+    marginBottom: Platform.OS === 'android' ? responsiveHeight(1) : 0,
   },
   fullColumn: {
     flex: 1,
@@ -1242,39 +1281,38 @@ const styles = StyleSheet.create({
     fontSize: responsiveFont(14),
     fontWeight: '600',
     color: COLORS.dark,
-    marginBottom: responsiveHeight(1),
+    marginBottom: responsiveHeight(0.5),
   },
   input: {
-    height: responsiveHeight(6),
+    height: Platform.OS === 'ios' ? responsiveHeight(5.5) : responsiveHeight(6),
     borderWidth: 1.5,
     borderColor: COLORS.light,
-    borderRadius: responsiveWidth(3),
-    paddingHorizontal: responsiveWidth(4),
-    fontSize: responsiveFont(15),
+    borderRadius: responsiveWidth(2.5),
+    paddingHorizontal: responsiveWidth(3.5),
+    fontSize: responsiveFont(14),
     color: COLORS.dark,
     backgroundColor: COLORS.white,
-    minHeight: responsiveHeight(6),
     textAlignVertical: 'center',
   },
   textArea: {
-    height: Math.max(responsiveHeight(12), 100),
+    height: responsiveHeight(12),
     textAlignVertical: 'top',
-    paddingTop: responsiveHeight(2),
-    paddingBottom: responsiveHeight(2),
+    paddingTop: responsiveHeight(1.5),
+    paddingBottom: responsiveHeight(1.5),
   },
   inputError: {
     borderColor: COLORS.error,
-    backgroundColor: COLORS.error + '08',
+    backgroundColor: COLORS.errorLight,
   },
   errorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: responsiveWidth(1.5),
-    marginTop: responsiveHeight(0.8),
+    gap: responsiveWidth(1),
+    marginTop: responsiveHeight(0.5),
   },
   errorText: {
     color: COLORS.error,
-    fontSize: responsiveFont(12),
+    fontSize: responsiveFont(11),
     fontWeight: '500',
   },
   // Order Items
@@ -1285,32 +1323,32 @@ const styles = StyleSheet.create({
   orderItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: responsiveWidth(3.5),
+    padding: responsiveWidth(3),
     backgroundColor: COLORS.background,
-    borderRadius: responsiveWidth(3),
+    borderRadius: responsiveWidth(2.5),
     borderWidth: 1,
     borderColor: COLORS.light,
   },
   orderItemImage: {
     width: responsiveWidth(14),
     height: responsiveWidth(14),
-    borderRadius: responsiveWidth(2.5),
-    marginRight: responsiveWidth(3.5),
+    borderRadius: responsiveWidth(2),
+    marginRight: responsiveWidth(3),
   },
   placeholderContainer: {
     backgroundColor: COLORS.light,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: responsiveWidth(2.5),
+    borderRadius: responsiveWidth(2),
   },
   imageLoading: {
     backgroundColor: COLORS.light,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: responsiveWidth(2.5),
+    borderRadius: responsiveWidth(2),
   },
   productImage: {
-    borderRadius: responsiveWidth(2.5),
+    borderRadius: responsiveWidth(2),
   },
   orderItemDetails: {
     flex: 1,
@@ -1319,25 +1357,25 @@ const styles = StyleSheet.create({
     fontSize: responsiveFont(14),
     fontWeight: '600',
     color: COLORS.dark,
-    marginBottom: responsiveHeight(0.8),
-    lineHeight: responsiveHeight(2),
+    marginBottom: responsiveHeight(0.5),
+    lineHeight: responsiveFont(18),
   },
   orderItemMeta: {
     flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'wrap',
-    gap: responsiveWidth(1.5),
-    marginBottom: responsiveHeight(0.8),
+    gap: responsiveWidth(1),
+    marginBottom: responsiveHeight(0.5),
   },
   variantContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: responsiveWidth(1.2),
+    gap: responsiveWidth(1),
   },
   colorDot: {
-    width: responsiveWidth(2.5),
-    height: responsiveWidth(2.5),
-    borderRadius: responsiveWidth(1.25),
+    width: responsiveWidth(3),
+    height: responsiveWidth(3),
+    borderRadius: responsiveWidth(1.5),
     borderWidth: 1,
     borderColor: COLORS.grayLight,
   },
@@ -1358,20 +1396,20 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   orderItemTotal: {
-    fontSize: responsiveFont(15),
+    fontSize: responsiveFont(14),
     fontWeight: '700',
     color: COLORS.primary,
   },
   // Order Summary
   summaryCard: {
     backgroundColor: COLORS.background,
-    borderRadius: responsiveWidth(3),
+    borderRadius: responsiveWidth(2.5),
     padding: responsiveWidth(4),
     borderWidth: 1,
     borderColor: COLORS.light,
   },
   summaryGrid: {
-    gap: responsiveHeight(1.2),
+    gap: responsiveHeight(1),
   },
   summaryRow: {
     flexDirection: 'row',
@@ -1395,7 +1433,7 @@ const styles = StyleSheet.create({
   summaryDivider: {
     height: 1,
     backgroundColor: COLORS.light,
-    marginVertical: responsiveHeight(1),
+    marginVertical: responsiveHeight(0.5),
   },
   totalRow: {
     flexDirection: 'row',
@@ -1418,15 +1456,17 @@ const styles = StyleSheet.create({
     marginHorizontal: responsiveWidth(4),
     marginTop: responsiveHeight(2),
     padding: responsiveWidth(4),
-    borderRadius: responsiveWidth(3),
+    borderRadius: responsiveWidth(2.5),
     borderLeftWidth: 4,
     borderLeftColor: COLORS.success,
+    borderWidth: 1,
+    borderColor: COLORS.success + '20',
   },
   securityHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: responsiveWidth(2.5),
-    marginBottom: responsiveHeight(1),
+    gap: responsiveWidth(2),
+    marginBottom: responsiveHeight(0.75),
   },
   securityTitle: {
     fontSize: responsiveFont(14),
@@ -1435,7 +1475,7 @@ const styles = StyleSheet.create({
   },
   securityText: {
     fontSize: responsiveFont(12),
-    color: COLORS.gray,
+    color: COLORS.darkLight,
     lineHeight: responsiveHeight(2.2),
   },
   // Shipping Progress
@@ -1444,7 +1484,7 @@ const styles = StyleSheet.create({
     marginTop: responsiveHeight(2),
     padding: responsiveWidth(3.5),
     backgroundColor: COLORS.white,
-    borderRadius: responsiveWidth(3),
+    borderRadius: responsiveWidth(2.5),
     borderWidth: 1,
     borderColor: COLORS.light,
     shadowColor: '#000',
@@ -1456,14 +1496,13 @@ const styles = StyleSheet.create({
   progressHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: responsiveWidth(2),
+    gap: responsiveWidth(1.5),
     marginBottom: responsiveHeight(1),
   },
   progressText: {
     fontSize: responsiveFont(12),
     color: COLORS.dark,
     fontWeight: '500',
-    flex: 1,
   },
   progressBar: {
     height: responsiveHeight(0.6),
@@ -1476,14 +1515,9 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     borderRadius: responsiveHeight(0.3),
   },
-  // Bottom Spacer for Footer
-  bottomSpacer: {
-    // Height is set dynamically in the component
-  },
-  // Premium Footer - Fixed at bottom
+  // Premium Footer - Fixed at Bottom
   footer: {
     position: 'absolute',
-    bottom: 0,
     left: 0,
     right: 0,
     backgroundColor: COLORS.white,
@@ -1492,16 +1526,13 @@ const styles = StyleSheet.create({
     ...Platform.select({
       ios: {
         shadowColor: COLORS.dark,
-        shadowOffset: { width: 0, height: -responsiveHeight(0.5) },
-        shadowOpacity: 0.1,
-        shadowRadius: responsiveWidth(3),
-      },
-      android: {
-        elevation: 12,
-        shadowColor: COLORS.dark,
         shadowOffset: { width: 0, height: -responsiveHeight(0.3) },
         shadowOpacity: 0.1,
-        shadowRadius: responsiveWidth(4),
+        shadowRadius: responsiveWidth(2),
+      },
+      android: {
+        elevation: 8,
+        borderTopWidth: 2,
       },
     }),
   },
@@ -1510,7 +1541,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: responsiveWidth(4),
-    paddingVertical: responsiveHeight(1.8),
+    paddingVertical: responsiveHeight(1.5),
+    gap: responsiveWidth(3),
   },
   footerSummary: {
     flex: 1,
@@ -1530,30 +1562,27 @@ const styles = StyleSheet.create({
   footerItems: {
     fontSize: responsiveFont(13),
     color: COLORS.gray,
+    fontWeight: '500',
   },
   checkoutButton: {
     backgroundColor: COLORS.primary,
-    borderRadius: responsiveWidth(35),
+    borderRadius: responsiveWidth(8),
     paddingHorizontal: responsiveWidth(6),
-    paddingVertical: responsiveHeight(2),
-    marginLeft: responsiveWidth(3),
+    paddingVertical: responsiveHeight(1.8),
     minWidth: responsiveWidth(35),
-    minHeight: responsiveHeight(6),
-    justifyContent: 'center',
-    alignItems: 'center',
     ...Platform.select({
       ios: {
         shadowColor: COLORS.primary,
         shadowOffset: { width: 0, height: responsiveHeight(0.5) },
         shadowOpacity: 0.3,
-        shadowRadius: responsiveWidth(3),
+        shadowRadius: responsiveWidth(2),
       },
       android: {
-        elevation: 8,
-        shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: responsiveHeight(0.3) },
-        shadowOpacity: 0.4,
-        shadowRadius: responsiveWidth(4),
+        elevation: 6,
+        shadowColor: COLORS.primaryDark,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 3,
       },
     }),
   },
@@ -1570,7 +1599,7 @@ const styles = StyleSheet.create({
         shadowColor: COLORS.gray,
       },
       android: {
-        shadowColor: COLORS.gray,
+        elevation: 2,
       },
     }),
   },

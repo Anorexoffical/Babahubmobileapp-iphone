@@ -107,19 +107,27 @@ const ProfileScreen = () => {
           />
 
           <MenuItem
-            icon="headset-outline"
-            title="Customer Support"
-            subtitle="Contact our support team"
-            color={COLORS.primary}
-            onPress={() => navigation.navigate('CustomerSupport')}
-          />
-
-          <MenuItem
             icon="shield-checkmark-outline"
             title="Privacy Policy"
             subtitle="How we handle your information"
             color={COLORS.success}
             onPress={() => navigation.navigate('PrivacyPolicyScreen')}
+          />
+
+          <MenuItem
+            icon="refresh-circle-outline"
+            title="Return Policy"
+            subtitle="Returns, refunds & delivery information"
+            color={COLORS.warning}
+            onPress={() => navigation.navigate('ReturnPolicyScreen')}
+          />
+
+          <MenuItem
+            icon="headset-outline"
+            title="Customer Support"
+            subtitle="Contact our support team"
+            color={COLORS.primary}
+            onPress={() => navigation.navigate('CustomerSupport')}
           />
         </View>
 
@@ -266,10 +274,11 @@ const styles = StyleSheet.create({
     elevation: 2,
     borderWidth: 1,
     borderColor: COLORS.light,
+    minHeight: 80, // Ensure consistent height across devices
   },
   iconContainer: {
-    width: 48,
-    height: 48,
+    width: width < 400 ? 44 : 48,
+    height: width < 400 ? 44 : 48,
     borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
@@ -277,16 +286,17 @@ const styles = StyleSheet.create({
   },
   menuText: {
     flex: 1,
+    justifyContent: 'center',
   },
   menuTitle: { 
-    fontSize: width * 0.04, 
+    fontSize: width < 400 ? width * 0.038 : width * 0.04, 
     fontWeight: '700', 
     color: COLORS.dark,
     marginBottom: 4,
     letterSpacing: 0.3,
   },
   menuSubtitle: { 
-    fontSize: width * 0.033, 
+    fontSize: width < 400 ? width * 0.03 : width * 0.033, 
     color: COLORS.gray,
     fontWeight: '500',
     lineHeight: 18,
@@ -312,9 +322,10 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
     gap: 10,
+    minHeight: 60, // Ensure consistent height
   },
   logoutText: { 
-    fontSize: width * 0.04, 
+    fontSize: width < 400 ? width * 0.038 : width * 0.04, 
     fontWeight: '700', 
     color: COLORS.error,
     letterSpacing: 0.5,
@@ -325,13 +336,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: width * 0.05,
   },
   footerText: {
-    fontSize: width * 0.035,
+    fontSize: width < 400 ? width * 0.032 : width * 0.035,
     fontWeight: '600',
     color: COLORS.gray,
     marginBottom: 4,
   },
   footerSubtext: {
-    fontSize: width * 0.03,
+    fontSize: width < 400 ? width * 0.028 : width * 0.03,
     color: COLORS.grayLight,
     fontWeight: '500',
   },

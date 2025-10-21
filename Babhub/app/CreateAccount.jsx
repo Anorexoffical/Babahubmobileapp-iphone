@@ -13,6 +13,7 @@ import {
   Animated,
   Modal,
   StatusBar,
+  Linking,
 } from "react-native";
 import React, { useState, useRef, useEffect } from "react";
 import { useRouter } from "expo-router";
@@ -21,6 +22,54 @@ import DateTimePickerModal from "react-native-modal-datetime-picker";
 import LottieView from "lottie-react-native";
 
 const { width, height } = Dimensions.get("window");
+
+// Enhanced responsive sizing functions for all devices
+const responsiveWidth = (percentage) => {
+  const baseWidth = 375; // iPhone 6/7/8 as base
+  const scale = width / baseWidth;
+  return (percentage / 100) * baseWidth * Math.min(scale, 1.8);
+};
+
+const responsiveHeight = (percentage) => {
+  const baseHeight = 667; // iPhone 6/7/8 as base
+  const scale = height / baseHeight;
+  return (percentage / 100) * baseHeight * Math.min(scale, 1.8);
+};
+
+const responsiveFont = (size) => {
+  const scale = Math.min(width, height) / 400;
+  const scaledSize = size * scale;
+  
+  // Set minimum and maximum font sizes for readability
+  if (Platform.OS === 'android') {
+    return Math.max(Math.min(scaledSize, size * 1.3), size * 0.9);
+  }
+  return Math.max(Math.min(scaledSize, size * 1.2), size * 0.8);
+};
+
+// Safe area calculations optimized for all Android devices including Huawei
+const getSafeAreaBottom = () => {
+  if (Platform.OS === 'ios') {
+    return responsiveHeight(2);
+  } else {
+    // Enhanced for Android devices including Huawei with navigation bars
+    const hasPhysicalNavigation = height / width > 1.9;
+    if (hasPhysicalNavigation) {
+      return responsiveHeight(3);
+    } else {
+      return responsiveHeight(4);
+    }
+  }
+};
+
+const getSafeAreaTop = () => {
+  if (Platform.OS === 'ios') {
+    return responsiveHeight(6);
+  } else {
+    const statusBarHeight = StatusBar.currentHeight || responsiveHeight(3);
+    return statusBarHeight + responsiveHeight(1.5);
+  }
+};
 
 // Enhanced Brand Color Palette
 const COLORS = {
@@ -59,6 +108,7 @@ const CreateAccount = () => {
   const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -69,6 +119,10 @@ const CreateAccount = () => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
   const confettiRef = useRef(null);
+
+  // Safe area values
+  const safeAreaBottom = getSafeAreaBottom();
+  const safeAreaTop = getSafeAreaTop();
 
   useEffect(() => {
     // Start animations when component mounts
@@ -125,7 +179,20 @@ const CreateAccount = () => {
     setDobFocus(false);
     setPasswordFocus(false);
     setConfirmPasswordFocus(false);
+    setAcceptedTerms(false);
     setErrors({});
+  };
+
+  const openPrivacyPolicy = () => {
+    Linking.openURL("https://babahub.co/index.php/privacy-policy/").catch((err) =>
+      Alert.alert("Error", "Unable to open privacy policy")
+    );
+  };
+
+  const openTermsOfService = () => {
+    Linking.openURL("https://babahub.co/index.php/terms-of-service/").catch((err) =>
+      Alert.alert("Error", "Unable to open terms of service")
+    );
   };
 
   const validateForm = () => {
@@ -151,6 +218,9 @@ const CreateAccount = () => {
     } else if (password !== confirmPassword) {
       newErrors.confirmPassword = "Passwords do not match";
     }
+    if (!acceptedTerms) {
+      newErrors.terms = "Please accept the Terms and Privacy Policy";
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -171,7 +241,10 @@ const CreateAccount = () => {
         "https://account.babahub.co/api/users/register",
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+          },
           body: JSON.stringify({ 
             name: name.trim(),
             email: email.toLowerCase().trim(), 
@@ -196,6 +269,10 @@ const CreateAccount = () => {
           errorMessage = `An account with email ${email} already exists. Please try signing in or use a different email address.`;
         } else if (errorMessage.toLowerCase().includes("user") || errorMessage.toLowerCase().includes("exists")) {
           errorMessage = "This user already exists. Please try signing in or use different credentials.";
+        } else if (data.errors) {
+          // Handle validation errors from server
+          const serverErrors = Object.values(data.errors).join(', ');
+          errorMessage = serverErrors || "Please check your information and try again.";
         }
         
         Alert.alert(
@@ -205,6 +282,7 @@ const CreateAccount = () => {
         );
       }
     } catch (err) {
+      console.error("Registration error:", err);
       Alert.alert(
         "Connection Error",
         "Unable to connect to server. Please check your internet connection and try again.",
@@ -218,12 +296,10 @@ const CreateAccount = () => {
   const handleSuccessContinue = () => {
     setShowSuccessModal(false);
     clearForm();
-    // Use router.back() to go back to previous screen (login) instead of pushing new page
     router.back();
   };
 
   const handleBackToLogin = () => {
-    // Use router.back() to go back to previous screen instead of pushing new page
     router.back();
   };
 
@@ -241,6 +317,7 @@ const CreateAccount = () => {
       <KeyboardAvoidingView
         style={styles.keyboardAvoid}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : responsiveHeight(2)}
       >
         <ScrollView
           ref={scrollViewRef}
@@ -258,9 +335,9 @@ const CreateAccount = () => {
             ]}
           >
             {/* Header Section */}
-            <View style={styles.headerSection}>
+            <View style={[styles.headerSection, { marginTop: safeAreaTop }]}>
               <View style={styles.headerIcon}>
-                <MaterialIcons name="person-add" size={32} color={COLORS.primary} />
+                <MaterialIcons name="person-add" size={responsiveFont(32)} color={COLORS.primary} />
               </View>
               <Text style={styles.header}>Join BabaHub</Text>
               <Text style={styles.subHeader}>
@@ -284,7 +361,7 @@ const CreateAccount = () => {
                 ]}>
                   <MaterialIcons 
                     name="person" 
-                    size={20} 
+                    size={responsiveFont(20)} 
                     color={nameFocus ? COLORS.primary : (errors.name ? COLORS.error : COLORS.grayLight)} 
                     style={styles.inputIcon}
                   />
@@ -327,7 +404,7 @@ const CreateAccount = () => {
                 ]}>
                   <MaterialIcons 
                     name="email" 
-                    size={20} 
+                    size={responsiveFont(20)} 
                     color={emailFocus ? COLORS.primary : (errors.email ? COLORS.error : COLORS.grayLight)} 
                     style={styles.inputIcon}
                   />
@@ -365,7 +442,7 @@ const CreateAccount = () => {
                     <Text style={styles.required}> *</Text>
                   </Text>
                   <View style={styles.dobHelper}>
-                    <MaterialIcons name="info" size={14} color={COLORS.primary} />
+                    <MaterialIcons name="info" size={responsiveFont(14)} color={COLORS.primary} />
                     <Text style={styles.dobHelperText}>For account recovery</Text>
                   </View>
                 </View>
@@ -382,7 +459,7 @@ const CreateAccount = () => {
                   ]}>
                     <MaterialIcons 
                       name="calendar-today" 
-                      size={20} 
+                      size={responsiveFont(20)} 
                       color={dobFocus ? COLORS.primary : (errors.dob ? COLORS.error : COLORS.grayLight)} 
                       style={styles.inputIcon}
                     />
@@ -391,7 +468,7 @@ const CreateAccount = () => {
                     </Text>
                     <MaterialIcons 
                       name="arrow-drop-down" 
-                      size={24} 
+                      size={responsiveFont(24)} 
                       color={COLORS.gray} 
                     />
                   </View>
@@ -427,7 +504,7 @@ const CreateAccount = () => {
                 ]}>
                   <MaterialIcons 
                     name="lock" 
-                    size={20} 
+                    size={responsiveFont(20)} 
                     color={passwordFocus ? COLORS.primary : (errors.password ? COLORS.error : COLORS.grayLight)} 
                     style={styles.inputIcon}
                   />
@@ -451,7 +528,6 @@ const CreateAccount = () => {
                     underlineColorAndroid="transparent"
                     selectionColor={COLORS.primary}
                     editable={!isLoading}
-                    // Props to prevent auto-capitalization and ensure lowercase start
                     autoCapitalize="none"
                     autoCorrect={false}
                     autoComplete="password"
@@ -466,7 +542,7 @@ const CreateAccount = () => {
                   >
                     <MaterialIcons
                       name={passwordVisible ? "visibility" : "visibility-off"}
-                      size={22}
+                      size={responsiveFont(22)}
                       color={COLORS.gray}
                     />
                   </TouchableOpacity>
@@ -492,7 +568,7 @@ const CreateAccount = () => {
                 ]}>
                   <MaterialIcons 
                     name="lock-outline" 
-                    size={20} 
+                    size={responsiveFont(20)} 
                     color={confirmPasswordFocus ? COLORS.primary : (errors.confirmPassword ? COLORS.error : COLORS.grayLight)} 
                     style={styles.inputIcon}
                   />
@@ -513,7 +589,6 @@ const CreateAccount = () => {
                     underlineColorAndroid="transparent"
                     selectionColor={COLORS.primary}
                     editable={!isLoading}
-                    // Props to prevent auto-capitalization and ensure lowercase start
                     autoCapitalize="none"
                     autoCorrect={false}
                     autoComplete="password"
@@ -528,7 +603,7 @@ const CreateAccount = () => {
                   >
                     <MaterialIcons
                       name={confirmPasswordVisible ? "visibility" : "visibility-off"}
-                      size={22}
+                      size={responsiveFont(22)}
                       color={COLORS.gray}
                     />
                   </TouchableOpacity>
@@ -536,6 +611,43 @@ const CreateAccount = () => {
                 {errors.confirmPassword ? (
                   <Text style={styles.errorText}>{errors.confirmPassword}</Text>
                 ) : null}
+              </View>
+
+              {/* Single Terms and Privacy Checkbox */}
+              <View style={styles.checkboxContainer}>
+                <View style={styles.checkboxRow}>
+                  <TouchableOpacity
+                    style={[
+                      styles.checkbox,
+                      acceptedTerms && styles.checkboxChecked,
+                      errors.terms && styles.checkboxError
+                    ]}
+                    onPress={() => {
+                      setAcceptedTerms(!acceptedTerms);
+                      if (errors.terms) {
+                        setErrors((prev) => ({ ...prev, terms: "" }));
+                      }
+                    }}
+                    disabled={isLoading}
+                  >
+                    {acceptedTerms && (
+                      <MaterialIcons name="check" size={responsiveFont(16)} color={COLORS.white} />
+                    )}
+                  </TouchableOpacity>
+                  <View style={styles.checkboxTextContainer}>
+                    <Text style={styles.checkboxLabel}>
+                      I agree to the{" "}
+                      <Text style={styles.checkboxLink} onPress={openTermsOfService}>
+                        Terms of Service
+                      </Text>{" "}
+                      and{" "}
+                      <Text style={styles.checkboxLink} onPress={openPrivacyPolicy}>
+                        Privacy Policy
+                      </Text>
+                    </Text>
+                  </View>
+                </View>
+                {errors.terms && <Text style={styles.errorText}>{errors.terms}</Text>}
               </View>
 
               {/* Create Account Button */}
@@ -550,13 +662,13 @@ const CreateAccount = () => {
               >
                 {isLoading ? (
                   <View style={styles.loadingContainer}>
-                    <MaterialIcons name="loop" size={20} color={COLORS.white} />
+                    <MaterialIcons name="loop" size={responsiveFont(20)} color={COLORS.white} />
                     <Text style={styles.createAccountButtonText}>Creating Account...</Text>
                   </View>
                 ) : (
                   <>
                     <Text style={styles.createAccountButtonText}>Create Account</Text>
-                    <MaterialIcons name="arrow-forward" size={20} color={COLORS.white} />
+                    <MaterialIcons name="arrow-forward" size={responsiveFont(20)} color={COLORS.white} />
                   </>
                 )}
               </TouchableOpacity>
@@ -567,24 +679,15 @@ const CreateAccount = () => {
                 style={styles.backToLoginContainer}
                 disabled={isLoading}
               >
-                <MaterialIcons name="arrow-back" size={16} color={COLORS.primary} />
+                <MaterialIcons name="arrow-back" size={responsiveFont(16)} color={COLORS.primary} />
                 <Text style={styles.backToLoginText}>Back to Login</Text>
               </TouchableOpacity>
-            </View>
-
-            {/* Footer */}
-            <View style={styles.footer}>
-              <Text style={styles.footerText}>
-                By creating an account, you agree to our{" "}
-                <Text style={styles.footerLink}>Terms of Service</Text> and{" "}
-                <Text style={styles.footerLink}>Privacy Policy</Text>
-              </Text>
             </View>
           </Animated.View>
         </ScrollView>
 
         {/* White Navigation Bar Spacer for iOS */}
-        {Platform.OS === 'ios' && <View style={styles.navigationBarSpacer} />}
+        {Platform.OS === 'ios' && <View style={[styles.navigationBarSpacer, { height: safeAreaBottom }]} />}
       </KeyboardAvoidingView>
 
       {/* Success Modal with Confetti */}
@@ -616,7 +719,7 @@ const CreateAccount = () => {
           {/* Success Content */}
           <View style={styles.successModal}>
             <View style={styles.successIconContainer}>
-              <MaterialIcons name="check-circle" size={80} color={COLORS.success} />
+              <MaterialIcons name="check-circle" size={responsiveFont(80)} color={COLORS.success} />
             </View>
             
             <Text style={styles.successTitle}>🎉 Welcome to BabaHub!</Text>
@@ -635,12 +738,12 @@ const CreateAccount = () => {
               activeOpacity={0.9}
             >
               <Text style={styles.successButtonText}>Back to Login</Text>
-              <MaterialIcons name="arrow-back" size={20} color={COLORS.white} />
+              <MaterialIcons name="arrow-back" size={responsiveFont(20)} color={COLORS.white} />
             </TouchableOpacity>
           </View>
 
           {/* White Navigation Bar Spacer for iOS in Modal */}
-          {Platform.OS === 'ios' && <View style={styles.modalNavigationBarSpacer} />}
+          {Platform.OS === 'ios' && <View style={[styles.modalNavigationBarSpacer, { height: safeAreaBottom }]} />}
         </View>
       </Modal>
     </View>
@@ -660,49 +763,48 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   content: {
-    paddingHorizontal: 24,
-    paddingVertical: 20,
+    paddingHorizontal: responsiveWidth(6),
+    paddingVertical: responsiveHeight(2),
     minHeight: height,
   },
   headerSection: {
     alignItems: 'center',
-    marginBottom: 40,
-    marginTop: height * 0.02,
+    marginBottom: responsiveHeight(4),
   },
   headerIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: responsiveWidth(16),
+    height: responsiveWidth(16),
+    borderRadius: responsiveWidth(8),
     backgroundColor: COLORS.primary + '15',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: responsiveHeight(2),
   },
   header: {
-    fontSize: 32,
+    fontSize: responsiveFont(32),
     fontWeight: '800',
-    marginBottom: 8,
+    marginBottom: responsiveHeight(1),
     color: COLORS.dark,
     textAlign: 'center',
     letterSpacing: 0.5,
   },
   subHeader: {
-    fontSize: 16,
+    fontSize: responsiveFont(16),
     color: COLORS.gray,
     textAlign: 'center',
-    lineHeight: 22,
-    paddingHorizontal: width * 0.05,
+    lineHeight: responsiveHeight(2.2),
+    paddingHorizontal: responsiveWidth(5),
   },
   formSection: {
-    marginBottom: 30,
+    marginBottom: responsiveHeight(3),
   },
   inputContainer: {
-    marginBottom: 20,
+    marginBottom: responsiveHeight(2),
   },
   label: {
     fontWeight: '600',
-    marginBottom: 8,
-    fontSize: 14,
+    marginBottom: responsiveHeight(0.8),
+    fontSize: responsiveFont(14),
     color: COLORS.dark,
     letterSpacing: 0.3,
   },
@@ -714,19 +816,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: responsiveHeight(0.8),
   },
   dobHelper: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.primary + '15',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    gap: 4,
+    paddingHorizontal: responsiveWidth(2),
+    paddingVertical: responsiveHeight(0.4),
+    borderRadius: responsiveWidth(2),
+    gap: responsiveWidth(1),
   },
   dobHelperText: {
-    fontSize: 11,
+    fontSize: responsiveFont(11),
     color: COLORS.primary,
     fontWeight: '600',
   },
@@ -736,17 +838,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 0.8,
     borderColor: COLORS.primaryLight,
-    borderRadius: 140,
-    paddingHorizontal: 16,
+    borderRadius: responsiveWidth(35),
+    paddingHorizontal: responsiveWidth(4),
     backgroundColor: COLORS.white,
-    height: 56,
+    height: responsiveHeight(7),
     shadowColor: '#000',
     shadowOffset: { 
       width: 0, 
-      height: 2 
+      height: responsiveHeight(0.2)
     },
     shadowOpacity: 0.08,
-    shadowRadius: 12,
+    shadowRadius: responsiveWidth(3),
     elevation: 4,
   },
   inputWrapperFocused: {
@@ -755,10 +857,10 @@ const styles = StyleSheet.create({
     shadowColor: COLORS.primary,
     shadowOffset: { 
       width: 0, 
-      height: 4 
+      height: responsiveHeight(0.4)
     },
     shadowOpacity: 0.15,
-    shadowRadius: 16,
+    shadowRadius: responsiveWidth(4),
     elevation: 8,
   },
   inputWrapperError: {
@@ -767,72 +869,116 @@ const styles = StyleSheet.create({
     shadowColor: COLORS.error,
     shadowOffset: { 
       width: 0, 
-      height: 4 
+      height: responsiveHeight(0.4)
     },
     shadowOpacity: 0.12,
-    shadowRadius: 14,
+    shadowRadius: responsiveWidth(3.5),
     elevation: 6,
   },
   inputDisabled: {
     opacity: 0.6,
   },
   inputIcon: {
-    marginRight: 12,
+    marginRight: responsiveWidth(3),
   },
   input: {
     flex: 1,
-    fontSize: 16,
+    fontSize: responsiveFont(16),
     color: COLORS.dark,
     paddingVertical: 0,
+    height: '100%',
   },
   dobInput: {
     justifyContent: 'space-between',
   },
   dobText: {
-    fontSize: 16,
+    fontSize: responsiveFont(16),
     color: COLORS.dark,
     flex: 1,
   },
   placeholderText: {
-    fontSize: 16,
+    fontSize: responsiveFont(16),
     color: COLORS.grayLight,
     flex: 1,
   },
   visibilityButton: {
-    padding: 4,
-    marginLeft: 8,
+    padding: responsiveWidth(1),
+    marginLeft: responsiveWidth(2),
   },
   errorText: {
     color: COLORS.error,
-    fontSize: 12,
-    marginTop: 6,
+    fontSize: responsiveFont(12),
+    marginTop: responsiveHeight(0.6),
     fontWeight: '500',
   },
   helperText: {
     color: COLORS.gray,
-    fontSize: 12,
-    marginTop: 6,
+    fontSize: responsiveFont(12),
+    marginTop: responsiveHeight(0.6),
     fontWeight: '500',
   },
+  // Checkbox Styles
+  checkboxContainer: {
+    marginBottom: responsiveHeight(2),
+    marginTop: responsiveHeight(1),
+  },
+  checkboxRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: responsiveHeight(1.2),
+  },
+  checkbox: {
+    width: responsiveWidth(5),
+    height: responsiveWidth(5),
+    borderRadius: responsiveWidth(1.5),
+    borderWidth: 2,
+    borderColor: COLORS.grayLight,
+    marginRight: responsiveWidth(3),
+    marginTop: responsiveHeight(0.2),
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.white,
+  },
+  checkboxChecked: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  checkboxError: {
+    borderColor: COLORS.error,
+  },
+  checkboxTextContainer: {
+    flex: 1,
+  },
+  checkboxLabel: {
+    fontSize: responsiveFont(14),
+    color: COLORS.dark,
+    lineHeight: responsiveHeight(2),
+  },
+  checkboxLink: {
+    color: COLORS.primary,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
+  },
+  // Button Styles
   createAccountButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: COLORS.primary,
-    borderRadius: 140,
-    height: 56,
-    paddingHorizontal: 24,
+    borderRadius: responsiveWidth(35),
+    height: responsiveHeight(7),
+    paddingHorizontal: responsiveWidth(6),
     shadowColor: COLORS.primary,
     shadowOffset: { 
       width: 0, 
-      height: 8 
+      height: responsiveHeight(0.8)
     },
     shadowOpacity: 0.25,
-    shadowRadius: 20,
+    shadowRadius: responsiveWidth(5),
     elevation: 12,
-    gap: 8,
-    marginTop: 10,
-    marginBottom: 20,
+    gap: responsiveWidth(2),
+    marginTop: responsiveHeight(1),
+    marginBottom: responsiveHeight(2),
     borderWidth: 0.8,
     borderColor: COLORS.primaryDark,
   },
@@ -842,10 +988,10 @@ const styles = StyleSheet.create({
   loadingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: responsiveWidth(2),
   },
   createAccountButtonText: {
-    fontSize: 18,
+    fontSize: responsiveFont(18),
     fontWeight: '700',
     color: COLORS.white,
     letterSpacing: 0.5,
@@ -854,37 +1000,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    marginBottom: 20,
-    padding: 12,
-    borderRadius: 12,
+    gap: responsiveWidth(1.5),
+    marginBottom: responsiveHeight(2),
+    padding: responsiveHeight(1.2),
+    borderRadius: responsiveWidth(3),
   },
   backToLoginText: {
     color: COLORS.primary,
-    fontSize: 15,
+    fontSize: responsiveFont(15),
     fontWeight: '600',
-  },
-  footer: {
-    alignItems: 'center',
-    paddingTop: 10,
-  },
-  footerText: {
-    fontSize: 12,
-    color: COLORS.grayLight,
-    textAlign: 'center',
-    lineHeight: 16,
-  },
-  footerLink: {
-    color: COLORS.primary,
-    fontWeight: '500',
   },
   // Navigation Bar Spacer for iOS
   navigationBarSpacer: {
-    height: Platform.OS === 'ios' ? 34 : 0, // Height of iOS home indicator
     backgroundColor: COLORS.white,
   },
   modalNavigationBarSpacer: {
-    height: Platform.OS === 'ios' ? 34 : 0, // Height of iOS home indicator
     backgroundColor: 'transparent',
   },
   // Success Modal Styles
@@ -893,7 +1023,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: responsiveWidth(5),
   },
   confetti: {
     position: 'absolute',
@@ -905,41 +1035,41 @@ const styles = StyleSheet.create({
   },
   successModal: {
     backgroundColor: COLORS.white,
-    borderRadius: 24,
-    padding: 32,
+    borderRadius: responsiveWidth(6),
+    padding: responsiveWidth(8),
     alignItems: 'center',
     width: '100%',
-    maxWidth: 400,
+    maxWidth: responsiveWidth(90),
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 10,
+      height: responsiveHeight(1),
     },
     shadowOpacity: 0.25,
-    shadowRadius: 20,
+    shadowRadius: responsiveWidth(5),
     elevation: 20,
     zIndex: 2,
   },
   successIconContainer: {
-    marginBottom: 20,
+    marginBottom: responsiveHeight(2),
   },
   successTitle: {
-    fontSize: 28,
+    fontSize: responsiveFont(28),
     fontWeight: '800',
     color: COLORS.dark,
     textAlign: 'center',
-    marginBottom: 16,
+    marginBottom: responsiveHeight(1.6),
     letterSpacing: 0.5,
   },
   successMessage: {
-    fontSize: 16,
+    fontSize: responsiveFont(16),
     color: COLORS.gray,
     textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: 32,
+    lineHeight: responsiveHeight(2.2),
+    marginBottom: responsiveHeight(3.2),
   },
   securityReminder: {
-    fontSize: 14,
+    fontSize: responsiveFont(14),
     color: COLORS.darkLight,
     fontWeight: '500',
     fontStyle: 'italic',
@@ -949,22 +1079,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: COLORS.primary,
-    borderRadius: 140,
-    height: 56,
-    paddingHorizontal: 32,
-    gap: 8,
+    borderRadius: responsiveWidth(35),
+    height: responsiveHeight(7),
+    paddingHorizontal: responsiveWidth(8),
+    gap: responsiveWidth(2),
     width: '100%',
     shadowColor: COLORS.primary,
     shadowOffset: {
       width: 0,
-      height: 8,
+      height: responsiveHeight(0.8),
     },
     shadowOpacity: 0.3,
-    shadowRadius: 16,
+    shadowRadius: responsiveWidth(4),
     elevation: 8,
   },
   successButtonText: {
-    fontSize: 18,
+    fontSize: responsiveFont(18),
     fontWeight: '700',
     color: COLORS.white,
     letterSpacing: 0.5,

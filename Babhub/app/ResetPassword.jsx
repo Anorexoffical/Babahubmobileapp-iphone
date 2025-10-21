@@ -23,6 +23,54 @@ import * as SecureStore from 'expo-secure-store';
 
 const { width, height } = Dimensions.get('window');
 
+// Enhanced responsive sizing functions for all devices
+const responsiveWidth = (percentage) => {
+  const baseWidth = 375; // iPhone 6/7/8 as base
+  const scale = width / baseWidth;
+  return (percentage / 100) * baseWidth * Math.min(scale, 1.8);
+};
+
+const responsiveHeight = (percentage) => {
+  const baseHeight = 667; // iPhone 6/7/8 as base
+  const scale = height / baseHeight;
+  return (percentage / 100) * baseHeight * Math.min(scale, 1.8);
+};
+
+const responsiveFont = (size) => {
+  const scale = Math.min(width, height) / 400;
+  const scaledSize = size * scale;
+  
+  // Set minimum and maximum font sizes for readability
+  if (Platform.OS === 'android') {
+    return Math.max(Math.min(scaledSize, size * 1.3), size * 0.9);
+  }
+  return Math.max(Math.min(scaledSize, size * 1.2), size * 0.8);
+};
+
+// Safe area calculations optimized for all Android devices including Huawei
+const getSafeAreaBottom = () => {
+  if (Platform.OS === 'ios') {
+    return responsiveHeight(2);
+  } else {
+    // Enhanced for Android devices including Huawei with navigation bars
+    const hasPhysicalNavigation = height / width > 1.9;
+    if (hasPhysicalNavigation) {
+      return responsiveHeight(3);
+    } else {
+      return responsiveHeight(4);
+    }
+  }
+};
+
+const getSafeAreaTop = () => {
+  if (Platform.OS === 'ios') {
+    return responsiveHeight(6);
+  } else {
+    const statusBarHeight = StatusBar.currentHeight || responsiveHeight(3);
+    return statusBarHeight + responsiveHeight(1.5);
+  }
+};
+
 // Enhanced Brand Color Palette
 const COLORS = {
   primary: '#6366F1',
@@ -44,7 +92,7 @@ const COLORS = {
   error: '#DC2626',
 };
 
-const RESET_TOKEN_EXPIRY_TIME = 2 * 60 * 1000; // 2 minutes
+const RESET_TOKEN_EXPIRY_TIME = 1 * 60 * 1000; // 1 minute (reduced from 2 minutes)
 
 const ResetPassword = () => {
   const router = useRouter();
@@ -55,15 +103,20 @@ const ResetPassword = () => {
   const [errors, setErrors] = useState({});
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(120); // 2 minutes in seconds
+  const [timeLeft, setTimeLeft] = useState(60); // 1 minute in seconds (reduced from 120)
   const [sessionValid, setSessionValid] = useState(false);
   const [resetCompleted, setResetCompleted] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showBackConfirmModal, setShowBackConfirmModal] = useState(false);
 
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
   const confettiRef = useRef(null);
+
+  // Safe area values
+  const safeAreaBottom = getSafeAreaBottom();
+  const safeAreaTop = getSafeAreaTop();
 
   useEffect(() => {
     // Start animations when component mounts
@@ -96,8 +149,8 @@ const ResetPassword = () => {
         return true; // Prevent default back behavior
       }
       
-      // Show confirmation for back to recovery
-      handleBackToRecovery();
+      // Show custom modal for back to recovery
+      setShowBackConfirmModal(true);
       return true; // Prevent default back behavior
     });
 
@@ -283,31 +336,12 @@ const ResetPassword = () => {
   };
 
   const handleBackToRecovery = () => {
-    if (resetCompleted) {
-      // If reset is completed, redirect to login
-      handleGoToLogin();
-    } else {
-      // Show confirmation before going back
-      Alert.alert(
-        "Go Back to Recovery?",
-        "Are you sure you want to go back to recovery? Any entered password information will be lost.",
-        [
-          { 
-            text: "Cancel", 
-            style: "cancel",
-            onPress: () => {}
-          },
-          { 
-            text: "Yes, Go Back", 
-            style: "destructive",
-            onPress: () => {
-              // Use back function to navigate back to ForgetPassword
-              router.back();
-            }
-          }
-        ]
-      );
-    }
+    setShowBackConfirmModal(false);
+    router.back();
+  };
+
+  const handleCancelBack = () => {
+    setShowBackConfirmModal(false);
   };
 
   const handleSuccessContinue = () => {
@@ -328,7 +362,7 @@ const ResetPassword = () => {
         <View style={styles.successContainer}>
           <View style={styles.successContent}>
             <View style={styles.successIcon}>
-              <MaterialIcons name="check-circle" size={80} color={COLORS.success} />
+              <MaterialIcons name="check-circle" size={responsiveFont(80)} color={COLORS.success} />
             </View>
             <Text style={styles.successTitle}>Password Reset Successfully!</Text>
             <Text style={styles.successMessage}>
@@ -340,12 +374,12 @@ const ResetPassword = () => {
               activeOpacity={0.9}
             >
               <Text style={styles.successButtonText}>Go to Login</Text>
-              <MaterialIcons name="arrow-forward" size={20} color={COLORS.white} />
+              <MaterialIcons name="arrow-forward" size={responsiveFont(20)} color={COLORS.white} />
             </TouchableOpacity>
           </View>
         </View>
         {/* White Navigation Bar Spacer for iOS */}
-        {Platform.OS === 'ios' && <View style={styles.navigationBarSpacer} />}
+        {Platform.OS === 'ios' && <View style={[styles.navigationBarSpacer, { height: safeAreaBottom }]} />}
       </View>
     );
   }
@@ -360,7 +394,7 @@ const ResetPassword = () => {
           translucent={false}
         />
         <View style={styles.loadingContainer}>
-          <MaterialIcons name="hourglass-empty" size={48} color={COLORS.primary} />
+          <MaterialIcons name="hourglass-empty" size={responsiveFont(48)} color={COLORS.primary} />
           <Text style={styles.loadingText}>Validating session...</Text>
           <TouchableOpacity 
             style={styles.retryButton}
@@ -370,7 +404,7 @@ const ResetPassword = () => {
           </TouchableOpacity>
         </View>
         {/* White Navigation Bar Spacer for iOS */}
-        {Platform.OS === 'ios' && <View style={styles.navigationBarSpacer} />}
+        {Platform.OS === 'ios' && <View style={[styles.navigationBarSpacer, { height: safeAreaBottom }]} />}
       </View>
     );
   }
@@ -385,8 +419,9 @@ const ResetPassword = () => {
       />
       
       <KeyboardAvoidingView
-        style={styles.container}
+        style={styles.keyboardAvoid}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : responsiveHeight(2)}
       >
         <ScrollView 
           contentContainerStyle={styles.scrollContent}
@@ -402,9 +437,9 @@ const ResetPassword = () => {
             ]}
           >
             {/* Header Section */}
-            <View style={styles.headerSection}>
+            <View style={[styles.headerSection, { marginTop: safeAreaTop }]}>
               <View style={styles.headerIcon}>
-                <MaterialIcons name="lock-open" size={32} color={COLORS.primary} />
+                <MaterialIcons name="lock-open" size={responsiveFont(32)} color={COLORS.primary} />
               </View>
               <Text style={styles.header}>New Password</Text>
               <Text style={styles.subHeader}>
@@ -415,18 +450,18 @@ const ResetPassword = () => {
             {/* Timer Section */}
             <View style={[
               styles.timerContainer,
-              timeLeft <= 30 && styles.timerContainerWarning
+              timeLeft <= 15 && styles.timerContainerWarning
             ]}>
               <View style={styles.timerCircle}>
                 <Text style={[
                   styles.timerText,
-                  timeLeft <= 30 && styles.timerTextWarning
+                  timeLeft <= 15 && styles.timerTextWarning
                 ]}>
                   {formatTime(timeLeft)}
                 </Text>
               </View>
               <Text style={styles.timerLabel}>
-                {timeLeft <= 30 ? "Time running out" : "Time remaining"}
+                {timeLeft <= 15 ? "Time running out" : "Time remaining"}
               </Text>
             </View>
 
@@ -445,7 +480,7 @@ const ResetPassword = () => {
                 ]}>
                   <MaterialIcons 
                     name="lock" 
-                    size={20} 
+                    size={responsiveFont(20)} 
                     color={errors.newPassword ? COLORS.error : COLORS.grayLight} 
                     style={styles.inputIcon}
                   />
@@ -461,7 +496,6 @@ const ResetPassword = () => {
                     }}
                     editable={!isLoading && timeLeft > 0}
                     selectionColor={COLORS.primary}
-                    // Props to prevent auto-capitalization and ensure lowercase start
                     autoCapitalize="none"
                     autoCorrect={false}
                     autoComplete="password"
@@ -476,14 +510,14 @@ const ResetPassword = () => {
                   >
                     <MaterialIcons
                       name={showNewPassword ? "visibility" : "visibility-off"}
-                      size={22}
+                      size={responsiveFont(22)}
                       color={(isLoading || timeLeft <= 0) ? COLORS.grayLight : COLORS.gray}
                     />
                   </TouchableOpacity>
                 </View>
                 {errors.newPassword ? (
                   <View style={styles.errorContainer}>
-                    <MaterialIcons name="error-outline" size={16} color={COLORS.error} />
+                    <MaterialIcons name="error-outline" size={responsiveFont(16)} color={COLORS.error} />
                     <Text style={styles.errorText}>{errors.newPassword}</Text>
                   </View>
                 ) : null}
@@ -502,7 +536,7 @@ const ResetPassword = () => {
                 ]}>
                   <MaterialIcons 
                     name="lock-outline" 
-                    size={20} 
+                    size={responsiveFont(20)} 
                     color={errors.confirmPassword ? COLORS.error : COLORS.grayLight} 
                     style={styles.inputIcon}
                   />
@@ -518,7 +552,6 @@ const ResetPassword = () => {
                     }}
                     editable={!isLoading && timeLeft > 0}
                     selectionColor={COLORS.primary}
-                    // Props to prevent auto-capitalization and ensure lowercase start
                     autoCapitalize="none"
                     autoCorrect={false}
                     autoComplete="password"
@@ -533,14 +566,14 @@ const ResetPassword = () => {
                   >
                     <MaterialIcons
                       name={showConfirmPassword ? "visibility" : "visibility-off"}
-                      size={22}
+                      size={responsiveFont(22)}
                       color={(isLoading || timeLeft <= 0) ? COLORS.grayLight : COLORS.gray}
                     />
                   </TouchableOpacity>
                 </View>
                 {errors.confirmPassword ? (
                   <View style={styles.errorContainer}>
-                    <MaterialIcons name="error-outline" size={16} color={COLORS.error} />
+                    <MaterialIcons name="error-outline" size={responsiveFont(16)} color={COLORS.error} />
                     <Text style={styles.errorText}>{errors.confirmPassword}</Text>
                   </View>
                 ) : null}
@@ -558,7 +591,7 @@ const ResetPassword = () => {
               >
                 {isLoading ? (
                   <View style={styles.loadingContainer}>
-                    <MaterialIcons name="loop" size={20} color={COLORS.white} />
+                    <MaterialIcons name="loop" size={responsiveFont(20)} color={COLORS.white} />
                     <Text style={styles.resetButtonText}>Updating...</Text>
                   </View>
                 ) : (
@@ -566,7 +599,7 @@ const ResetPassword = () => {
                     <Text style={styles.resetButtonText}>
                       {timeLeft <= 0 ? "Session Expired" : "Reset Password"}
                     </Text>
-                    <MaterialIcons name="check-circle" size={20} color={COLORS.white} />
+                    <MaterialIcons name="check-circle" size={responsiveFont(20)} color={COLORS.white} />
                   </>
                 )}
               </TouchableOpacity>
@@ -574,11 +607,11 @@ const ResetPassword = () => {
               {/* Back Link - Only show if reset is not completed */}
               {!resetCompleted && (
                 <TouchableOpacity 
-                  onPress={handleBackToRecovery} 
+                  onPress={() => setShowBackConfirmModal(true)} 
                   style={styles.backButtonContainer}
                   disabled={isLoading}
                 >
-                  <MaterialIcons name="arrow-back" size={16} color={COLORS.primary} />
+                  <MaterialIcons name="arrow-back" size={responsiveFont(16)} color={COLORS.primary} />
                   <Text style={styles.backButtonText}>Back to Recovery</Text>
                 </TouchableOpacity>
               )}
@@ -587,7 +620,7 @@ const ResetPassword = () => {
         </ScrollView>
 
         {/* White Navigation Bar Spacer for iOS */}
-        {Platform.OS === 'ios' && <View style={styles.navigationBarSpacer} />}
+        {Platform.OS === 'ios' && <View style={[styles.navigationBarSpacer, { height: safeAreaBottom }]} />}
       </KeyboardAvoidingView>
 
       {/* Success Modal with Confetti */}
@@ -619,7 +652,7 @@ const ResetPassword = () => {
           {/* Success Content */}
           <View style={styles.successModal}>
             <View style={styles.successIconContainer}>
-              <MaterialIcons name="check-circle" size={80} color={COLORS.success} />
+              <MaterialIcons name="check-circle" size={responsiveFont(80)} color={COLORS.success} />
             </View>
             
             <Text style={styles.successTitle}>🎉 Password Reset Successful!</Text>
@@ -634,12 +667,53 @@ const ResetPassword = () => {
               activeOpacity={0.9}
             >
               <Text style={styles.successButtonText}>Continue to Login</Text>
-              <MaterialIcons name="arrow-forward" size={20} color={COLORS.white} />
+              <MaterialIcons name="arrow-forward" size={responsiveFont(20)} color={COLORS.white} />
             </TouchableOpacity>
           </View>
 
           {/* White Navigation Bar Spacer for iOS in Modal */}
-          {Platform.OS === 'ios' && <View style={styles.modalNavigationBarSpacer} />}
+          {Platform.OS === 'ios' && <View style={[styles.modalNavigationBarSpacer, { height: safeAreaBottom }]} />}
+        </View>
+      </Modal>
+
+      {/* Custom Back Confirmation Modal */}
+      <Modal
+        visible={showBackConfirmModal}
+        transparent={true}
+        animationType="fade"
+        statusBarTranslucent={true}
+        onRequestClose={handleCancelBack}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.customModal}>
+            <View style={styles.modalIconContainer}>
+              <MaterialIcons name="help-outline" size={responsiveFont(60)} color={COLORS.warning} />
+            </View>
+            
+            <Text style={styles.modalTitle}>Go Back to Recovery?</Text>
+            
+            <Text style={styles.modalMessage}>
+              Are you sure you want to go back to recovery? Any entered password information will be lost.
+            </Text>
+
+            <View style={styles.modalButtonContainer}>
+              <TouchableOpacity
+                style={styles.modalCancelButton}
+                onPress={handleCancelBack}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.modalCancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={styles.modalConfirmButton}
+                onPress={handleBackToRecovery}
+                activeOpacity={0.9}
+              >
+                <Text style={styles.modalConfirmButtonText}>Yes, Go Back</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
       </Modal>
     </View>
@@ -651,7 +725,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.white,
   },
-  container: {
+  keyboardAvoid: {
     flex: 1,
     backgroundColor: COLORS.background,
   },
@@ -659,8 +733,8 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   content: {
-    paddingHorizontal: 24,
-    paddingVertical: 20,
+    paddingHorizontal: responsiveWidth(6),
+    paddingVertical: responsiveHeight(2),
     minHeight: height,
   },
   loadingContainer: {
@@ -668,23 +742,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: COLORS.background,
-    paddingHorizontal: 24,
+    paddingHorizontal: responsiveWidth(6),
   },
   loadingText: {
-    fontSize: 16,
+    fontSize: responsiveFont(16),
     color: COLORS.gray,
-    marginTop: 16,
-    marginBottom: 20,
+    marginTop: responsiveHeight(1.6),
+    marginBottom: responsiveHeight(2),
   },
   retryButton: {
     backgroundColor: COLORS.primary,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 25,
+    paddingHorizontal: responsiveWidth(5),
+    paddingVertical: responsiveHeight(1.2),
+    borderRadius: responsiveWidth(6.25),
   },
   retryButtonText: {
     color: COLORS.white,
-    fontSize: 16,
+    fontSize: responsiveFont(16),
     fontWeight: '600',
   },
   // Success Screen Styles
@@ -693,64 +767,62 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 24,
+    paddingHorizontal: responsiveWidth(6),
   },
   successContent: {
     alignItems: 'center',
     width: '100%',
   },
   successIcon: {
-    marginBottom: 24,
+    marginBottom: responsiveHeight(2.4),
   },
   successTitle: {
-    fontSize: 28,
+    fontSize: responsiveFont(28),
     fontWeight: '800',
     color: COLORS.dark,
     textAlign: 'center',
-    marginBottom: 16,
+    marginBottom: responsiveHeight(1.6),
     letterSpacing: 0.5,
   },
   successMessage: {
-    fontSize: 16,
+    fontSize: responsiveFont(16),
     color: COLORS.gray,
     textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: 32,
-    paddingHorizontal: 20,
+    lineHeight: responsiveHeight(2.2),
+    marginBottom: responsiveHeight(3.2),
+    paddingHorizontal: responsiveWidth(5),
   },
   successButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: COLORS.primary,
-    borderRadius: 140,
-    height: 56,
-    paddingHorizontal: 32,
-    gap: 8,
+    borderRadius: responsiveWidth(35),
+    height: responsiveHeight(7),
+    paddingHorizontal: responsiveWidth(8),
+    gap: responsiveWidth(2),
     width: '100%',
-    maxWidth: 300,
+    maxWidth: responsiveWidth(75),
     shadowColor: COLORS.primary,
     shadowOffset: {
       width: 0,
-      height: 8,
+      height: responsiveHeight(0.8),
     },
     shadowOpacity: 0.3,
-    shadowRadius: 16,
+    shadowRadius: responsiveWidth(4),
     elevation: 8,
   },
   successButtonText: {
-    fontSize: 18,
+    fontSize: responsiveFont(18),
     fontWeight: '700',
     color: COLORS.white,
     letterSpacing: 0.5,
   },
   // Navigation Bar Spacer for iOS
   navigationBarSpacer: {
-    height: Platform.OS === 'ios' ? 34 : 0, // Height of iOS home indicator
     backgroundColor: COLORS.white,
   },
   modalNavigationBarSpacer: {
-    height: Platform.OS === 'ios' ? 34 : 0, // Height of iOS home indicator
     backgroundColor: 'transparent',
   },
   // Success Modal Styles
@@ -759,7 +831,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: responsiveWidth(5),
   },
   confetti: {
     position: 'absolute',
@@ -771,84 +843,83 @@ const styles = StyleSheet.create({
   },
   successModal: {
     backgroundColor: COLORS.white,
-    borderRadius: 24,
-    padding: 32,
+    borderRadius: responsiveWidth(6),
+    padding: responsiveWidth(8),
     alignItems: 'center',
     width: '100%',
-    maxWidth: 400,
+    maxWidth: responsiveWidth(90),
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 10,
+      height: responsiveHeight(1),
     },
     shadowOpacity: 0.25,
-    shadowRadius: 20,
+    shadowRadius: responsiveWidth(5),
     elevation: 20,
     zIndex: 2,
   },
   successIconContainer: {
-    marginBottom: 20,
+    marginBottom: responsiveHeight(2),
   },
   headerSection: {
     alignItems: 'center',
-    marginBottom: 30,
-    marginTop: height * 0.02,
+    marginBottom: responsiveHeight(3),
   },
   headerIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: responsiveWidth(16),
+    height: responsiveWidth(16),
+    borderRadius: responsiveWidth(8),
     backgroundColor: COLORS.primary + '15',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: responsiveHeight(2),
   },
   header: {
-    fontSize: 28,
+    fontSize: responsiveFont(28),
     fontWeight: '800',
-    marginBottom: 8,
+    marginBottom: responsiveHeight(1),
     color: COLORS.dark,
     textAlign: 'center',
     letterSpacing: 0.5,
   },
   subHeader: {
-    fontSize: 16,
+    fontSize: responsiveFont(16),
     color: COLORS.gray,
     textAlign: 'center',
-    lineHeight: 22,
-    paddingHorizontal: width * 0.05,
+    lineHeight: responsiveHeight(2.2),
+    paddingHorizontal: responsiveWidth(5),
   },
   timerContainer: {
     alignItems: 'center',
     backgroundColor: COLORS.white,
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 25,
+    borderRadius: responsiveWidth(4),
+    padding: responsiveHeight(2),
+    marginBottom: responsiveHeight(2.5),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: responsiveHeight(0.4) },
     shadowOpacity: 0.1,
-    shadowRadius: 12,
+    shadowRadius: responsiveWidth(3),
     elevation: 8,
   },
   timerContainerWarning: {
     backgroundColor: '#FFF5F5',
   },
   timerCircle: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
+    width: responsiveWidth(17.5),
+    height: responsiveWidth(17.5),
+    borderRadius: responsiveWidth(8.75),
     backgroundColor: COLORS.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: responsiveHeight(1),
     shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: responsiveHeight(0.4) },
     shadowOpacity: 0.3,
-    shadowRadius: 8,
+    shadowRadius: responsiveWidth(2),
     elevation: 6,
   },
   timerText: {
-    fontSize: 18,
+    fontSize: responsiveFont(18),
     fontWeight: 'bold',
     color: COLORS.white,
   },
@@ -856,21 +927,21 @@ const styles = StyleSheet.create({
     color: COLORS.white,
   },
   timerLabel: {
-    fontSize: 14,
+    fontSize: responsiveFont(14),
     color: COLORS.gray,
     textAlign: 'center',
     fontWeight: '500',
   },
   formSection: {
-    marginBottom: 30,
+    marginBottom: responsiveHeight(3),
   },
   inputContainer: {
-    marginBottom: 24,
+    marginBottom: responsiveHeight(2.4),
   },
   label: {
     fontWeight: '600',
-    marginBottom: 8,
-    fontSize: 14,
+    marginBottom: responsiveHeight(0.8),
+    fontSize: responsiveFont(14),
     color: COLORS.dark,
     letterSpacing: 0.3,
   },
@@ -882,17 +953,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 0.8,
     borderColor: COLORS.primaryLight,
-    borderRadius: 140,
-    paddingHorizontal: 16,
+    borderRadius: responsiveWidth(35),
+    paddingHorizontal: responsiveWidth(4),
     backgroundColor: COLORS.white,
-    height: 56,
+    height: responsiveHeight(7),
     shadowColor: '#000',
     shadowOffset: { 
       width: 0, 
-      height: 2 
+      height: responsiveHeight(0.2)
     },
     shadowOpacity: 0.08,
-    shadowRadius: 12,
+    shadowRadius: responsiveWidth(3),
     elevation: 4,
   },
   inputWrapperError: {
@@ -901,37 +972,38 @@ const styles = StyleSheet.create({
     shadowColor: COLORS.error,
     shadowOffset: { 
       width: 0, 
-      height: 4 
+      height: responsiveHeight(0.4)
     },
     shadowOpacity: 0.12,
-    shadowRadius: 14,
+    shadowRadius: responsiveWidth(3.5),
     elevation: 6,
   },
   inputDisabled: {
     opacity: 0.6,
   },
   inputIcon: {
-    marginRight: 12,
+    marginRight: responsiveWidth(3),
   },
   input: {
     flex: 1,
-    fontSize: 16,
+    fontSize: responsiveFont(16),
     color: COLORS.dark,
     paddingVertical: 0,
+    height: '100%',
   },
   visibilityButton: {
-    padding: 4,
-    marginLeft: 8,
+    padding: responsiveWidth(1),
+    marginLeft: responsiveWidth(2),
   },
   errorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: responsiveHeight(0.8),
   },
   errorText: {
     color: COLORS.error,
-    fontSize: 13,
-    marginLeft: 6,
+    fontSize: responsiveFont(13),
+    marginLeft: responsiveWidth(1.5),
     fontWeight: '500',
     flex: 1,
   },
@@ -940,20 +1012,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: COLORS.primary,
-    borderRadius: 140,
-    height: 56,
-    paddingHorizontal: 24,
+    borderRadius: responsiveWidth(35),
+    height: responsiveHeight(7),
+    paddingHorizontal: responsiveWidth(6),
     shadowColor: COLORS.primary,
     shadowOffset: { 
       width: 0, 
-      height: 8 
+      height: responsiveHeight(0.8)
     },
     shadowOpacity: 0.25,
-    shadowRadius: 20,
+    shadowRadius: responsiveWidth(5),
     elevation: 12,
-    gap: 8,
-    marginTop: 10,
-    marginBottom: 20,
+    gap: responsiveWidth(2),
+    marginTop: responsiveHeight(1),
+    marginBottom: responsiveHeight(2),
     borderWidth: 0.8,
     borderColor: COLORS.primaryDark,
   },
@@ -964,10 +1036,10 @@ const styles = StyleSheet.create({
   loadingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: responsiveWidth(2),
   },
   resetButtonText: {
-    fontSize: 18,
+    fontSize: responsiveFont(18),
     fontWeight: '700',
     color: COLORS.white,
     letterSpacing: 0.5,
@@ -976,15 +1048,83 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    marginBottom: 20,
-    padding: 12,
-    borderRadius: 12,
+    gap: responsiveWidth(1.5),
+    marginBottom: responsiveHeight(2),
+    padding: responsiveHeight(1.2),
+    borderRadius: responsiveWidth(3),
   },
   backButtonText: {
     color: COLORS.primary,
-    fontSize: 15,
+    fontSize: responsiveFont(15),
     fontWeight: '600',
+  },
+  // Custom Modal Styles
+  customModal: {
+    backgroundColor: COLORS.white,
+    borderRadius: responsiveWidth(6),
+    padding: responsiveWidth(8),
+    alignItems: 'center',
+    width: '100%',
+    maxWidth: responsiveWidth(90),
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: responsiveHeight(1),
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: responsiveWidth(5),
+    elevation: 20,
+  },
+  modalIconContainer: {
+    marginBottom: responsiveHeight(2),
+  },
+  modalTitle: {
+    fontSize: responsiveFont(24),
+    fontWeight: '800',
+    color: COLORS.dark,
+    textAlign: 'center',
+    marginBottom: responsiveHeight(1.6),
+    letterSpacing: 0.5,
+  },
+  modalMessage: {
+    fontSize: responsiveFont(16),
+    color: COLORS.gray,
+    textAlign: 'center',
+    lineHeight: responsiveHeight(2.2),
+    marginBottom: responsiveHeight(3.2),
+  },
+  modalButtonContainer: {
+    flexDirection: 'row',
+    gap: responsiveWidth(3),
+    width: '100%',
+  },
+  modalCancelButton: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.light,
+    borderRadius: responsiveWidth(3),
+    height: responsiveHeight(6.25),
+    borderWidth: 1,
+    borderColor: COLORS.grayLight,
+  },
+  modalCancelButtonText: {
+    fontSize: responsiveFont(16),
+    fontWeight: '600',
+    color: COLORS.dark,
+  },
+  modalConfirmButton: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.primary,
+    borderRadius: responsiveWidth(3),
+    height: responsiveHeight(6.25),
+  },
+  modalConfirmButtonText: {
+    fontSize: responsiveFont(16),
+    fontWeight: '600',
+    color: COLORS.white,
   },
 });
 

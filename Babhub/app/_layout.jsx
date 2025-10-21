@@ -1,4 +1,3 @@
-// app/_layout.js
 import { Stack, useRouter, useSegments, useNavigation } from 'expo-router';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { useEffect, useRef } from 'react';
@@ -45,6 +44,7 @@ function RouteProtection({ children }) {
         'OrderSuccessScreen',
         'PaymentScreen',
         'PaymentCancelledScreen',
+        'ReturnPolicyScreen'
       ];
 
       // Define public routes
@@ -103,6 +103,25 @@ function RouteProtection({ children }) {
     handleNavigation();
   }, [userToken, segments, isLoading]);
 
+  // Enhanced back button handling for HomeScreen
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      const currentRoute = segments[0] || 'index';
+      const tabRoute = segments[1] || '';
+      
+      // If user is on HomeScreen in tabs, exit app
+      if (currentRoute === '(tabs)' && tabRoute === 'HomeScreen') {
+        BackHandler.exitApp();
+        return true;
+      }
+      
+      // Allow normal back navigation for other cases
+      return false;
+    });
+
+    return () => backHandler.remove();
+  }, [segments]);
+
   // Show loading indicator while checking auth state
   if (isLoading) {
     return (
@@ -139,6 +158,7 @@ export default function RootLayout() {
           <Stack.Screen name="PrivacyPolicyScreen" />
           <Stack.Screen name="ProductDetailPage" />
           <Stack.Screen name="ProfileDetailsScreen" />
+          <Stack.Screen name="ReturnPolicyScreen" />
           <Stack.Screen name="OrderSuccessScreen" options={{ 
             gestureEnabled: false, // Disable swipe back on iOS
             animation: 'fade' // Use fade animation for cleaner transition

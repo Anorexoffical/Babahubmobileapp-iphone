@@ -1,19 +1,38 @@
-import { Tabs, useRouter } from 'expo-router';
+import { Tabs, useRouter, useNavigation } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { useEffect } from 'react';
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, BackHandler } from 'react-native';
 
 export default function TabLayout() {
   const { userToken, isLoading } = useAuth();
   const router = useRouter();
+  const navigation = useNavigation();
 
   useEffect(() => {
     if (!isLoading && !userToken) {
-      // Redirect to login if not authenticated
       router.replace('/login');
     }
   }, [userToken, isLoading]);
+
+  // Handle back button in tab navigator
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      // Get current route name
+      const currentRoute = navigation.getState()?.routes[navigation.getState().index]?.name;
+      
+      // If we're on HomeScreen, minimize the app
+      if (currentRoute === 'HomeScreen') {
+        BackHandler.exitApp();
+        return true;
+      }
+      
+      // For other tabs, let the default back behavior work
+      return false;
+    });
+
+    return () => backHandler.remove();
+  }, [navigation]);
 
   if (isLoading) {
     return (
@@ -24,7 +43,7 @@ export default function TabLayout() {
   }
 
   if (!userToken) {
-    return null; // Will redirect due to useEffect
+    return null;
   }
 
   return (

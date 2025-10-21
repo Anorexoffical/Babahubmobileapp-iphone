@@ -59,8 +59,14 @@ const getNavigationBarHeight = () => {
     if (height < 600) return 16; // Small devices
     if (height < 700) return 20; // Medium devices
     if (height < 800) return 24; // Large devices
-    return 28; // Extra large devices
+    if (height < 900) return 28; // Extra large devices
+    return 32; // Very large devices (tablets)
   }
+};
+
+// Get status bar height for Android
+const getStatusBarHeight = () => {
+  return Platform.OS === 'android' ? StatusBar.currentHeight : 0;
 };
 
 const MyOrder = () => {
@@ -113,12 +119,14 @@ const MyOrder = () => {
     return () => backHandler.remove();
   }, []);
 
-  // FIXED: Proper navigation to ProfileScreen that feels like going back
+  // Updated: Proper back navigation
   const handleBack = () => {
-    router.navigate({
-      pathname: '/(tabs)/ProfileScreen',
-      params: { fromMyOrders: true }
-    });
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      // If no back history, navigate to home
+      router.replace('/(tabs)/HomeScreen');
+    }
   };
 
   const showOrderDetails = (order) => {
@@ -248,7 +256,7 @@ const MyOrder = () => {
         <View style={styles.totalContainer}>
           <Text style={styles.totalLabel}>Total Amount</Text>
           <Text style={styles.orderTotal}>
-            PKR {parseFloat(item.totalAmountAfterTax).toLocaleString()}
+            R {parseFloat(item.totalAmountAfterTax).toLocaleString()}
           </Text>
         </View>
         
@@ -437,9 +445,9 @@ const MyOrder = () => {
                               <Text style={styles.quantityValue}>{item.quantity}</Text>
                             </View>
                             <View style={styles.priceContainer}>
-                              <Text style={styles.itemPrice}>PKR {parseFloat(item.price).toLocaleString()} each</Text>
+                              <Text style={styles.itemPrice}>R {parseFloat(item.price).toLocaleString()} each</Text>
                               <Text style={styles.itemTotal}>
-                                PKR {(parseFloat(item.price) * parseInt(item.quantity)).toLocaleString()}
+                                R {(parseFloat(item.price) * parseInt(item.quantity)).toLocaleString()}
                               </Text>
                             </View>
                           </View>
@@ -456,7 +464,7 @@ const MyOrder = () => {
                     <View style={styles.summaryRow}>
                       <Text style={styles.summaryLabel}>Items Total</Text>
                       <Text style={styles.summaryValue}>
-                        PKR {subtotal.toLocaleString()}
+                        R {subtotal.toLocaleString()}
                       </Text>
                     </View>
                     <View style={styles.summaryRow}>
@@ -466,14 +474,14 @@ const MyOrder = () => {
                     <View style={styles.summaryRow}>
                       <Text style={styles.summaryLabel}>Tax & Charges</Text>
                       <Text style={styles.summaryValue}>
-                        PKR {(totalAmount - subtotal).toLocaleString()}
+                        R 00
                       </Text>
                     </View>
                     <View style={styles.summaryDivider} />
                     <View style={styles.finalTotal}>
                       <Text style={styles.finalTotalLabel}>Total Paid</Text>
                       <Text style={styles.finalTotalValue}>
-                        PKR {totalAmount.toLocaleString()}
+                        R {totalAmount.toLocaleString()}
                       </Text>
                     </View>
                   </View>
@@ -520,7 +528,7 @@ const MyOrder = () => {
             <Text style={styles.loadingText}>Loading your orders...</Text>
           </View>
           
-          {/* Navigation Bar Spacer */}
+          {/* Enhanced Navigation Bar Spacer with white background */}
           <View style={styles.navigationBarSpacer} />
         </View>
       </SafeAreaView>
@@ -610,7 +618,7 @@ const MyOrder = () => {
         {/* Order Detail Modal */}
         <OrderDetailModal />
 
-        {/* Navigation Bar Spacer for Android/Huawei */}
+        {/* Enhanced Navigation Bar Spacer for Android/Huawei with white background */}
         <View style={styles.navigationBarSpacer} />
       </View>
     </SafeAreaView>
@@ -635,7 +643,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: scale(16),
     paddingVertical: verticalScale(12),
-    paddingTop: Platform.OS === 'ios' ? verticalScale(12) : verticalScale(16),
+    paddingTop: Platform.OS === 'ios' ? verticalScale(12) : verticalScale(12) + getStatusBarHeight(),
     borderBottomLeftRadius: scale(20),
     borderBottomRightRadius: scale(20),
     shadowColor: COLORS.primary,
@@ -660,7 +668,8 @@ const styles = StyleSheet.create({
   },
   summaryContainer: {
     paddingHorizontal: scale(16),
-    paddingVertical: verticalScale(12),
+    paddingTop: verticalScale(12),
+    paddingBottom: verticalScale(8),
   },
   summaryCard: {
     flexDirection: 'row',
@@ -696,7 +705,7 @@ const styles = StyleSheet.create({
   },
   listHeader: {
     marginBottom: verticalScale(12),
-    paddingTop: verticalScale(8),
+    paddingTop: verticalScale(4),
   },
   recentOrdersTitle: {
     fontSize: moderateScale(16),
@@ -712,6 +721,7 @@ const styles = StyleSheet.create({
   list: {
     paddingHorizontal: scale(16),
     paddingBottom: verticalScale(20),
+    paddingTop: 0,
   },
   card: {
     backgroundColor: COLORS.white,
@@ -1065,6 +1075,11 @@ const styles = StyleSheet.create({
     color: COLORS.success,
     fontWeight: '700',
   },
+  summaryDivider: {
+    height: 1,
+    backgroundColor: COLORS.light,
+    marginVertical: verticalScale(8),
+  },
   finalTotal: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1111,14 +1126,21 @@ const styles = StyleSheet.create({
     fontSize: moderateScale(15),
     fontWeight: '700',
   },
-  // Navigation Bar Spacer
+  // Enhanced Navigation Bar Spacer with white background
   navigationBarSpacer: {
     height: getNavigationBarHeight(),
     backgroundColor: COLORS.white,
+    width: '100%',
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
   },
   modalNavigationSpacer: {
     height: getNavigationBarHeight(),
     backgroundColor: COLORS.white,
+    width: '100%',
   },
   loadingContainer: {
     flex: 1,
@@ -1138,6 +1160,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: scale(40),
     paddingTop: verticalScale(50),
+    paddingBottom: verticalScale(80), // Extra padding for bottom navigation
   },
   emptyIllustration: {
     width: scale(100),

@@ -242,8 +242,14 @@ const ProductDetailPage = () => {
     if (router.canGoBack?.()) {
       router.back();
     } else {
-      router.replace('/');
+      // Use the correct home route path
+      router.replace('/(tabs)/HomeScreen');
     }
+  };
+
+  const handleBackToHome = () => {
+    // Use the correct home route path
+    router.replace('/(tabs)/HomeScreen');
   };
 
   if (loading) {
@@ -267,7 +273,7 @@ const ProductDetailPage = () => {
           <Text style={styles.errorText}>Product not found</Text>
           <TouchableOpacity 
             style={styles.backHomeButton}
-            onPress={() => router.replace('/')}
+            onPress={handleBackToHome}
           >
             <Text style={styles.backHomeText}>Back to Home</Text>
           </TouchableOpacity>

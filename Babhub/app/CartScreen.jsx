@@ -11,7 +11,8 @@ import {
   Platform,
   ActivityIndicator,
   Dimensions,
-  StatusBar
+  StatusBar,
+  Modal
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -111,6 +112,51 @@ const ProductImage = ({ imageUrl, style }) => {
   );
 };
 
+// Custom Clear Cart Modal Component
+const ClearCartModal = ({ visible, onClose, onConfirm }) => {
+  return (
+    <Modal
+      animationType="fade"
+      transparent={true}
+      visible={visible}
+      onRequestClose={onClose}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContainer}>
+          {/* Modal Header */}
+          <View style={styles.modalHeader}>
+            <View style={styles.modalIconContainer}>
+              <Ionicons name="trash-outline" size={responsiveFont(24)} color={COLORS.white} />
+            </View>
+            <Text style={styles.modalTitle}>Clear Cart</Text>
+            <Text style={styles.modalSubtitle}>
+              Are you sure you want to remove all items from your cart?
+            </Text>
+          </View>
+
+          {/* Modal Actions */}
+          <View style={styles.modalActions}>
+            <TouchableOpacity 
+              style={[styles.modalButton, styles.cancelButton]}
+              onPress={onClose}
+            >
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[styles.modalButton, styles.confirmButton]}
+              onPress={onConfirm}
+            >
+              <Ionicons name="trash" size={responsiveFont(16)} color={COLORS.white} />
+              <Text style={styles.confirmButtonText}>Clear All</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+};
+
 const CartScreen = () => {
   const router = useRouter();
   const params = useLocalSearchParams();
@@ -118,6 +164,7 @@ const CartScreen = () => {
   const [loading, setLoading] = useState(true);
   const [appIsReady, setAppIsReady] = useState(false);
   const [productStock, setProductStock] = useState({});
+  const [clearCartModalVisible, setClearCartModalVisible] = useState(false);
 
   // Safe area values
   const safeAreaBottom = getSafeAreaBottom();
@@ -236,12 +283,17 @@ const CartScreen = () => {
     const item = cartItems[index];
     const availableStock = getAvailableStock(item);
     
-    // Check if new quantity exceeds available stock
-    if (newQuantity > availableStock) {
+    // Only check stock limit when increasing quantity, not when decreasing
+    if (newQuantity > item.quantity && newQuantity > availableStock) {
       Alert.alert(
-        'Stock Limit',
+        'Stock Limit Reached',
         `Only ${availableStock} items available in stock. You cannot add more than the available quantity.`,
-        [{ text: 'OK' }]
+        [
+          { 
+            text: 'OK', 
+            style: 'default' 
+          }
+        ]
       );
       return;
     }
@@ -254,7 +306,7 @@ const CartScreen = () => {
   };
 
   const calculateSubtotal = () => cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
-  const calculateTax = () => calculateSubtotal() * 0.1;
+  const calculateTax = () => 0; // Changed to zero tax
   const calculateShipping = () => calculateSubtotal() > 50 ? 0 : 9.99;
   const calculateTotal = () => calculateSubtotal() + calculateTax() + calculateShipping();
 
@@ -264,25 +316,18 @@ const CartScreen = () => {
     return { itemCount, uniqueItems };
   };
 
+  const showClearCartModal = () => {
+    setClearCartModalVisible(true);
+  };
+
+  const hideClearCartModal = () => {
+    setClearCartModalVisible(false);
+  };
+
   const clearCart = async () => {
-    Alert.alert(
-      'Clear Cart',
-      'Remove all items from your cart?',
-      [
-        { 
-          text: 'Cancel', 
-          style: 'cancel' 
-        },
-        { 
-          text: 'Clear All', 
-          style: 'destructive',
-          onPress: async () => {
-            setCartItems([]);
-            await AsyncStorage.setItem('cart', JSON.stringify([]));
-          }
-        }
-      ]
-    );
+    setCartItems([]);
+    await AsyncStorage.setItem('cart', JSON.stringify([]));
+    hideClearCartModal();
   };
 
   const handleStartShopping = () => {
@@ -330,9 +375,9 @@ const CartScreen = () => {
           {cartItems.length > 0 && (
             <TouchableOpacity 
               style={styles.clearButton}
-              onPress={clearCart}
+              onPress={showClearCartModal}
             >
-              <Ionicons name="trash-outline" size={responsiveFont(16)} color={COLORS.error} />
+              <Ionicons name="trash-outline" size={responsiveFont(16)} color={COLORS.white} />
             </TouchableOpacity>
           )}
         </View>
@@ -352,6 +397,7 @@ const CartScreen = () => {
                         imageUrl={`${BASE_URL}${item.image}`}
                         style={styles.itemImage}
                       />
+                      {/* Improved Quantity Badge - Bigger and more visible */}
                       <View style={styles.itemBadge}>
                         <Text style={styles.itemBadgeText}>{item.quantity}</Text>
                       </View>
@@ -566,6 +612,13 @@ const CartScreen = () => {
           </View>
         </View>
       )}
+
+      {/* Custom Clear Cart Modal */}
+      <ClearCartModal
+        visible={clearCartModalVisible}
+        onClose={hideClearCartModal}
+        onConfirm={clearCart}
+      />
     </View>
   );
 };
@@ -636,9 +689,20 @@ const styles = StyleSheet.create({
     color: COLORS.dark,
   },
   clearButton: {
-    padding: responsiveWidth(1.5),
-    borderRadius: responsiveWidth(2),
-    backgroundColor: 'rgba(220, 38, 38, 0.1)',
+    padding: responsiveWidth(2),
+    borderRadius: responsiveWidth(2.5),
+    backgroundColor: COLORS.primary,
+    ...Platform.select({
+      ios: {
+        shadowColor: COLORS.primary,
+        shadowOffset: { width: 0, height: responsiveHeight(0.25) },
+        shadowOpacity: 0.3,
+        shadowRadius: responsiveWidth(1.5),
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
   },
   cartItemsContainer: {
     paddingHorizontal: responsiveWidth(4),
@@ -672,22 +736,34 @@ const styles = StyleSheet.create({
     height: responsiveWidth(15),
     borderRadius: responsiveWidth(2),
   },
+  // Improved Quantity Badge - Bigger and more visible
   itemBadge: {
     position: 'absolute',
-    top: -responsiveWidth(1),
-    right: -responsiveWidth(1),
+    top: -responsiveWidth(2),
+    right: -responsiveWidth(2),
     backgroundColor: COLORS.primary,
-    width: responsiveWidth(4.5),
-    height: responsiveWidth(4.5),
-    borderRadius: responsiveWidth(2.25),
+    width: responsiveWidth(7),
+    height: responsiveWidth(7),
+    borderRadius: responsiveWidth(3.5),
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1.5,
+    borderWidth: 2,
     borderColor: COLORS.white,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: responsiveHeight(0.25) },
+        shadowOpacity: 0.3,
+        shadowRadius: responsiveWidth(1.5),
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
   },
   itemBadgeText: {
-    fontSize: responsiveFont(9),
-    fontWeight: '700',
+    fontSize: responsiveFont(12),
+    fontWeight: '800',
     color: COLORS.white,
   },
   placeholderContainer: {
@@ -1095,6 +1171,91 @@ const styles = StyleSheet.create({
     borderRadius: responsiveWidth(35),
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  // Custom Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: responsiveWidth(5),
+  },
+  modalContainer: {
+    backgroundColor: COLORS.white,
+    borderRadius: responsiveWidth(4),
+    width: '100%',
+    maxWidth: responsiveWidth(85),
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: responsiveHeight(1) },
+        shadowOpacity: 0.25,
+        shadowRadius: responsiveWidth(4),
+      },
+      android: {
+        elevation: 10,
+      },
+    }),
+  },
+  modalHeader: {
+    alignItems: 'center',
+    paddingHorizontal: responsiveWidth(6),
+    paddingTop: responsiveHeight(4),
+    paddingBottom: responsiveHeight(3),
+  },
+  modalIconContainer: {
+    width: responsiveWidth(16),
+    height: responsiveWidth(16),
+    borderRadius: responsiveWidth(8),
+    backgroundColor: COLORS.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: responsiveHeight(2),
+  },
+  modalTitle: {
+    fontSize: responsiveFont(20),
+    fontWeight: '700',
+    color: COLORS.dark,
+    marginBottom: responsiveHeight(1),
+    textAlign: 'center',
+  },
+  modalSubtitle: {
+    fontSize: responsiveFont(14),
+    color: COLORS.gray,
+    textAlign: 'center',
+    lineHeight: responsiveHeight(2.25),
+  },
+  modalActions: {
+    flexDirection: 'row',
+    borderTopWidth: 1,
+    borderTopColor: COLORS.light,
+  },
+  modalButton: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: responsiveHeight(2),
+    gap: responsiveWidth(2),
+  },
+  cancelButton: {
+    backgroundColor: COLORS.white,
+    borderRightWidth: 1,
+    borderRightColor: COLORS.light,
+  },
+  confirmButton: {
+    backgroundColor: COLORS.primary,
+  },
+  cancelButtonText: {
+    fontSize: responsiveFont(16),
+    fontWeight: '600',
+    color: COLORS.gray,
+  },
+  confirmButtonText: {
+    fontSize: responsiveFont(16),
+    fontWeight: '600',
+    color: COLORS.white,
   },
 });
 
