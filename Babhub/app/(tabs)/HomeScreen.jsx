@@ -57,28 +57,36 @@ const COLORS = {
 // Maximum unique items allowed in cart
 const MAX_CART_ITEMS = 3;
 
-// Home banners data
+// UPDATED: Home banners data with attractive images and better text
 const homeBanners = [
+
   {
     id: '1',
     image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80',
-    title: 'Welcome to Our Store',
-    subtitle: 'Discover amazing products just for you',
-    type: 'welcome'
+    title: 'New Arrivals',
+    subtitle: 'Fresh styles just for you',
+    type: 'new'
   },
   {
     id: '2',
-    image: 'https://images.unsplash.com/photo-1558769132-cb25c5d1f9cc?ixlib=rb-4.0.3&auto=format&fit=crop&w=2064&q=80',
-    title: 'Trending Now',
-    subtitle: 'Shop what everyone is loving',
-    type: 'trending'
+    image: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80',
+    title: 'Premium Collection',
+    subtitle: 'Luxury items at great prices',
+    type: 'premium'
   },
   {
     id: '3',
-    image: 'https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80',
-    title: 'Special Offers',
-    subtitle: 'Exclusive deals waiting for you',
-    type: 'offers'
+    image: 'https://images.unsplash.com/photo-1556742044-3c52d6e88c62?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80',
+    title: 'Tech Deals',
+    subtitle: 'Latest gadgets with amazing offers',
+    type: 'tech'
+  },
+  {
+    id: '4',
+    image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80',
+    title: 'Flash Sale',
+    subtitle: 'Limited time offers - Shop now!',
+    type: 'flash'
   }
 ];
 
@@ -175,8 +183,8 @@ const normalizeImageUrl = (imageUrl) => {
   return `https://account.babahub.co${normalizedPath}`;
 };
 
-// IMPROVED Internet Status Bar Component for Android
-const InternetStatusBar = ({ isOnline, onRetry }) => {
+// UPDATED: Internet Status Bar Component for Android - Removed Retry Button
+const InternetStatusBar = ({ isOnline }) => {
   const translateY = useRef(new Animated.Value(-60)).current;
 
   useEffect(() => {
@@ -202,9 +210,6 @@ const InternetStatusBar = ({ isOnline, onRetry }) => {
       <View style={styles.internetStatusContent}>
         <Ionicons name="wifi-outline" size={18} color={COLORS.white} />
         <Text style={styles.internetStatusText}>No internet connection</Text>
-        <TouchableOpacity onPress={onRetry} style={styles.retryButton}>
-          <Text style={styles.retryText}>Retry</Text>
-        </TouchableOpacity>
       </View>
     </Animated.View>
   );
@@ -323,7 +328,7 @@ const SearchSuggestions = ({ suggestions, popularSearches, onSuggestionPress, se
   );
 };
 
-// Banner Item Component
+// UPDATED: Banner Item Component with new badge colors and shorter text
 const BannerItem = ({ item, index, currentIndex }) => {
   const translateX = useRef(new Animated.Value(width)).current;
   const opacity = useRef(new Animated.Value(0)).current;
@@ -356,12 +361,27 @@ const BannerItem = ({ item, index, currentIndex }) => {
     }
   }, [currentIndex]);
 
+  // UPDATED: Better badge colors for different banner types
   const getBadgeColor = (type) => {
     switch (type) {
-      case 'welcome': return COLORS.primary;
-      case 'trending': return COLORS.secondary;
-      case 'offers': return COLORS.accent;
+      case 'sale': return '#FF6B6B'; // Red for sales
+      case 'new': return '#4FACFE'; // Blue for new arrivals
+      case 'premium': return '#FFD700'; // Gold for premium
+      case 'tech': return '#10B981'; // Green for tech
+      case 'flash': return '#EC4899'; // Pink for flash sales
       default: return COLORS.primary;
+    }
+  };
+
+  // UPDATED: Better badge text
+  const getBadgeText = (type) => {
+    switch (type) {
+      case 'sale': return 'HOT DEAL';
+      case 'new': return 'NEW';
+      case 'premium': return 'PREMIUM';
+      case 'tech': return 'TECH';
+      case 'flash': return 'FLASH';
+      default: return 'FEATURED';
     }
   };
 
@@ -382,7 +402,7 @@ const BannerItem = ({ item, index, currentIndex }) => {
       <View style={styles.bannerContent}>
         <View style={[styles.bannerBadge, { backgroundColor: getBadgeColor(item.type) }]}>
           <Text style={styles.bannerBadgeText}>
-            {item.type === 'welcome' ? 'WELCOME' : item.type === 'trending' ? 'TRENDING' : 'OFFERS'}
+            {getBadgeText(item.type)}
           </Text>
         </View>
         
@@ -390,7 +410,7 @@ const BannerItem = ({ item, index, currentIndex }) => {
         <Text style={styles.bannerSubtitle}>{item.subtitle}</Text>
         
         <TouchableOpacity style={styles.bannerButton}>
-          <Text style={styles.bannerButtonText}>Explore Now</Text>
+          <Text style={styles.bannerButtonText}>Shop Now</Text>
           <Ionicons name="arrow-forward" size={16} color={COLORS.white} style={{ marginLeft: 8 }} />
         </TouchableOpacity>
       </View>
@@ -665,7 +685,7 @@ const StickyHeader = ({ user, cartItems, router, scrollY, isOnline }) => {
   );
 };
 
-// Special Offer Banner Component
+// UPDATED: Special Offer Banner Component with better text
 const SpecialOfferBanner = () => {
   const scaleValue = useRef(new Animated.Value(1)).current;
   const opacityValue = useRef(new Animated.Value(0)).current;
@@ -724,7 +744,7 @@ const SpecialOfferBanner = () => {
       >
         <View style={styles.specialOfferTextContainer}>
           <Text style={styles.specialOfferTitle}>Special Offer! 🎉</Text>
-          <Text style={styles.specialOfferSubtitle}>Get 20% off on your first order with code: WELCOME20</Text>
+          <Text style={styles.specialOfferSubtitle}>Get 20% off on your first order</Text>
         </View>
         <View style={styles.specialOfferButton}>
           <Text style={styles.specialOfferButtonText}>Claim Now</Text>
@@ -1271,10 +1291,9 @@ const HomeScreen = () => {
         translucent={false}
       />
       
-      {/* IMPROVED Internet Status Bar */}
+      {/* UPDATED: Internet Status Bar without Retry Button */}
       <InternetStatusBar 
         isOnline={isOnline} 
-        onRetry={checkConnection}
       />
 
       {/* Sticky Header */}
@@ -1431,7 +1450,7 @@ const HomeScreen = () => {
             ) : (
               /* Show regular home content when not searching */
               <View>
-                {/* Main Banner */}
+                {/* UPDATED: Main Banner with new images and text */}
                 <View style={styles.bannerContainer}>
                   <FlatList
                     ref={bannerRef}
@@ -1561,7 +1580,7 @@ const HomeScreen = () => {
   );
 };
 
-// IMPROVED Styles for Android with better responsiveness
+// UPDATED: Styles for Android with better responsiveness and removed retry button styles
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -1587,7 +1606,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: COLORS.gray,
   },
-  // IMPROVED Internet Status Bar Styles for Android
+  // UPDATED: Internet Status Bar Styles for Android - Removed Retry Button
   internetStatusBar: {
     position: 'absolute',
     top: 0,
@@ -1609,19 +1628,8 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     marginLeft: 8,
-    marginRight: 12,
   },
-  retryButton: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  retryText: {
-    color: COLORS.white,
-    fontSize: 13,
-    fontWeight: '600',
-  },
+  // Removed retryButton and retryText styles
   // Offline Styles
   offlineContent: {
     paddingTop: 50, // Extra padding to account for status bar

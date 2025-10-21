@@ -45,10 +45,23 @@ const COLORS = {
   whatsapp: '#25D366',
 };
 
-// Responsive scaling functions
+// Enhanced responsive scaling functions
 const scale = (size) => (width / 375) * size;
 const verticalScale = (size) => (height / 812) * size;
 const moderateScale = (size, factor = 0.5) => size + (scale(size) - size) * factor;
+
+// Calculate dynamic spacer height based on screen size and platform
+const getNavigationBarHeight = () => {
+  if (Platform.OS === 'ios') {
+    return height > 800 ? 34 : 20; // For notch devices and older iPhones
+  } else {
+    // Android/Huawei devices - responsive calculation
+    if (height < 600) return 16; // Small devices
+    if (height < 700) return 20; // Medium devices
+    if (height < 800) return 24; // Large devices
+    return 28; // Extra large devices
+  }
+};
 
 const MyOrder = () => {
   const { user } = useAuth();
@@ -477,6 +490,9 @@ const MyOrder = () => {
                   <Text style={styles.whatsappButtonText}>Get Help on WhatsApp</Text>
                 </TouchableOpacity>
               </View>
+
+              {/* Navigation Bar Spacer for Android/Huawei */}
+              <View style={styles.modalNavigationSpacer} />
             </Animated.View>
           </View>
         </SafeAreaView>
@@ -503,6 +519,9 @@ const MyOrder = () => {
             <ActivityIndicator size="large" color={COLORS.primary} />
             <Text style={styles.loadingText}>Loading your orders...</Text>
           </View>
+          
+          {/* Navigation Bar Spacer */}
+          <View style={styles.navigationBarSpacer} />
         </View>
       </SafeAreaView>
     );
@@ -590,6 +609,9 @@ const MyOrder = () => {
 
         {/* Order Detail Modal */}
         <OrderDetailModal />
+
+        {/* Navigation Bar Spacer for Android/Huawei */}
+        <View style={styles.navigationBarSpacer} />
       </View>
     </SafeAreaView>
   );
@@ -1088,6 +1110,15 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     fontSize: moderateScale(15),
     fontWeight: '700',
+  },
+  // Navigation Bar Spacer
+  navigationBarSpacer: {
+    height: getNavigationBarHeight(),
+    backgroundColor: COLORS.white,
+  },
+  modalNavigationSpacer: {
+    height: getNavigationBarHeight(),
+    backgroundColor: COLORS.white,
   },
   loadingContainer: {
     flex: 1,

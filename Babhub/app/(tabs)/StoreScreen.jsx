@@ -72,7 +72,7 @@ const storeBanners = [
   },
   {
     id: '2',
-    image: 'https://images.unsplash.com/photo-1558769132-cb25c5d1f9cc?ixlib=rb-4.0.3&auto=format&fit=crop&w=2064&q=80',
+    image: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80',
     title: 'Premium Brands',
     subtitle: 'Shop from top designers',
     type: 'premium'
@@ -155,7 +155,7 @@ const trendingProducts = [
     name: 'Wireless Earbuds Pro',
     brand: 'TechGear',
     price: 129.99,
-    image: 'https://images.unsplash.com/photo-1590658165737-15a047b8b5e3?w=400&h=300&fit=crop',
+    image: 'https://images.unsplash.com/photo-1566206091558-7f218b696731?w=400&h=400&fit=crop&crop=center',
     rating: 4.8,
     reviews: 234
   },
@@ -533,11 +533,10 @@ const MiddleBanner = ({ item }) => {
   );
 };
 
-// New Trending Product Card
-const TrendingProductCard = ({ item, index, onAddToCart, cartQuantity }) => {
+// New Trending Product Card - REMOVED Add to Cart button
+const TrendingProductCard = ({ item, index }) => {
   const cardOpacity = useRef(new Animated.Value(0)).current;
   const cardTranslateX = useRef(new Animated.Value(50)).current;
-  const [recentlyAdded, setRecentlyAdded] = useState(false);
 
   useEffect(() => {
     Animated.sequence([
@@ -557,28 +556,6 @@ const TrendingProductCard = ({ item, index, onAddToCart, cartQuantity }) => {
       ])
     ]).start();
   }, []);
-
-  const handleAddToCartPress = async (e) => {
-    e.stopPropagation();
-    
-    // Visual feedback
-    setRecentlyAdded(true);
-    setTimeout(() => setRecentlyAdded(false), 1000);
-    
-    // Add to cart
-    await onAddToCart(item);
-  };
-
-  const renderCartQuantityBadge = (quantity) => {
-    if (quantity > 0) {
-      return (
-        <View style={styles.quantityBadge}>
-          <Text style={styles.quantityText}>{quantity}</Text>
-        </View>
-      );
-    }
-    return null;
-  };
 
   return (
     <Animated.View 
@@ -608,22 +585,18 @@ const TrendingProductCard = ({ item, index, onAddToCart, cartQuantity }) => {
           
           <View style={styles.trendingPriceContainer}>
             <Text style={styles.trendingPrice}>${item.price.toFixed(2)}</Text>
-            <View style={styles.cartButtonContainer}>
-              <TouchableOpacity
-                style={[
-                  styles.trendingCartButton,
-                  cartQuantity > 0 && styles.cartButtonActive,
-                  recentlyAdded && styles.cartButtonPulse
-                ]}
-                onPress={handleAddToCartPress}
-              >
-                <Ionicons 
-                  name={recentlyAdded ? "checkmark" : "cart"} 
-                  size={responsiveFont(16)} 
-                  color={COLORS.white} 
-                />
-              </TouchableOpacity>
-              {cartQuantity > 0 && renderCartQuantityBadge(cartQuantity)}
+            <View style={styles.ratingContainer}>
+              <View style={styles.stars}>
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <Ionicons 
+                    key={star} 
+                    name="star" 
+                    size={responsiveFont(12)} 
+                    color={star <= Math.floor(item.rating) ? COLORS.secondary : COLORS.grayLight} 
+                  />
+                ))}
+              </View>
+              <Text style={styles.ratingText}>{item.rating} ({item.reviews})</Text>
             </View>
           </View>
         </View>
@@ -1565,15 +1538,12 @@ const StoreScreen = () => {
     );
   };
 
+  // UPDATED: Trending Product Card without Add to Cart button
   const renderTrendingProduct = ({ item, index }) => {
-    const cartQuantity = getCartQuantity(item.id);
-    
     return (
       <TrendingProductCard 
         item={item}
         index={index}
-        onAddToCart={handleAddToCart}
-        cartQuantity={cartQuantity}
       />
     );
   };
@@ -2799,14 +2769,6 @@ const styles = StyleSheet.create({
     fontSize: responsiveFont(18),
     fontWeight: 'bold',
     color: COLORS.primary,
-  },
-  trendingCartButton: {
-    width: responsiveWidth(9),
-    height: responsiveWidth(9),
-    borderRadius: responsiveWidth(4.5),
-    backgroundColor: COLORS.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   middleBannerContainer: {
     paddingHorizontal: responsiveWidth(5),

@@ -28,7 +28,10 @@ import {
   Platform,
   Dimensions,
   Modal,
-  StatusBar
+  StatusBar,
+  KeyboardAvoidingView,
+  Keyboard,
+  TouchableWithoutFeedback
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -36,22 +39,49 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const { width, height } = Dimensions.get('window');
 
-// Responsive sizing functions
-const responsiveWidth = (percentage) => (width * percentage) / 100;
-const responsiveHeight = (percentage) => (height * percentage) / 100;
-const responsiveFont = (size) => {
-  const scale = Math.min(width, height) / 400;
-  const scaledSize = size * scale;
-  return Math.max(scaledSize, 12);
+// Enhanced responsive sizing for Android/Huawei
+const isSmallScreen = width < 375;
+const isLargeScreen = width > 414;
+
+const responsiveWidth = (percentage) => {
+  const baseWidth = isSmallScreen ? 360 : 375;
+  const scale = width / baseWidth;
+  return Math.min((width * percentage) / 100, (baseWidth * percentage) / 100 * scale);
 };
 
-// Safe area calculations for different devices
+const responsiveHeight = (percentage) => {
+  const baseHeight = isSmallScreen ? 640 : 812;
+  const scale = height / baseHeight;
+  let result = (height * percentage) / 100;
+  
+  // Ensure minimum touch target size for Android (44px minimum)
+  if (percentage < 5 && result < 44) {
+    return 44;
+  }
+  return result;
+};
+
+const responsiveFont = (size) => {
+  const scale = width / 375;
+  let scaledSize = size * scale;
+  
+  // Limit scaling for very small and very large screens
+  if (isSmallScreen) {
+    scaledSize = size * 0.9;
+  } else if (isLargeScreen) {
+    scaledSize = size * 1.1;
+  }
+  
+  return Math.max(scaledSize, 12); // Minimum font size
+};
+
+// Safe area calculations optimized for Android/Huawei
 const getSafeAreaBottom = () => {
   if (Platform.OS === 'ios') {
     return responsiveHeight(2);
   } else {
-    // For Android devices including Huawei - increased padding for navigation bar
-    return responsiveHeight(6);
+    // For Android devices including Huawei - more space for navigation gestures
+    return responsiveHeight(8);
   }
 };
 
@@ -59,8 +89,8 @@ const getSafeAreaTop = () => {
   if (Platform.OS === 'ios') {
     return responsiveHeight(6);
   } else {
-    // For Android devices including Huawei
-    return (StatusBar.currentHeight || responsiveHeight(4)) + responsiveHeight(2);
+    // For Android devices including Huawei - account for status bar and notch
+    return (StatusBar.currentHeight || responsiveHeight(6)) + responsiveHeight(2);
   }
 };
 
@@ -196,7 +226,7 @@ const CustomPopup = ({ visible, title, message, type = 'info', onClose, showClos
           <View style={styles.popupContent}>
             <View style={styles.popupIconContainer}>
               <View style={[styles.popupIconCircle, { backgroundColor: color }]}>
-                <Ionicons name={icon} size={22} color={COLORS.white} />
+                <Ionicons name={icon} size={responsiveFont(22)} color={COLORS.white} />
               </View>
             </View>
             
@@ -213,7 +243,7 @@ const CustomPopup = ({ visible, title, message, type = 'info', onClose, showClos
               activeOpacity={0.8}
             >
               <Text style={styles.popupButtonText}>Continue</Text>
-              <Ionicons name="chevron-forward" size={16} color={COLORS.white} />
+              <Ionicons name="chevron-forward" size={responsiveFont(16)} color={COLORS.white} />
             </TouchableOpacity>
           </View>
         </Animated.View>
@@ -230,7 +260,7 @@ const ProductImage = ({ imageUrl, style }) => {
   if (imageError || !imageUrl) {
     return (
       <View style={[style, styles.placeholderContainer]}>
-        <Ionicons name="image-outline" size={20} color={COLORS.grayLight} />
+        <Ionicons name="image-outline" size={responsiveFont(20)} color={COLORS.grayLight} />
       </View>
     );
   }
@@ -278,6 +308,9 @@ const Checkout = () => {
   // Internet connection state
   const [isConnected, setIsConnected] = useState(true);
 
+  // Keyboard state
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
   // Animation values
   const fadeAnim = useState(new Animated.Value(0))[0];
   const slideAnim = useState(new Animated.Value(30))[0];
@@ -292,6 +325,34 @@ const Checkout = () => {
   // Safe area values
   const safeAreaBottom = getSafeAreaBottom();
   const safeAreaTop = getSafeAreaTop();
+
+  // Keyboard listeners for Android optimization
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      (e) => {
+        setKeyboardVisible(true);
+        // For Android, adjust scroll position when keyboard appears
+        if (Platform.OS === 'android') {
+          setTimeout(() => {
+            scrollViewRef.current?.scrollTo({ y: 100, animated: true });
+          }, 100);
+        }
+      }
+    );
+    
+    const keyboardDidHideListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => {
+        setKeyboardVisible(false);
+      }
+    );
+
+    return () => {
+      keyboardDidShowListener.remove();
+      keyboardDidHideListener.remove();
+    };
+  }, []);
 
   // Check internet connection periodically
   useEffect(() => {
@@ -421,11 +482,10 @@ const Checkout = () => {
     loadCartAndUser();
   }, []);
 
-  // Calculate order totals
+  // Calculate order totals (TAX REMOVED)
   const calculateSubtotal = () => cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
-  const calculateTax = () => calculateSubtotal() * 0.1;
   const calculateShipping = () => calculateSubtotal() > 50 ? 0 : 9.99;
-  const calculateTotal = () => calculateSubtotal() + calculateTax() + calculateShipping();
+  const calculateTotal = () => calculateSubtotal() + calculateShipping();
 
   // Phone validation
   const validatePhone = (text) => {
@@ -496,7 +556,6 @@ const Checkout = () => {
       address,
       items: cartItems,
       subtotal: calculateSubtotal().toFixed(2),
-      tax: calculateTax().toFixed(2),
       shipping: calculateShipping().toFixed(2),
       total: calculateTotal().toFixed(2),
     };
@@ -534,6 +593,11 @@ const Checkout = () => {
     }
   };
 
+  // Dismiss keyboard when tapping outside
+  const dismissKeyboard = () => {
+    Keyboard.dismiss();
+  };
+
   // If cart is empty, show nothing (will automatically navigate back)
   if (cartItems.length === 0) {
     return (
@@ -555,270 +619,289 @@ const Checkout = () => {
   }
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView 
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : responsiveHeight(2)}
+    >
       <StatusBar backgroundColor={COLORS.white} barStyle="dark-content" />
       
       {/* Internet Connection Status Bar */}
       {!isConnected && (
         <View style={styles.offlineContainer}>
-          <Ionicons name="wifi-outline" size={16} color={COLORS.white} />
+          <Ionicons name="wifi-outline" size={responsiveFont(16)} color={COLORS.white} />
           <Text style={styles.offlineText}>No internet connection</Text>
         </View>
       )}
 
-      <Animated.ScrollView 
-        ref={scrollViewRef}
-        style={[
-          styles.scrollView,
-          {
-            opacity: fadeAnim,
-            transform: [{ translateY: slideAnim }]
-          }
-        ]}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        {/* Header - Consistent with CartScreen */}
-        <View style={[styles.header, { paddingTop: safeAreaTop }]}>
-          <TouchableOpacity 
-            style={styles.backButton}
-            onPress={() => router.back()}
-          >
-            <View style={styles.backButtonInner}>
-              <Ionicons name="chevron-back" size={responsiveFont(18)} color={COLORS.primary} />
-            </View>
-          </TouchableOpacity>
-          <View style={styles.headerCenter}>
-            <Text style={styles.headerTitle}>Checkout</Text>
-            <Text style={styles.headerSubtitle}>
-              {cartItems.length} {cartItems.length === 1 ? 'item' : 'items'}
-            </Text>
-          </View>
-          <View style={styles.headerRight} />
-        </View>
-
-        {/* User Info Section */}
-        <View style={styles.userInfoSection}>
-          <View style={styles.userInfoHeader}>
-            <Ionicons name="person-circle-outline" size={20} color={COLORS.primary} />
-            <Text style={styles.userInfoTitle}>Account Information</Text>
-          </View>
-          <View style={styles.userEmailContainer}>
-            <Ionicons name="mail-outline" size={14} color={COLORS.gray} />
-            <Text style={styles.userEmail}>{user?.email || "Not logged in"}</Text>
-            <View style={styles.verifiedBadge}>
-              <Ionicons name="checkmark-circle" size={12} color={COLORS.success} />
-              <Text style={styles.verifiedText}>Verified</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Contact Information Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Ionicons name="location-outline" size={18} color={COLORS.primary} />
-            <Text style={styles.sectionTitle}>Shipping Information</Text>
-          </View>
-          
-          <View style={styles.twoColumnGrid}>
-            {/* First Row - Two Columns */}
-            <View style={styles.formRow}>
-              <View style={styles.column}>
-                <Text style={styles.inputLabel}>Full name *</Text>
-                <TextInput
-                  ref={nameInputRef}
-                  style={[styles.input, errors.name && styles.inputError]}
-                  placeholder="Enter your full name"
-                  value={name}
-                  onChangeText={(text) => {
-                    setName(text);
-                    if (text) {
-                      setErrors(prev => ({ ...prev, name: '' }));
-                    }
-                  }}
-                  placeholderTextColor={COLORS.grayLight}
-                  returnKeyType="next"
-                />
-                {errors.name && (
-                  <View style={styles.errorContainer}>
-                    <Ionicons name="warning" size={12} color={COLORS.error} />
-                    <Text style={styles.errorText}>{errors.name}</Text>
-                  </View>
-                )}
+      <TouchableWithoutFeedback onPress={dismissKeyboard}>
+        <Animated.ScrollView 
+          ref={scrollViewRef}
+          style={[
+            styles.scrollView,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }]
+            }
+          ]}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={[
+            styles.scrollContent,
+            keyboardVisible && styles.scrollContentKeyboardOpen
+          ]}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Header - Consistent with CartScreen */}
+          <View style={[styles.header, { paddingTop: safeAreaTop }]}>
+            <TouchableOpacity 
+              style={styles.backButton}
+              onPress={() => router.back()}
+            >
+              <View style={styles.backButtonInner}>
+                <Ionicons name="chevron-back" size={responsiveFont(18)} color={COLORS.primary} />
               </View>
-
-              <View style={styles.column}>
-                <Text style={styles.inputLabel}>Phone number *</Text>
-                <TextInput
-                  ref={phoneInputRef}
-                  style={[styles.input, errors.phone && styles.inputError]}
-                  placeholder="+1 (555) 123-4567"
-                  value={phone}
-                  onChangeText={validatePhone}
-                  keyboardType="phone-pad"
-                  placeholderTextColor={COLORS.grayLight}
-                  returnKeyType="next"
-                />
-                {errors.phone && (
-                  <View style={styles.errorContainer}>
-                    <Ionicons name="warning" size={12} color={COLORS.error} />
-                    <Text style={styles.errorText}>{errors.phone}</Text>
-                  </View>
-                )}
-              </View>
-            </View>
-
-            {/* Second Row - Address (Full Width) */}
-            <View style={styles.formRow}>
-              <View style={styles.fullColumn}>
-                <Text style={styles.inputLabel}>Delivery address *</Text>
-                <TextInput
-                  ref={addressInputRef}
-                  style={[styles.input, styles.textArea, errors.address && styles.inputError]}
-                  placeholder="Enter your complete delivery address including street, city, and zip code"
-                  value={address}
-                  onChangeText={(text) => {
-                    setAddress(text);
-                    if (text) {
-                      setErrors(prev => ({ ...prev, address: '' }));
-                    }
-                  }}
-                  multiline
-                  numberOfLines={3}
-                  placeholderTextColor={COLORS.grayLight}
-                  returnKeyType="done"
-                />
-                {errors.address && (
-                  <View style={styles.errorContainer}>
-                    <Ionicons name="warning" size={12} color={COLORS.error} />
-                    <Text style={styles.errorText}>{errors.address}</Text>
-                  </View>
-                )}
-              </View>
-            </View>
-          </View>
-        </View>
-
-        {/* Order Summary Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Ionicons name="bag-outline" size={18} color={COLORS.primary} />
-            <Text style={styles.sectionTitle}>Order Summary</Text>
-            <View style={styles.totalBadge}>
-              <Text style={styles.totalBadgeText}>R {calculateTotal().toFixed(2)}</Text>
-            </View>
-          </View>
-
-          <View style={styles.orderItemsContainer}>
-            {cartItems.map((item, index) => (
-              <View key={`${item.id}-${index}`} style={styles.orderItem}>
-                <ProductImage 
-                  imageUrl={`${BASE_URL}${item.image}`}
-                  style={styles.orderItemImage}
-                />
-                
-                <View style={styles.orderItemDetails}>
-                  <Text style={styles.orderItemTitle} numberOfLines={1}>
-                    {item.title}
-                  </Text>
-                  
-                  <View style={styles.orderItemMeta}>
-                    <View style={styles.variantContainer}>
-                      <View style={[styles.colorDot, { backgroundColor: item.color }]} />
-                      <Text style={styles.variantText}>{item.color}</Text>
-                    </View>
-                    <Text style={styles.variantText}>•</Text>
-                    <Text style={styles.variantText}>Size: {item.size}</Text>
-                    <Text style={styles.variantText}>•</Text>
-                    <Text style={styles.variantText}>Qty: {item.quantity}</Text>
-                  </View>
-
-                  <View style={styles.orderItemBottom}>
-                    <Text style={styles.orderItemPrice}>
-                      R {item.price.toFixed(2)} each
-                    </Text>
-                    <Text style={styles.orderItemTotal}>
-                      R {(item.price * item.quantity).toFixed(2)}
-                    </Text>
-                  </View>
-                </View>
-              </View>
-            ))}
-          </View>
-
-          {/* Premium Order Totals */}
-          <View style={styles.summaryCard}>
-            <View style={styles.summaryGrid}>
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Subtotal</Text>
-                <Text style={styles.summaryValue}>R {calculateSubtotal().toFixed(2)}</Text>
-              </View>
-
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Shipping</Text>
-                <Text style={[
-                  styles.summaryValue,
-                  calculateShipping() === 0 && styles.freeShipping
-                ]}>
-                  {calculateShipping() === 0 ? 'FREE' : `R ${calculateShipping().toFixed(2)}`}
-                </Text>
-              </View>
-
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Tax</Text>
-                <Text style={styles.summaryValue}>R {calculateTax().toFixed(2)}</Text>
-              </View>
-
-              <View style={styles.summaryDivider} />
-
-              <View style={styles.totalRow}>
-                <Text style={styles.totalLabel}>Total</Text>
-                <Text style={styles.totalAmount}>R {calculateTotal().toFixed(2)}</Text>
-              </View>
-            </View>
-          </View>
-        </View>
-
-        {/* Security & Payment Note */}
-        <View style={styles.securityNote}>
-          <View style={styles.securityHeader}>
-            <Ionicons name="shield-checkmark" size={18} color={COLORS.success} />
-            <Text style={styles.securityTitle}>Secure Payment</Text>
-          </View>
-          <Text style={styles.securityText}>
-            • Your payment information is encrypted and secure{'\n'}
-            • We never save your payment credentials{'\n'}
-            • All transactions are processed through secure payment gateways
-          </Text>
-        </View>
-
-        {/* Shipping Progress */}
-        {calculateSubtotal() < 50 && (
-          <View style={styles.shippingProgress}>
-            <View style={styles.progressHeader}>
-              <Ionicons name="rocket" size={14} color={COLORS.primary} />
-              <Text style={styles.progressText}>
-                Add R {(50 - calculateSubtotal()).toFixed(2)} for free shipping
+            </TouchableOpacity>
+            <View style={styles.headerCenter}>
+              <Text style={styles.headerTitle}>Checkout</Text>
+              <Text style={styles.headerSubtitle}>
+                {cartItems.length} {cartItems.length === 1 ? 'item' : 'items'}
               </Text>
             </View>
-            <View style={styles.progressBar}>
-              <View 
-                style={[
-                  styles.progressFill,
-                  { width: `${(calculateSubtotal() / 50) * 100}%` }
-                ]} 
-              />
+            <View style={styles.headerRight} />
+          </View>
+
+          {/* User Info Section */}
+          <View style={styles.userInfoSection}>
+            <View style={styles.userInfoHeader}>
+              <Ionicons name="person-circle-outline" size={responsiveFont(20)} color={COLORS.primary} />
+              <Text style={styles.userInfoTitle}>Account Information</Text>
+            </View>
+            <View style={styles.userEmailContainer}>
+              <Ionicons name="mail-outline" size={responsiveFont(14)} color={COLORS.gray} />
+              <Text style={styles.userEmail}>{user?.email || "Not logged in"}</Text>
+              <View style={styles.verifiedBadge}>
+                <Ionicons name="checkmark-circle" size={responsiveFont(12)} color={COLORS.success} />
+                <Text style={styles.verifiedText}>Verified</Text>
+              </View>
             </View>
           </View>
-        )}
 
-        {/* Extra Spacer for Footer */}
-        <View style={[styles.bottomSpacer, { height: responsiveHeight(12) + safeAreaBottom }]} />
-      </Animated.ScrollView>
+          {/* Contact Information Section */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="location-outline" size={responsiveFont(18)} color={COLORS.primary} />
+              <Text style={styles.sectionTitle}>Shipping Information</Text>
+            </View>
+            
+            <View style={styles.twoColumnGrid}>
+              {/* First Row - Two Columns */}
+              <View style={styles.formRow}>
+                <View style={styles.column}>
+                  <Text style={styles.inputLabel}>Full name *</Text>
+                  <TextInput
+                    ref={nameInputRef}
+                    style={[styles.input, errors.name && styles.inputError]}
+                    placeholder="Enter your full name"
+                    value={name}
+                    onChangeText={(text) => {
+                      setName(text);
+                      if (text) {
+                        setErrors(prev => ({ ...prev, name: '' }));
+                      }
+                    }}
+                    placeholderTextColor={COLORS.grayLight}
+                    returnKeyType="next"
+                    onSubmitEditing={() => phoneInputRef.current?.focus()}
+                  />
+                  {errors.name && (
+                    <View style={styles.errorContainer}>
+                      <Ionicons name="warning" size={responsiveFont(12)} color={COLORS.error} />
+                      <Text style={styles.errorText}>{errors.name}</Text>
+                    </View>
+                  )}
+                </View>
+
+                <View style={styles.column}>
+                  <Text style={styles.inputLabel}>Phone number *</Text>
+                  <TextInput
+                    ref={phoneInputRef}
+                    style={[styles.input, errors.phone && styles.inputError]}
+                    placeholder="+1 (555) 123-4567"
+                    value={phone}
+                    onChangeText={validatePhone}
+                    keyboardType="phone-pad"
+                    placeholderTextColor={COLORS.grayLight}
+                    returnKeyType="next"
+                    onSubmitEditing={() => addressInputRef.current?.focus()}
+                  />
+                  {errors.phone && (
+                    <View style={styles.errorContainer}>
+                      <Ionicons name="warning" size={responsiveFont(12)} color={COLORS.error} />
+                      <Text style={styles.errorText}>{errors.phone}</Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+
+              {/* Second Row - Address (Full Width) */}
+              <View style={styles.formRow}>
+                <View style={styles.fullColumn}>
+                  <Text style={styles.inputLabel}>Delivery address *</Text>
+                  <TextInput
+                    ref={addressInputRef}
+                    style={[styles.input, styles.textArea, errors.address && styles.inputError]}
+                    placeholder="Enter your complete delivery address including street, city, and zip code"
+                    value={address}
+                    onChangeText={(text) => {
+                      setAddress(text);
+                      if (text) {
+                        setErrors(prev => ({ ...prev, address: '' }));
+                      }
+                    }}
+                    multiline
+                    numberOfLines={3}
+                    placeholderTextColor={COLORS.grayLight}
+                    returnKeyType="done"
+                    blurOnSubmit={true}
+                  />
+                  {errors.address && (
+                    <View style={styles.errorContainer}>
+                      <Ionicons name="warning" size={responsiveFont(12)} color={COLORS.error} />
+                      <Text style={styles.errorText}>{errors.address}</Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+            </View>
+          </View>
+
+          {/* Order Summary Section */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="bag-outline" size={responsiveFont(18)} color={COLORS.primary} />
+              <Text style={styles.sectionTitle}>Order Summary</Text>
+              <View style={styles.totalBadge}>
+                <Text style={styles.totalBadgeText}>R {calculateTotal().toFixed(2)}</Text>
+              </View>
+            </View>
+
+            <View style={styles.orderItemsContainer}>
+              {cartItems.map((item, index) => (
+                <View key={`${item.id}-${index}`} style={styles.orderItem}>
+                  <ProductImage 
+                    imageUrl={`${BASE_URL}${item.image}`}
+                    style={styles.orderItemImage}
+                  />
+                  
+                  <View style={styles.orderItemDetails}>
+                    <Text style={styles.orderItemTitle} numberOfLines={1}>
+                      {item.title}
+                    </Text>
+                    
+                    <View style={styles.orderItemMeta}>
+                      <View style={styles.variantContainer}>
+                        <View style={[styles.colorDot, { backgroundColor: item.color }]} />
+                        <Text style={styles.variantText}>{item.color}</Text>
+                      </View>
+                      <Text style={styles.variantText}>•</Text>
+                      <Text style={styles.variantText}>Size: {item.size}</Text>
+                      <Text style={styles.variantText}>•</Text>
+                      <Text style={styles.variantText}>Qty: {item.quantity}</Text>
+                    </View>
+
+                    <View style={styles.orderItemBottom}>
+                      <Text style={styles.orderItemPrice}>
+                        R {item.price.toFixed(2)} each
+                      </Text>
+                      <Text style={styles.orderItemTotal}>
+                        R {(item.price * item.quantity).toFixed(2)}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              ))}
+            </View>
+
+            {/* Premium Order Totals - TAX REMOVED */}
+            <View style={styles.summaryCard}>
+              <View style={styles.summaryGrid}>
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Subtotal</Text>
+                  <Text style={styles.summaryValue}>R {calculateSubtotal().toFixed(2)}</Text>
+                </View>
+
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Shipping</Text>
+                  <Text style={[
+                    styles.summaryValue,
+                    calculateShipping() === 0 && styles.freeShipping
+                  ]}>
+                    {calculateShipping() === 0 ? 'FREE' : `R ${calculateShipping().toFixed(2)}`}
+                  </Text>
+                </View>
+
+                <View style={styles.summaryDivider} />
+
+                <View style={styles.totalRow}>
+                  <Text style={styles.totalLabel}>Total</Text>
+                  <Text style={styles.totalAmount}>R {calculateTotal().toFixed(2)}</Text>
+                </View>
+              </View>
+            </View>
+          </View>
+
+          {/* Security & Payment Note */}
+          <View style={styles.securityNote}>
+            <View style={styles.securityHeader}>
+              <Ionicons name="shield-checkmark" size={responsiveFont(18)} color={COLORS.success} />
+              <Text style={styles.securityTitle}>Secure Payment</Text>
+            </View>
+            <Text style={styles.securityText}>
+              • Your payment information is encrypted and secure{'\n'}
+              • We never save your payment credentials{'\n'}
+              • All transactions are processed through secure payment gateways
+            </Text>
+          </View>
+
+          {/* Shipping Progress */}
+          {calculateSubtotal() < 50 && (
+            <View style={styles.shippingProgress}>
+              <View style={styles.progressHeader}>
+                <Ionicons name="rocket" size={responsiveFont(14)} color={COLORS.primary} />
+                <Text style={styles.progressText}>
+                  Add R {(50 - calculateSubtotal()).toFixed(2)} for free shipping
+                </Text>
+              </View>
+              <View style={styles.progressBar}>
+                <View 
+                  style={[
+                    styles.progressFill,
+                    { width: `${(calculateSubtotal() / 50) * 100}%` }
+                  ]} 
+                />
+              </View>
+            </View>
+          )}
+
+          {/* Extra Spacer for Footer */}
+          <View style={[styles.bottomSpacer, { 
+            height: keyboardVisible 
+              ? responsiveHeight(8) + safeAreaBottom 
+              : responsiveHeight(12) + safeAreaBottom 
+          }]} />
+        </Animated.ScrollView>
+      </TouchableWithoutFeedback>
 
       {/* Premium Checkout Footer - Fixed Pay Button */}
       {cartItems.length > 0 && (
-        <View style={[styles.footer, { paddingBottom: safeAreaBottom }]}>
+        <View style={[
+          styles.footer, 
+          { 
+            paddingBottom: keyboardVisible 
+              ? Math.max(safeAreaBottom, responsiveHeight(2)) 
+              : safeAreaBottom 
+          }
+        ]}>
           <View style={styles.footerContent}>
             <View style={styles.footerSummary}>
               <Text style={styles.footerTotalLabel}>Total Amount</Text>
@@ -830,12 +913,13 @@ const Checkout = () => {
                 style={[styles.checkoutButton, loading && styles.checkoutButtonDisabled]}
                 onPress={handleCheckout}
                 disabled={loading}
+                activeOpacity={0.8}
               >
                 {loading ? (
                   <ActivityIndicator size="small" color={COLORS.white} />
                 ) : (
                   <View style={styles.checkoutButtonContent}>
-                    <Ionicons name="lock-closed" size={16} color={COLORS.white} />
+                    <Ionicons name="lock-closed" size={responsiveFont(16)} color={COLORS.white} />
                     <Text style={styles.checkoutText}>Pay Now</Text>
                   </View>
                 )}
@@ -853,7 +937,7 @@ const Checkout = () => {
         type={popupType}
         onClose={hidePopup}
       />
-    </View>
+    </KeyboardAvoidingView>
   );
 };
 
@@ -874,30 +958,36 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     paddingBottom: responsiveHeight(2),
   },
+  scrollContentKeyboardOpen: {
+    paddingBottom: responsiveHeight(6),
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: COLORS.white,
+    paddingHorizontal: responsiveWidth(5),
   },
   loadingText: {
     marginTop: responsiveHeight(2),
     fontSize: responsiveFont(16),
     color: COLORS.gray,
     fontWeight: '500',
+    textAlign: 'center',
   },
   // Offline Status Bar
   offlineContainer: {
     backgroundColor: COLORS.error,
-    padding: 8,
+    paddingVertical: responsiveHeight(1.2),
+    paddingHorizontal: responsiveWidth(4),
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
+    gap: responsiveWidth(2),
   },
   offlineText: {
     color: COLORS.white,
-    fontSize: 12,
+    fontSize: responsiveFont(13),
     fontWeight: '600',
   },
   // Premium Popup Styles
@@ -905,7 +995,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    paddingHorizontal: responsiveWidth(5),
   },
   popupBackdrop: {
     position: 'absolute',
@@ -917,73 +1007,73 @@ const styles = StyleSheet.create({
   },
   popupContainer: {
     backgroundColor: COLORS.white,
-    borderRadius: 20,
+    borderRadius: responsiveWidth(4),
     width: '100%',
-    maxWidth: 340,
+    maxWidth: responsiveWidth(90),
     shadowColor: COLORS.black,
-    shadowOffset: { width: 0, height: 10 },
+    shadowOffset: { width: 0, height: responsiveHeight(1) },
     shadowOpacity: 0.3,
-    shadowRadius: 20,
+    shadowRadius: responsiveWidth(4),
     elevation: 15,
     overflow: 'hidden',
   },
   popupContent: {
     flexDirection: 'row',
-    padding: 24,
-    paddingBottom: 16,
+    padding: responsiveWidth(5),
+    paddingBottom: responsiveWidth(3),
   },
   popupIconContainer: {
-    marginRight: 16,
+    marginRight: responsiveWidth(4),
   },
   popupIconCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: responsiveWidth(12),
+    height: responsiveWidth(12),
+    borderRadius: responsiveWidth(6),
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: responsiveHeight(0.5) },
     shadowOpacity: 0.2,
-    shadowRadius: 8,
+    shadowRadius: responsiveWidth(2),
     elevation: 4,
   },
   popupTextContainer: {
     flex: 1,
   },
   popupTitle: {
-    fontSize: 18,
+    fontSize: responsiveFont(18),
     fontWeight: '700',
     color: COLORS.black,
-    marginBottom: 8,
-    lineHeight: 22,
+    marginBottom: responsiveHeight(1),
+    lineHeight: responsiveHeight(2.5),
   },
   popupMessage: {
-    fontSize: 14,
+    fontSize: responsiveFont(14),
     color: COLORS.dark,
-    lineHeight: 20,
+    lineHeight: responsiveHeight(2.2),
   },
   popupActions: {
-    padding: 16,
-    paddingTop: 8,
+    padding: responsiveWidth(4),
+    paddingTop: responsiveWidth(2),
   },
   popupButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderRadius: 140,
-    gap: 8,
+    paddingHorizontal: responsiveWidth(5),
+    paddingVertical: responsiveHeight(1.8),
+    borderRadius: responsiveWidth(35),
+    gap: responsiveWidth(2),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: responsiveHeight(0.5) },
     shadowOpacity: 0.2,
-    shadowRadius: 8,
+    shadowRadius: responsiveWidth(2),
     elevation: 4,
-    minHeight: 52,
+    minHeight: responsiveHeight(5.5),
   },
   popupButtonText: {
     color: COLORS.white,
-    fontSize: 16,
+    fontSize: responsiveFont(16),
     fontWeight: '700',
   },
   // Header - White Background
@@ -994,43 +1084,47 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: responsiveWidth(4),
     paddingVertical: responsiveHeight(1.5),
-    borderBottomLeftRadius: responsiveWidth(5),
-    borderBottomRightRadius: responsiveWidth(5),
+    borderBottomLeftRadius: responsiveWidth(4),
+    borderBottomRightRadius: responsiveWidth(4),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: responsiveHeight(0.5) },
+    shadowOffset: { width: 0, height: responsiveHeight(0.3) },
     shadowOpacity: 0.08,
-    shadowRadius: responsiveWidth(3),
+    shadowRadius: responsiveWidth(2),
     elevation: 5,
     marginBottom: responsiveHeight(1),
   },
   backButton: {
-    padding: responsiveWidth(1.5),
+    padding: responsiveWidth(2),
+    marginLeft: -responsiveWidth(1),
   },
   backButtonInner: {
-    width: responsiveWidth(9),
-    height: responsiveWidth(9),
+    width: responsiveWidth(10),
+    height: responsiveWidth(10),
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(99, 102, 241, 0.1)',
-    borderRadius: responsiveWidth(2.5),
+    borderRadius: responsiveWidth(3),
   },
   headerCenter: {
     alignItems: 'center',
     flex: 1,
+    paddingHorizontal: responsiveWidth(2),
   },
   headerTitle: {
     fontSize: responsiveFont(18),
     fontWeight: '700',
     color: COLORS.dark,
-    marginBottom: 2,
+    marginBottom: responsiveHeight(0.3),
+    textAlign: 'center',
   },
   headerSubtitle: {
     fontSize: responsiveFont(13),
     color: COLORS.gray,
     fontWeight: '500',
+    textAlign: 'center',
   },
   headerRight: {
-    width: responsiveWidth(9),
+    width: responsiveWidth(10),
   },
   // User Info Section
   userInfoSection: {
@@ -1041,12 +1135,17 @@ const styles = StyleSheet.create({
     padding: responsiveWidth(4),
     borderWidth: 1,
     borderColor: COLORS.light,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
   userInfoHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: responsiveHeight(1),
-    gap: responsiveWidth(2),
+    marginBottom: responsiveHeight(1.2),
+    gap: responsiveWidth(2.5),
   },
   userInfoTitle: {
     fontSize: responsiveFont(16),
@@ -1057,9 +1156,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.primary + '08',
-    padding: responsiveWidth(3),
-    borderRadius: responsiveWidth(2),
-    gap: responsiveWidth(2),
+    paddingHorizontal: responsiveWidth(3),
+    paddingVertical: responsiveHeight(1.5),
+    borderRadius: responsiveWidth(2.5),
+    gap: responsiveWidth(2.5),
   },
   userEmail: {
     fontSize: responsiveFont(14),
@@ -1071,10 +1171,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.success + '15',
-    paddingHorizontal: responsiveWidth(2),
-    paddingVertical: responsiveHeight(0.5),
-    borderRadius: responsiveWidth(1.5),
-    gap: responsiveWidth(1),
+    paddingHorizontal: responsiveWidth(2.5),
+    paddingVertical: responsiveHeight(0.8),
+    borderRadius: responsiveWidth(2),
+    gap: responsiveWidth(1.2),
   },
   verifiedText: {
     fontSize: responsiveFont(10),
@@ -1085,29 +1185,34 @@ const styles = StyleSheet.create({
   section: {
     backgroundColor: COLORS.white,
     marginHorizontal: responsiveWidth(4),
-    marginTop: responsiveHeight(1),
+    marginTop: responsiveHeight(2),
     borderRadius: responsiveWidth(3),
     padding: responsiveWidth(4),
     borderWidth: 1,
     borderColor: COLORS.light,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: responsiveHeight(1.5),
-    gap: responsiveWidth(2),
+    marginBottom: responsiveHeight(2),
+    gap: responsiveWidth(2.5),
   },
   sectionTitle: {
     fontSize: responsiveFont(16),
     fontWeight: '700',
     color: COLORS.dark,
+    flex: 1,
   },
   totalBadge: {
     backgroundColor: COLORS.primary,
-    paddingHorizontal: responsiveWidth(2.5),
-    paddingVertical: responsiveHeight(0.5),
+    paddingHorizontal: responsiveWidth(3),
+    paddingVertical: responsiveHeight(0.8),
     borderRadius: responsiveWidth(3),
-    marginLeft: 'auto',
   },
   totalBadgeText: {
     fontSize: responsiveFont(12),
@@ -1116,14 +1221,15 @@ const styles = StyleSheet.create({
   },
   // Two Column Form Layout
   twoColumnGrid: {
-    gap: responsiveHeight(1),
+    gap: responsiveHeight(2),
   },
   formRow: {
-    flexDirection: 'row',
+    flexDirection: width < 400 ? 'column' : 'row',
     gap: responsiveWidth(3),
   },
   column: {
     flex: 1,
+    marginBottom: width < 400 ? responsiveHeight(1.5) : 0,
   },
   fullColumn: {
     flex: 1,
@@ -1136,22 +1242,25 @@ const styles = StyleSheet.create({
     fontSize: responsiveFont(14),
     fontWeight: '600',
     color: COLORS.dark,
-    marginBottom: responsiveHeight(0.5),
+    marginBottom: responsiveHeight(1),
   },
   input: {
-    height: responsiveHeight(5.5),
+    height: responsiveHeight(6),
     borderWidth: 1.5,
     borderColor: COLORS.light,
-    borderRadius: responsiveWidth(2.5),
-    paddingHorizontal: responsiveWidth(3),
-    fontSize: responsiveFont(14),
+    borderRadius: responsiveWidth(3),
+    paddingHorizontal: responsiveWidth(4),
+    fontSize: responsiveFont(15),
     color: COLORS.dark,
     backgroundColor: COLORS.white,
+    minHeight: responsiveHeight(6),
+    textAlignVertical: 'center',
   },
   textArea: {
-    height: responsiveHeight(10),
+    height: Math.max(responsiveHeight(12), 100),
     textAlignVertical: 'top',
-    paddingTop: responsiveHeight(1),
+    paddingTop: responsiveHeight(2),
+    paddingBottom: responsiveHeight(2),
   },
   inputError: {
     borderColor: COLORS.error,
@@ -1160,46 +1269,48 @@ const styles = StyleSheet.create({
   errorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: responsiveWidth(1),
-    marginTop: responsiveHeight(0.5),
+    gap: responsiveWidth(1.5),
+    marginTop: responsiveHeight(0.8),
   },
   errorText: {
     color: COLORS.error,
-    fontSize: responsiveFont(11),
+    fontSize: responsiveFont(12),
     fontWeight: '500',
   },
   // Order Items
   orderItemsContainer: {
-    gap: responsiveHeight(1),
-    marginBottom: responsiveHeight(1.5),
+    gap: responsiveHeight(1.5),
+    marginBottom: responsiveHeight(2),
   },
   orderItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: responsiveWidth(3),
+    padding: responsiveWidth(3.5),
     backgroundColor: COLORS.background,
-    borderRadius: responsiveWidth(2.5),
+    borderRadius: responsiveWidth(3),
+    borderWidth: 1,
+    borderColor: COLORS.light,
   },
   orderItemImage: {
-    width: responsiveWidth(12.5),
-    height: responsiveWidth(12.5),
-    borderRadius: responsiveWidth(2),
-    marginRight: responsiveWidth(3),
+    width: responsiveWidth(14),
+    height: responsiveWidth(14),
+    borderRadius: responsiveWidth(2.5),
+    marginRight: responsiveWidth(3.5),
   },
   placeholderContainer: {
     backgroundColor: COLORS.light,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: responsiveWidth(2),
+    borderRadius: responsiveWidth(2.5),
   },
   imageLoading: {
     backgroundColor: COLORS.light,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: responsiveWidth(2),
+    borderRadius: responsiveWidth(2.5),
   },
   productImage: {
-    borderRadius: responsiveWidth(2),
+    borderRadius: responsiveWidth(2.5),
   },
   orderItemDetails: {
     flex: 1,
@@ -1208,23 +1319,27 @@ const styles = StyleSheet.create({
     fontSize: responsiveFont(14),
     fontWeight: '600',
     color: COLORS.dark,
-    marginBottom: responsiveHeight(0.5),
+    marginBottom: responsiveHeight(0.8),
+    lineHeight: responsiveHeight(2),
   },
   orderItemMeta: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexWrap: 'wrap',
     gap: responsiveWidth(1.5),
-    marginBottom: responsiveHeight(0.5),
+    marginBottom: responsiveHeight(0.8),
   },
   variantContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: responsiveWidth(1),
+    gap: responsiveWidth(1.2),
   },
   colorDot: {
-    width: responsiveWidth(2),
-    height: responsiveWidth(2),
-    borderRadius: responsiveWidth(1),
+    width: responsiveWidth(2.5),
+    height: responsiveWidth(2.5),
+    borderRadius: responsiveWidth(1.25),
+    borderWidth: 1,
+    borderColor: COLORS.grayLight,
   },
   variantText: {
     fontSize: responsiveFont(11),
@@ -1235,6 +1350,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginTop: responsiveHeight(0.5),
   },
   orderItemPrice: {
     fontSize: responsiveFont(12),
@@ -1242,18 +1358,20 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   orderItemTotal: {
-    fontSize: responsiveFont(14),
+    fontSize: responsiveFont(15),
     fontWeight: '700',
     color: COLORS.primary,
   },
   // Order Summary
   summaryCard: {
     backgroundColor: COLORS.background,
-    borderRadius: responsiveWidth(2.5),
+    borderRadius: responsiveWidth(3),
     padding: responsiveWidth(4),
+    borderWidth: 1,
+    borderColor: COLORS.light,
   },
   summaryGrid: {
-    gap: responsiveHeight(0.75),
+    gap: responsiveHeight(1.2),
   },
   summaryRow: {
     flexDirection: 'row',
@@ -1277,7 +1395,7 @@ const styles = StyleSheet.create({
   summaryDivider: {
     height: 1,
     backgroundColor: COLORS.light,
-    marginVertical: responsiveHeight(0.75),
+    marginVertical: responsiveHeight(1),
   },
   totalRow: {
     flexDirection: 'row',
@@ -1285,12 +1403,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   totalLabel: {
-    fontSize: responsiveFont(15),
+    fontSize: responsiveFont(16),
     fontWeight: '700',
     color: COLORS.dark,
   },
   totalAmount: {
-    fontSize: responsiveFont(18),
+    fontSize: responsiveFont(20),
     fontWeight: '800',
     color: COLORS.primary,
   },
@@ -1298,17 +1416,17 @@ const styles = StyleSheet.create({
   securityNote: {
     backgroundColor: COLORS.success + '08',
     marginHorizontal: responsiveWidth(4),
-    marginTop: responsiveHeight(1),
-    padding: responsiveWidth(3.5),
-    borderRadius: responsiveWidth(2.5),
-    borderLeftWidth: 3,
+    marginTop: responsiveHeight(2),
+    padding: responsiveWidth(4),
+    borderRadius: responsiveWidth(3),
+    borderLeftWidth: 4,
     borderLeftColor: COLORS.success,
   },
   securityHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: responsiveWidth(2),
-    marginBottom: responsiveHeight(0.75),
+    gap: responsiveWidth(2.5),
+    marginBottom: responsiveHeight(1),
   },
   securityTitle: {
     fontSize: responsiveFont(14),
@@ -1318,45 +1436,51 @@ const styles = StyleSheet.create({
   securityText: {
     fontSize: responsiveFont(12),
     color: COLORS.gray,
-    lineHeight: responsiveHeight(2),
+    lineHeight: responsiveHeight(2.2),
   },
   // Shipping Progress
   shippingProgress: {
     marginHorizontal: responsiveWidth(4),
-    marginTop: responsiveHeight(1),
-    padding: responsiveWidth(3),
+    marginTop: responsiveHeight(2),
+    padding: responsiveWidth(3.5),
     backgroundColor: COLORS.white,
-    borderRadius: responsiveWidth(2.5),
+    borderRadius: responsiveWidth(3),
     borderWidth: 1,
     borderColor: COLORS.light,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   progressHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: responsiveWidth(1.5),
-    marginBottom: responsiveHeight(0.75),
+    gap: responsiveWidth(2),
+    marginBottom: responsiveHeight(1),
   },
   progressText: {
     fontSize: responsiveFont(12),
     color: COLORS.dark,
     fontWeight: '500',
+    flex: 1,
   },
   progressBar: {
-    height: responsiveHeight(0.5),
+    height: responsiveHeight(0.6),
     backgroundColor: COLORS.light,
-    borderRadius: responsiveHeight(0.25),
+    borderRadius: responsiveHeight(0.3),
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
     backgroundColor: COLORS.primary,
-    borderRadius: responsiveHeight(0.25),
+    borderRadius: responsiveHeight(0.3),
   },
   // Bottom Spacer for Footer
   bottomSpacer: {
     // Height is set dynamically in the component
   },
-  // Premium Footer - Simplified with White Background
+  // Premium Footer - Fixed at bottom
   footer: {
     position: 'absolute',
     bottom: 0,
@@ -1370,10 +1494,14 @@ const styles = StyleSheet.create({
         shadowColor: COLORS.dark,
         shadowOffset: { width: 0, height: -responsiveHeight(0.5) },
         shadowOpacity: 0.1,
-        shadowRadius: responsiveWidth(2),
+        shadowRadius: responsiveWidth(3),
       },
       android: {
-        elevation: 8,
+        elevation: 12,
+        shadowColor: COLORS.dark,
+        shadowOffset: { width: 0, height: -responsiveHeight(0.3) },
+        shadowOpacity: 0.1,
+        shadowRadius: responsiveWidth(4),
       },
     }),
   },
@@ -1381,8 +1509,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: responsiveWidth(5),
-    paddingVertical: responsiveHeight(1.5),
+    paddingHorizontal: responsiveWidth(4),
+    paddingVertical: responsiveHeight(1.8),
   },
   footerSummary: {
     flex: 1,
@@ -1391,13 +1519,13 @@ const styles = StyleSheet.create({
     fontSize: responsiveFont(12),
     color: COLORS.gray,
     fontWeight: '500',
-    marginBottom: responsiveHeight(0.25),
+    marginBottom: responsiveHeight(0.3),
   },
   footerTotal: {
     fontSize: responsiveFont(22),
     fontWeight: '800',
     color: COLORS.primary,
-    marginBottom: responsiveHeight(0.25),
+    marginBottom: responsiveHeight(0.3),
   },
   footerItems: {
     fontSize: responsiveFont(13),
@@ -1406,18 +1534,26 @@ const styles = StyleSheet.create({
   checkoutButton: {
     backgroundColor: COLORS.primary,
     borderRadius: responsiveWidth(35),
-    paddingHorizontal: responsiveWidth(5),
-    paddingVertical: responsiveHeight(1.5),
-    marginLeft: responsiveWidth(4),
+    paddingHorizontal: responsiveWidth(6),
+    paddingVertical: responsiveHeight(2),
+    marginLeft: responsiveWidth(3),
+    minWidth: responsiveWidth(35),
+    minHeight: responsiveHeight(6),
+    justifyContent: 'center',
+    alignItems: 'center',
     ...Platform.select({
       ios: {
         shadowColor: COLORS.primary,
         shadowOffset: { width: 0, height: responsiveHeight(0.5) },
         shadowOpacity: 0.3,
-        shadowRadius: responsiveWidth(2),
+        shadowRadius: responsiveWidth(3),
       },
       android: {
-        elevation: 6,
+        elevation: 8,
+        shadowColor: COLORS.primary,
+        shadowOffset: { width: 0, height: responsiveHeight(0.3) },
+        shadowOpacity: 0.4,
+        shadowRadius: responsiveWidth(4),
       },
     }),
   },
@@ -1429,7 +1565,14 @@ const styles = StyleSheet.create({
   },
   checkoutButtonDisabled: {
     backgroundColor: COLORS.grayLight,
-    shadowColor: COLORS.gray,
+    ...Platform.select({
+      ios: {
+        shadowColor: COLORS.gray,
+      },
+      android: {
+        shadowColor: COLORS.gray,
+      },
+    }),
   },
   checkoutText: {
     color: COLORS.white,

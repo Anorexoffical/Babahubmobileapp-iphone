@@ -17,6 +17,16 @@ import { useAuth } from './contexts/AuthContext';
 
 const { width, height } = Dimensions.get('window');
 
+// Enhanced responsive calculations
+const responsive = {
+  width: (percentage) => width * (percentage / 100),
+  height: (percentage) => height * (percentage / 100),
+  font: (size) => {
+    const scale = width / 375; // Base width iPhone 6/7/8
+    return Math.round(size * scale);
+  },
+};
+
 // Enhanced Brand Color Palette
 const COLORS = {
   primary: '#6366F1',
@@ -83,6 +93,19 @@ const ProfileDetailsScreen = () => {
     }
   };
 
+  // Calculate dynamic spacer height based on screen size and platform
+  const getNavigationBarHeight = () => {
+    if (Platform.OS === 'ios') {
+      return height > 800 ? 34 : 20; // For notch devices and older iPhones
+    } else {
+      // Android/Huawei devices - responsive calculation
+      if (height < 600) return 16; // Small devices
+      if (height < 700) return 20; // Medium devices
+      if (height < 800) return 24; // Large devices
+      return 28; // Extra large devices
+    }
+  };
+
   return (
     <View style={styles.fullContainer}>
       <StatusBar backgroundColor={COLORS.primary} barStyle="light-content" />
@@ -97,7 +120,7 @@ const ProfileDetailsScreen = () => {
                 style={styles.backButton}
                 onPress={handleBack}
               >
-                <Ionicons name="arrow-back" size={24} color={COLORS.white} />
+                <Ionicons name="arrow-back" size={responsive.font(24)} color={COLORS.white} />
               </TouchableOpacity>
               <Text style={styles.headerTitle}>Profile Details</Text>
               <View style={styles.placeholder} />
@@ -124,7 +147,7 @@ const ProfileDetailsScreen = () => {
           {/* Profile Information Card */}
           <View style={styles.card}>
             <View style={styles.cardHeader}>
-              <Ionicons name="person-circle-outline" size={22} color={COLORS.primary} />
+              <Ionicons name="person-circle-outline" size={responsive.font(22)} color={COLORS.primary} />
               <Text style={styles.sectionTitle}>Profile Information</Text>
             </View>
             
@@ -145,7 +168,7 @@ const ProfileDetailsScreen = () => {
           {/* Personal Details Card */}
           <View style={styles.card}>
             <View style={styles.cardHeader}>
-              <Ionicons name="information-circle-outline" size={22} color={COLORS.primary} />
+              <Ionicons name="information-circle-outline" size={responsive.font(22)} color={COLORS.primary} />
               <Text style={styles.sectionTitle}>Personal Details</Text>
             </View>
             
@@ -159,7 +182,7 @@ const ProfileDetailsScreen = () => {
           {/* Account Status Card */}
           <View style={styles.card}>
             <View style={styles.cardHeader}>
-              <Ionicons name="shield-checkmark-outline" size={22} color={COLORS.primary} />
+              <Ionicons name="shield-checkmark-outline" size={responsive.font(22)} color={COLORS.primary} />
               <Text style={styles.sectionTitle}>Account Status</Text>
             </View>
             
@@ -183,8 +206,8 @@ const ProfileDetailsScreen = () => {
         </ScrollView>
       </View>
 
-      {/* White Navigation Bar Spacer for iOS */}
-      {Platform.OS === 'ios' && <View style={styles.navigationBarSpacer} />}
+      {/* Dynamic Navigation Bar Spacer */}
+      <View style={[styles.navigationBarSpacer, { height: getNavigationBarHeight() }]} />
     </View>
   );
 };
@@ -200,11 +223,11 @@ const InfoItem = ({
   <View style={styles.infoItem}>
     <View style={styles.infoLeft}>
       <View style={styles.infoIcon}>
-        <Ionicons name={icon} size={18} color={COLORS.primary} />
+        <Ionicons name={icon} size={responsive.font(18)} color={COLORS.primary} />
       </View>
       <View style={styles.infoContent}>
         <Text style={styles.label}>{label}</Text>
-        <Text style={[styles.value, { color: valueColor }]}>{value}</Text>
+        <Text style={[styles.value, { color: valueColor }]} numberOfLines={1}>{value}</Text>
       </View>
     </View>
     
@@ -214,7 +237,7 @@ const InfoItem = ({
           style={styles.copyButton}
           onPress={() => onCopy(value)}
         >
-          <Ionicons name="copy-outline" size={18} color={COLORS.primary} />
+          <Ionicons name="copy-outline" size={responsive.font(18)} color={COLORS.primary} />
         </TouchableOpacity>
       )}
     </View>
@@ -234,99 +257,102 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: COLORS.primary,
-    borderBottomLeftRadius: 25,
-    borderBottomRightRadius: 25,
+    borderBottomLeftRadius: responsive.width(6),
+    borderBottomRightRadius: responsive.width(6),
     shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 10 },
+    shadowOffset: { width: 0, height: responsive.height(1) },
     shadowOpacity: 0.3,
-    shadowRadius: 20,
+    shadowRadius: responsive.width(5),
     elevation: 10,
     overflow: 'hidden',
   },
   headerBackground: {
     backgroundColor: COLORS.primary,
-    paddingTop: height * 0.06,
-    paddingBottom: height * 0.03,
+    paddingTop: Platform.OS === 'ios' ? responsive.height(8) : responsive.height(6),
+    paddingBottom: responsive.height(3),
   },
   headerContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: width * 0.05,
+    paddingHorizontal: responsive.width(5),
   },
   backButton: {
-    padding: 8,
-    borderRadius: 12,
+    padding: responsive.width(2),
+    borderRadius: responsive.width(3),
     backgroundColor: 'rgba(255,255,255,0.2)',
   },
   headerTitle: {
-    fontSize: width * 0.045,
+    fontSize: responsive.font(18),
     fontWeight: '800',
     color: COLORS.white,
     letterSpacing: 0.5,
+    textAlign: 'center',
+    flex: 1,
+    marginHorizontal: responsive.width(2),
   },
   placeholder: {
-    width: 40,
+    width: responsive.width(10),
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 30,
+    paddingBottom: responsive.height(2),
   },
   avatarSection: {
     alignItems: 'center',
-    paddingVertical: height * 0.04,
-    paddingHorizontal: width * 0.05,
+    paddingVertical: responsive.height(4),
+    paddingHorizontal: responsive.width(5),
   },
   avatarContainer: {
     position: 'relative',
-    marginBottom: 15,
+    marginBottom: responsive.height(2),
   },
   avatarGradient: {
-    width: width * 0.22,
-    height: width * 0.22,
-    borderRadius: width * 0.11,
+    width: responsive.width(22),
+    height: responsive.width(22),
+    borderRadius: responsive.width(11),
     backgroundColor: COLORS.primaryLight,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 8 },
+    shadowOffset: { width: 0, height: responsive.height(1) },
     shadowOpacity: 0.3,
-    shadowRadius: 15,
+    shadowRadius: responsive.width(4),
     elevation: 8,
-    borderWidth: 4,
+    borderWidth: responsive.width(1),
     borderColor: COLORS.white,
   },
   monogram: {
-    fontSize: width * 0.08,
+    fontSize: responsive.font(32),
     fontWeight: '800',
     color: COLORS.white,
     letterSpacing: 1,
   },
   userName: {
-    fontSize: width * 0.06,
+    fontSize: responsive.font(20),
     fontWeight: '800',
     color: COLORS.dark,
-    marginBottom: 4,
+    marginBottom: responsive.height(0.5),
     textAlign: 'center',
   },
   userEmail: {
-    fontSize: width * 0.035,
+    fontSize: responsive.font(14),
     color: COLORS.gray,
-    marginBottom: 8,
+    marginBottom: responsive.height(1),
     textAlign: 'center',
   },
   card: {
     backgroundColor: COLORS.white,
-    marginHorizontal: width * 0.05,
-    borderRadius: 20,
-    padding: width * 0.05,
-    marginBottom: width * 0.04,
+    marginHorizontal: responsive.width(5),
+    borderRadius: responsive.width(5),
+    padding: responsive.width(5),
+    marginBottom: responsive.width(4),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: responsive.height(0.5) },
     shadowOpacity: 0.08,
-    shadowRadius: 12,
+    shadowRadius: responsive.width(3),
     elevation: 6,
     borderWidth: 1,
     borderColor: COLORS.light,
@@ -334,11 +360,11 @@ const styles = StyleSheet.create({
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
-    gap: 10,
+    marginBottom: responsive.height(2),
+    gap: responsive.width(2),
   },
   sectionTitle: {
-    fontSize: width * 0.04,
+    fontSize: responsive.font(16),
     fontWeight: '700',
     color: COLORS.dark,
     letterSpacing: 0.3,
@@ -347,7 +373,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 14,
+    paddingVertical: responsive.height(1.5),
     borderBottomWidth: 1,
     borderBottomColor: COLORS.light,
   },
@@ -357,57 +383,56 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   infoIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+    width: responsive.width(9),
+    height: responsive.width(9),
+    borderRadius: responsive.width(2.5),
     backgroundColor: COLORS.primary + '15',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: responsive.width(3),
   },
   infoContent: {
     flex: 1,
   },
   label: {
-    fontSize: width * 0.032,
+    fontSize: responsive.font(13),
     color: COLORS.gray,
     fontWeight: '500',
-    marginBottom: 2,
+    marginBottom: responsive.height(0.3),
   },
   value: {
-    fontSize: width * 0.038,
+    fontSize: responsive.font(15),
     fontWeight: '600',
     color: COLORS.dark,
   },
   infoRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: responsive.width(2),
   },
   copyButton: {
-    padding: 6,
-    borderRadius: 8,
+    padding: responsive.width(1.5),
+    borderRadius: responsive.width(2),
     backgroundColor: COLORS.primary + '10',
   },
   footer: {
     alignItems: 'center',
-    paddingVertical: height * 0.03,
-    paddingHorizontal: width * 0.05,
+    paddingVertical: responsive.height(3),
+    paddingHorizontal: responsive.width(5),
   },
   footerText: {
-    fontSize: width * 0.035,
+    fontSize: responsive.font(14),
     fontWeight: '700',
     color: COLORS.gray,
-    marginBottom: 4,
+    marginBottom: responsive.height(0.5),
   },
   footerSubtext: {
-    fontSize: width * 0.03,
+    fontSize: responsive.font(12),
     color: COLORS.grayLight,
     fontWeight: '500',
   },
-  // White Navigation Bar Spacer for iOS
+  // Dynamic Navigation Bar Spacer for all devices
   navigationBarSpacer: {
-    height: Platform.OS === 'ios' ? 34 : 0, // Height of iOS home indicator
     backgroundColor: COLORS.white,
   },
 });
