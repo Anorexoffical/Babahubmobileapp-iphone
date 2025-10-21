@@ -180,8 +180,7 @@ const ResetPassword = () => {
         
         if (timeRemaining <= 0) {
           // Session expired
-          await SecureStore.deleteItemAsync('reset_email');
-          await SecureStore.deleteItemAsync('reset_timestamp');
+          await clearSessionData();
           Alert.alert(
             "Session Expired", 
             "Please start the recovery process again",
@@ -226,9 +225,17 @@ const ResetPassword = () => {
     return () => clearInterval(timer);
   }, [sessionValid, timeLeft, resetCompleted]);
 
+  const clearSessionData = async () => {
+    try {
+      await SecureStore.deleteItemAsync('reset_email');
+      await SecureStore.deleteItemAsync('reset_timestamp');
+    } catch (error) {
+      console.error('Error clearing session data:', error);
+    }
+  };
+
   const handleSessionExpiry = async () => {
-    await SecureStore.deleteItemAsync('reset_email');
-    await SecureStore.deleteItemAsync('reset_timestamp');
+    await clearSessionData();
     Alert.alert(
       "Time's Up", 
       "Please start the recovery process again",
@@ -261,12 +268,19 @@ const ResetPassword = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleGoToLogin = () => {
-    // Clear all session data
-    SecureStore.deleteItemAsync('reset_email');
-    SecureStore.deleteItemAsync('reset_timestamp');
+  const handleGoToLogin = async () => {
+    // Clear all session data and input fields
+    await clearSessionData();
+    setNewPassword('');
+    setConfirmPassword('');
+    setErrors({});
+    
     // Navigate to login using replace to prevent going back
-    router.replace('/login');
+    // Also pass a parameter to indicate reset completion
+    router.replace({
+      pathname: '/login',
+      params: { passwordResetCompleted: 'true' }
+    });
   };
 
   const handleResetPassword = async () => {

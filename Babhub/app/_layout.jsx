@@ -1,3 +1,4 @@
+
 import { Stack, useRouter, useSegments, useNavigation } from 'expo-router';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { useEffect, useRef } from 'react';
@@ -44,7 +45,7 @@ function RouteProtection({ children }) {
         'OrderSuccessScreen',
         'PaymentScreen',
         'PaymentCancelledScreen',
-        'ReturnPolicyScreen'
+        'ReturnPolicyScreen',
       ];
 
       // Define public routes

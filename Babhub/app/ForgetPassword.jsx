@@ -16,7 +16,7 @@ import {
   StatusBar,
 } from 'react-native';
 import React, { useState, useRef, useEffect } from 'react';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import * as SecureStore from 'expo-secure-store';
@@ -94,6 +94,7 @@ const COLORS = {
 
 const ForgetPassword = () => {
   const router = useRouter();
+  const params = useLocalSearchParams();
   const [email, setEmail] = useState('');
   const [dob, setDob] = useState('');
   const [emailFocus, setEmailFocus] = useState(false);
@@ -117,6 +118,29 @@ const ForgetPassword = () => {
   // Safe area values
   const safeAreaBottom = getSafeAreaBottom();
   const safeAreaTop = getSafeAreaTop();
+
+  // Clear form when coming from reset password
+  useEffect(() => {
+    const clearFormIfNeeded = async () => {
+      // Check if we're coming from a completed password reset
+      if (params.passwordResetCompleted === 'true') {
+        // Clear any stored session data
+        await SecureStore.deleteItemAsync('reset_email');
+        await SecureStore.deleteItemAsync('reset_timestamp');
+        
+        // Clear form fields
+        setEmail('');
+        setDob('');
+        setSelectedDate(new Date());
+        setErrors({});
+        
+        // Remove the parameter from URL
+        router.setParams({ passwordResetCompleted: undefined });
+      }
+    };
+
+    clearFormIfNeeded();
+  }, [params.passwordResetCompleted]);
 
   useEffect(() => {
     // Start animations when component mounts

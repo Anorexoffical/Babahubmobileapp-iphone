@@ -17,7 +17,7 @@ import {
   Modal,
 } from 'react-native';
 import React, { useState, useRef, useEffect } from 'react';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import Mybutton from '../components/Mybutton';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useAuth } from './contexts/AuthContext';
@@ -53,6 +53,7 @@ const COLORS = {
 
 const Login = () => {
   const router = useRouter();
+  const params = useLocalSearchParams();
   const { signIn } = useAuth();
   const [checked, setChecked] = useState(true);
   const [passwordVisible, setPasswordVisible] = useState(false);
@@ -72,6 +73,28 @@ const Login = () => {
 
   // Refs for inputs
   const passwordInputRef = useRef(null);
+
+  // Clear form when coming from password reset
+  useEffect(() => {
+    if (params.passwordResetCompleted === 'true') {
+      // Clear form fields when coming from successful password reset
+      setEmail('');
+      setPassword('');
+      setErrors({});
+      
+      // Remove the parameter from URL
+      router.setParams({ passwordResetCompleted: undefined });
+      
+      // Show success message
+      setTimeout(() => {
+        Alert.alert(
+          "Password Reset Successful", 
+          "Your password has been updated successfully. You can now sign in with your new password.",
+          [{ text: "OK" }]
+        );
+      }, 500);
+    }
+  }, [params.passwordResetCompleted]);
 
   useEffect(() => {
     // Start animations when component mounts
@@ -476,6 +499,7 @@ const Login = () => {
   );
 };
 
+// ... (styles remain exactly the same as your original)
 const styles = StyleSheet.create({
   container: {
     flex: 1,
