@@ -4,7 +4,7 @@ const crypto = require("crypto");
 const Order = require("../Models/OrderModel.js");
 
 // PayFast Payment Integration
-const generateSignature = (data, passPhrase = "") => {
+const generateSignature = (data, passPhrase = "Legendtailor786") => {
   const getString = Object.keys(data)
     .filter(key => data[key])
     .map(key => `${key}=${encodeURIComponent(data[key].trim()).replace(/%20/g, "+")}`)

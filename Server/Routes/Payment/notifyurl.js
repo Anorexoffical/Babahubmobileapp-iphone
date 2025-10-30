@@ -6,7 +6,7 @@ const axios = require('axios');
 const Order = require("../../Models/OrderModel");
 
 
-const passPhrase = "";
+const passPhrase = "Legendtailor786";
 const testingMode = false;
 const pfHost = testingMode ? "sandbox.payfast.co.za" : "www.payfast.co.za";
 
