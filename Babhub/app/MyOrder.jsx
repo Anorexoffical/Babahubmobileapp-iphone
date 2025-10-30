@@ -1,3 +1,4 @@
+// app/screens/MyOrder.js
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -109,7 +110,7 @@ const MyOrder = () => {
     fetchOrders();
   }, [user]);
 
-  // Handle back button and hardware back press
+  // Handle back button and hardware back press - UPDATED
   useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
       handleBack();
@@ -119,14 +120,11 @@ const MyOrder = () => {
     return () => backHandler.remove();
   }, []);
 
-  // Updated: Proper back navigation
+  // UPDATED: Navigate to Profile screen when back is pressed
   const handleBack = () => {
-    if (router.canGoBack()) {
-      router.back();
-    } else {
-      // If no back history, navigate to home
-      router.replace('/(tabs)/HomeScreen');
-    }
+    // Always navigate to Profile screen, never go back in history
+    router.replace('/(tabs)/ProfileScreen');
+    return true;
   };
 
   const showOrderDetails = (order) => {
@@ -593,7 +591,7 @@ const MyOrder = () => {
                 <Text style={styles.ordersSubtitle}>
                   Tap on any order to view details
                 </Text>
-              </View>
+            </View>
             }
           />
         ) : (
@@ -607,7 +605,7 @@ const MyOrder = () => {
             </Text>
             <TouchableOpacity 
               style={styles.shopButton}
-              onPress={() => router.navigate('/(tabs)/HomeScreen')}
+              onPress={() => router.replace('/(tabs)/HomeScreen')}
             >
               <Ionicons name="storefront-outline" size={scale(20)} color={COLORS.white} />
               <Text style={styles.shopButtonText}>Start Shopping</Text>

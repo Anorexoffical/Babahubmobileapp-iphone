@@ -120,6 +120,12 @@ const CreateAccount = () => {
   const slideAnim = useRef(new Animated.Value(30)).current;
   const confettiRef = useRef(null);
 
+  // Refs for text inputs
+  const nameInputRef = useRef(null);
+  const emailInputRef = useRef(null);
+  const passwordInputRef = useRef(null);
+  const confirmPasswordInputRef = useRef(null);
+
   // Safe area values
   const safeAreaBottom = getSafeAreaBottom();
   const safeAreaTop = getSafeAreaTop();
@@ -164,6 +170,45 @@ const CreateAccount = () => {
     setDatePickerVisibility(false);
     if (errors.dob) {
       setErrors((prev) => ({ ...prev, dob: "" }));
+    }
+  };
+
+  // Function to automatically convert all text to lowercase for passwords
+  const handlePasswordChange = (text, field) => {
+    // Convert the entire text to lowercase to prevent any capital letters
+    const lowercaseText = text.toLowerCase();
+    
+    if (field === 'password') {
+      setPassword(lowercaseText);
+      if (errors.password && lowercaseText) {
+        setErrors((prev) => ({ ...prev, password: "" }));
+      }
+      // Also update confirm password validation if passwords match
+      if (errors.confirmPassword && lowercaseText === confirmPassword) {
+        setErrors((prev) => ({ ...prev, confirmPassword: "" }));
+      }
+    } else if (field === 'confirmPassword') {
+      setConfirmPassword(lowercaseText);
+      if (errors.confirmPassword && lowercaseText) {
+        setErrors((prev) => ({ ...prev, confirmPassword: "" }));
+      }
+    }
+  };
+
+  // Function to handle email input (also lowercase)
+  const handleEmailChange = (text) => {
+    const lowercaseEmail = text.toLowerCase();
+    setEmail(lowercaseEmail);
+    if (errors.email && lowercaseEmail.trim()) {
+      setErrors((prev) => ({ ...prev, email: "" }));
+    }
+  };
+
+  // Function to handle name input (proper capitalization)
+  const handleNameChange = (text) => {
+    setName(text);
+    if (errors.name && text.trim()) {
+      setErrors((prev) => ({ ...prev, name: "" }));
     }
   };
 
@@ -249,7 +294,7 @@ const CreateAccount = () => {
             name: name.trim(),
             email: email.toLowerCase().trim(), 
             dob, 
-            password,
+            password: password.toLowerCase(), // Ensure password is lowercase
             role: "customer"
           }),
         }
@@ -366,16 +411,12 @@ const CreateAccount = () => {
                     style={styles.inputIcon}
                   />
                   <TextInput
+                    ref={nameInputRef}
                     placeholder="John Doe"
                     placeholderTextColor={COLORS.grayLight}
                     style={styles.input}
                     value={name}
-                    onChangeText={(text) => {
-                      setName(text);
-                      if (errors.name && text.trim()) {
-                        setErrors((prev) => ({ ...prev, name: "" }));
-                      }
-                    }}
+                    onChangeText={handleNameChange}
                     onFocus={() => setNameFocus(true)}
                     onBlur={() => setNameFocus(false)}
                     underlineColorAndroid="transparent"
@@ -385,6 +426,8 @@ const CreateAccount = () => {
                     autoCorrect={false}
                     autoComplete="name"
                     textContentType="name"
+                    returnKeyType="next"
+                    onSubmitEditing={() => emailInputRef.current?.focus()}
                   />
                 </View>
                 {errors.name ? <Text style={styles.errorText}>{errors.name}</Text> : null}
@@ -409,17 +452,13 @@ const CreateAccount = () => {
                     style={styles.inputIcon}
                   />
                   <TextInput
+                    ref={emailInputRef}
                     placeholder="hello@example.com"
                     placeholderTextColor={COLORS.grayLight}
                     style={styles.input}
                     keyboardType="email-address"
                     value={email}
-                    onChangeText={(text) => {
-                      setEmail(text);
-                      if (errors.email && text.trim()) {
-                        setErrors((prev) => ({ ...prev, email: "" }));
-                      }
-                    }}
+                    onChangeText={handleEmailChange}
                     onFocus={() => setEmailFocus(true)}
                     onBlur={() => setEmailFocus(false)}
                     underlineColorAndroid="transparent"
@@ -429,6 +468,8 @@ const CreateAccount = () => {
                     autoCorrect={false}
                     autoComplete="email"
                     textContentType="emailAddress"
+                    returnKeyType="next"
+                    onSubmitEditing={showDatepicker}
                   />
                 </View>
                 {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
@@ -509,20 +550,13 @@ const CreateAccount = () => {
                     style={styles.inputIcon}
                   />
                   <TextInput
+                    ref={passwordInputRef}
                     placeholder="••••••••"
                     placeholderTextColor={COLORS.grayLight}
                     style={styles.input}
                     secureTextEntry={!passwordVisible}
                     value={password}
-                    onChangeText={(text) => {
-                      setPassword(text);
-                      if (errors.password && text) {
-                        setErrors((prev) => ({ ...prev, password: "" }));
-                      }
-                      if (errors.confirmPassword && text === confirmPassword) {
-                        setErrors((prev) => ({ ...prev, confirmPassword: "" }));
-                      }
-                    }}
+                    onChangeText={(text) => handlePasswordChange(text, 'password')}
                     onFocus={() => setPasswordFocus(true)}
                     onBlur={() => setPasswordFocus(false)}
                     underlineColorAndroid="transparent"
@@ -531,9 +565,9 @@ const CreateAccount = () => {
                     autoCapitalize="none"
                     autoCorrect={false}
                     autoComplete="password"
-                    keyboardType="default"
                     textContentType="newPassword"
-                    importantForAutofill="yes"
+                    returnKeyType="next"
+                    onSubmitEditing={() => confirmPasswordInputRef.current?.focus()}
                   />
                   <TouchableOpacity 
                     onPress={() => setPasswordVisible(!passwordVisible)}
@@ -550,7 +584,7 @@ const CreateAccount = () => {
                 {errors.password ? (
                   <Text style={styles.errorText}>{errors.password}</Text>
                 ) : (
-                  <Text style={styles.helperText}>Must be at least 6 characters</Text>
+                  <Text style={styles.helperText}>Must be at least 6 characters (auto lowercase)</Text>
                 )}
               </View>
 
@@ -573,17 +607,13 @@ const CreateAccount = () => {
                     style={styles.inputIcon}
                   />
                   <TextInput
+                    ref={confirmPasswordInputRef}
                     placeholder="••••••••"
                     placeholderTextColor={COLORS.grayLight}
                     style={styles.input}
                     secureTextEntry={!confirmPasswordVisible}
                     value={confirmPassword}
-                    onChangeText={(text) => {
-                      setConfirmPassword(text);
-                      if (errors.confirmPassword && text) {
-                        setErrors((prev) => ({ ...prev, confirmPassword: "" }));
-                      }
-                    }}
+                    onChangeText={(text) => handlePasswordChange(text, 'confirmPassword')}
                     onFocus={() => setConfirmPasswordFocus(true)}
                     onBlur={() => setConfirmPasswordFocus(false)}
                     underlineColorAndroid="transparent"
@@ -592,9 +622,9 @@ const CreateAccount = () => {
                     autoCapitalize="none"
                     autoCorrect={false}
                     autoComplete="password"
-                    keyboardType="default"
                     textContentType="newPassword"
-                    importantForAutofill="yes"
+                    returnKeyType="done"
+                    onSubmitEditing={handleCreateAccount}
                   />
                   <TouchableOpacity
                     onPress={() => setConfirmPasswordVisible(!confirmPasswordVisible)}

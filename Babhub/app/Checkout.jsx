@@ -317,23 +317,20 @@ const Checkout = () => {
   const safeAreaBottom = getSafeAreaBottom();
   const safeAreaTop = getSafeAreaTop();
 
-  // Keyboard state
+  // Keyboard state - FIXED: Removed keyboard height tracking for footer
   const [keyboardVisible, setKeyboardVisible] = useState(false);
-  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
       Platform.OS === 'android' ? 'keyboardDidShow' : 'keyboardWillShow',
-      (e) => {
+      () => {
         setKeyboardVisible(true);
-        setKeyboardHeight(e.endCoordinates.height);
       }
     );
     const keyboardDidHideListener = Keyboard.addListener(
       Platform.OS === 'android' ? 'keyboardDidHide' : 'keyboardWillHide',
       () => {
         setKeyboardVisible(false);
-        setKeyboardHeight(0);
       }
     );
 
@@ -683,7 +680,7 @@ const Checkout = () => {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[
             styles.scrollContent,
-            { paddingBottom: keyboardVisible ? keyboardHeight + responsiveHeight(15) : responsiveHeight(15) }
+            { paddingBottom: responsiveHeight(20) } // Fixed padding, no keyboard adjustment
           ]}
           keyboardShouldPersistTaps="handled"
         >
@@ -938,13 +935,12 @@ const Checkout = () => {
         </Animated.ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Premium Checkout Footer - Fixed Pay Button */}
+      {/* Premium Checkout Footer - Fixed at Bottom (No Keyboard Movement) */}
       {cartItems.length > 0 && (
         <View style={[
           styles.footer, 
           { 
             paddingBottom: safeAreaBottom,
-            bottom: keyboardVisible ? keyboardHeight : 0
           }
         ]}>
           <View style={styles.footerContent}>
@@ -1515,11 +1511,12 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     borderRadius: responsiveHeight(0.3),
   },
-  // Premium Footer - Fixed at Bottom
+  // Premium Footer - Fixed at Bottom (No Keyboard Movement)
   footer: {
     position: 'absolute',
     left: 0,
     right: 0,
+    bottom: 0,
     backgroundColor: COLORS.white,
     borderTopWidth: 1,
     borderTopColor: COLORS.light,

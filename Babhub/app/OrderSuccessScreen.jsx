@@ -11,9 +11,10 @@ import {
   StatusBar,
   BackHandler,
   Platform,
-  Modal
+  Modal,
+  Alert
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import LottieView from 'lottie-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -48,6 +49,7 @@ const COLORS = {
 
 const OrderSuccessScreen = () => {
   const router = useRouter();
+  const params = useLocalSearchParams();
   const [showBackModal, setShowBackModal] = useState(false);
   
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -56,13 +58,13 @@ const OrderSuccessScreen = () => {
   const confettiAnim = useRef(null);
   const modalScaleAnim = useRef(new Animated.Value(0)).current;
 
-  // Handle back button press - FIXED
+  // Handle back button press - COMPLETELY PREVENT GOING BACK
   const handleBackPress = () => {
     showModal();
     return true; // Prevent default back behavior
   };
 
-  // Show modal animation - FIXED
+  // Show modal animation
   const showModal = () => {
     setShowBackModal(true);
     Animated.spring(modalScaleAnim, {
@@ -92,15 +94,24 @@ const OrderSuccessScreen = () => {
         await AsyncStorage.setItem('cart', JSON.stringify([]));
         console.log('🛒 Cart cleared successfully');
         
-        // 2. Clear any pending payment URLs
-        await AsyncStorage.removeItem('latestPaymentUrl');
+        // 2. Clear any pending payment URLs or checkout data
+        await AsyncStorage.multiRemove([
+          'latestPaymentUrl',
+          'checkoutData',
+          'pendingOrder',
+          'selectedAddress',
+          'selectedPaymentMethod'
+        ]);
+        
+        // 3. Clear navigation history by preventing going back
+        router.setParams({ preventBack: 'true' });
         
       } catch (error) {
         console.error('❌ Error initializing success screen:', error);
       }
     };
 
-    // Handle Android back button - show custom modal - FIXED
+    // Handle Android back button - show custom modal
     const backHandler = BackHandler.addEventListener('hardwareBackPress', handleBackPress);
 
     // Start animations
@@ -138,21 +149,29 @@ const OrderSuccessScreen = () => {
     };
   }, []);
 
-  // Completely replace navigation stack and clear cart
+  // COMPLETELY REPLACE NAVIGATION STACK - NO GOING BACK
   const navigateWithReset = async (targetRoute) => {
     try {
-      // Ensure cart is cleared one more time
+      // Final cart clearance
       await AsyncStorage.setItem('cart', JSON.stringify([]));
       
-      // Use replace to completely remove current screen from history
+      // Clear all navigation history and replace completely
       if (targetRoute === 'home') {
-        router.replace('/(tabs)/HomeScreen');
+        // Replace with home screen - removes success screen from history
+        router.replace({
+          pathname: '/(tabs)/HomeScreen',
+          params: { fromSuccess: 'true' }
+        });
       } else if (targetRoute === 'orders') {
-        router.replace('/MyOrder');
+        // Replace with orders screen - removes success screen from history
+        router.replace({
+          pathname: '/MyOrder',
+          params: { fromSuccess: 'true' }
+        });
       }
     } catch (error) {
       console.error('Navigation error:', error);
-      // Fallback navigation
+      // Fallback - complete reset to home
       router.replace('/(tabs)/HomeScreen');
     }
   };
@@ -173,6 +192,15 @@ const OrderSuccessScreen = () => {
   const handleModalViewOrders = () => {
     hideModal();
     setTimeout(() => handleViewOrders(), 200);
+  };
+
+  // Force exit app (only for extreme cases)
+  const handleForceExit = () => {
+    if (Platform.OS === 'android') {
+      BackHandler.exitApp();
+    } else {
+      Alert.alert('Exiting app', 'Please close the app manually.');
+    }
   };
 
   return (
@@ -215,8 +243,21 @@ const OrderSuccessScreen = () => {
           
           {/* Success Message */}
           <Text style={styles.successMessage}>
-            Thank you for your purchase! Your order has been confirmed.
+            Thank you for your purchase! Your order has been confirmed and your cart has been cleared.
           </Text>
+
+          {/* Order Details */}
+          <View style={styles.orderDetails}>
+            <Text style={styles.orderDetailText}>
+              • You can view your order in "My Orders"
+            </Text>
+            <Text style={styles.orderDetailText}>
+              • Continue shopping for more great deals
+            </Text>
+            <Text style={styles.orderDetailText}>
+              • You cannot return to checkout from here
+            </Text>
+          </View>
 
           {/* Action Buttons */}
           <View style={styles.actionsContainer}>
@@ -268,14 +309,21 @@ const OrderSuccessScreen = () => {
                 <View style={styles.modalIconContainer}>
                   <Ionicons name="exit-outline" size={moderateScale(22)} color={COLORS.primary} />
                 </View>
-                <Text style={styles.modalTitle}>Leave This Screen?</Text>
+                <Text style={styles.modalTitle}>Order Complete!</Text>
               </View>
 
               {/* Modal Body */}
               <View style={styles.modalBody}>
                 <Text style={styles.modalMessage}>
-                  Your order is complete. Where would you like to go?
+                  Your purchase was successful and your cart has been cleared. Where would you like to go next?
                 </Text>
+                
+                <View style={styles.modalNote}>
+                  <Ionicons name="information-circle" size={moderateScale(14)} color={COLORS.gray} />
+                  <Text style={styles.modalNoteText}>
+                    You cannot return to checkout from here
+                  </Text>
+                </View>
               </View>
 
               {/* Modal Actions */}
@@ -295,7 +343,7 @@ const OrderSuccessScreen = () => {
                   activeOpacity={0.8}
                 >
                   <Ionicons name="bag-handle-outline" size={moderateScale(16)} color={COLORS.primary} />
-                  <Text style={styles.modalSecondaryButtonText}>Orders</Text>
+                  <Text style={styles.modalSecondaryButtonText}>My Orders</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity 
@@ -303,7 +351,7 @@ const OrderSuccessScreen = () => {
                   onPress={hideModal}
                   activeOpacity={0.8}
                 >
-                  <Text style={styles.modalCancelButtonText}>Cancel</Text>
+                  <Text style={styles.modalCancelButtonText}>Stay Here</Text>
                 </TouchableOpacity>
               </View>
             </Animated.View>
@@ -380,8 +428,33 @@ const styles = StyleSheet.create({
     color: COLORS.gray,
     textAlign: 'center',
     lineHeight: moderateScale(20),
-    marginBottom: verticalScale(30),
+    marginBottom: verticalScale(20),
     paddingHorizontal: moderateScale(10),
+    includeFontPadding: false,
+  },
+  // Order Details
+  orderDetails: {
+    backgroundColor: COLORS.white,
+    padding: moderateScale(16),
+    borderRadius: moderateScale(12),
+    marginBottom: verticalScale(30),
+    width: '100%',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: moderateScale(2) },
+        shadowOpacity: 0.1,
+        shadowRadius: moderateScale(4),
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  orderDetailText: {
+    fontSize: moderateScale(12),
+    color: COLORS.gray,
+    marginBottom: moderateScale(6),
     includeFontPadding: false,
   },
   // Action Buttons
@@ -498,6 +571,22 @@ const styles = StyleSheet.create({
     color: COLORS.gray,
     textAlign: 'center',
     lineHeight: moderateScale(20),
+    marginBottom: verticalScale(12),
+    includeFontPadding: false,
+  },
+  modalNote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: moderateScale(6),
+    padding: moderateScale(10),
+    backgroundColor: COLORS.background,
+    borderRadius: moderateScale(8),
+  },
+  modalNoteText: {
+    fontSize: moderateScale(12),
+    color: COLORS.gray,
+    fontStyle: 'italic',
     includeFontPadding: false,
   },
   modalActions: {

@@ -49,10 +49,6 @@ const ReturnPolicyScreen = () => {
     Linking.openURL('mailto:babahubsa@gmail.com?subject=Return Policy Inquiry&body=Hello BabaHub Support,');
   };
 
-  const handleCallSupport = () => {
-    Linking.openURL('tel:0845000000');
-  };
-
   return (
     <View style={styles.fullContainer}>
       <StatusBar backgroundColor={COLORS.primary} barStyle="light-content" />
@@ -91,204 +87,242 @@ const ReturnPolicyScreen = () => {
             </Text>
           </View>
 
-          {/* Data Protection Section */}
+          {/* Thank You Section */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Ionicons name="shield-checkmark" size={22} color={COLORS.primary} />
-              <Text style={styles.sectionTitle}>How We Store & Protect Your Data</Text>
+              <Ionicons name="heart" size={22} color={COLORS.primary} />
+              <Text style={styles.sectionTitle}>Thank You for Shopping with BabaHub</Text>
+            </View>
+            <View style={styles.policyCard}>
+              <Text style={styles.welcomeText}>
+                We're committed to ensuring your complete satisfaction with every purchase. Please review our return and refund policy below.
+              </Text>
+            </View>
+          </View>
+
+          {/* Returns Eligibility Section */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="checkmark-circle" size={22} color={COLORS.primary} />
+              <Text style={styles.sectionTitle}>Returns Eligibility</Text>
             </View>
             
             <View style={styles.policyCard}>
-              <View style={styles.policyPoint}>
-                <View style={styles.pointIcon}>
-                  <Ionicons name="lock-closed" size={16} color={COLORS.primary} />
-                </View>
-                <View style={styles.pointContent}>
-                  <Text style={styles.pointTitle}>Secure Data Storage</Text>
-                  <Text style={styles.pointDescription}>
-                    All your personal and payment information is encrypted and stored securely using industry-standard security protocols.
-                  </Text>
-                </View>
-              </View>
-
-              <View style={styles.policyPoint}>
-                <View style={styles.pointIcon}>
-                  <Ionicons name="card" size={16} color={COLORS.primary} />
-                </View>
-                <View style={styles.pointContent}>
-                  <Text style={styles.pointTitle}>Payment Protection</Text>
-                  <Text style={styles.pointDescription}>
-                    We use secure payment gateways that comply with PCI DSS standards. Your payment details are never stored on our servers.
-                  </Text>
-                </View>
-              </View>
-
-              <View style={styles.policyPoint}>
-                <View style={styles.pointIcon}>
-                  <Ionicons name="eye-off" size={16} color={COLORS.primary} />
-                </View>
-                <View style={styles.pointContent}>
-                  <Text style={styles.pointTitle}>Privacy First</Text>
-                  <Text style={styles.pointDescription}>
-                    We never share your personal information with third parties without your consent, except as required by law.
-                  </Text>
+              <View style={styles.eligibilityInfo}>
+                <Text style={styles.eligibilityPeriod}>
+                  We accept returns within <Text style={styles.highlight}>7 days</Text> of delivery
+                </Text>
+                <Text style={styles.eligibilitySubtitle}>
+                  The following conditions must be met:
+                </Text>
+                
+                <View style={styles.conditionList}>
+                  <View style={styles.conditionItem}>
+                    <Ionicons name="checkmark" size={16} color={COLORS.success} />
+                    <Text style={styles.conditionText}>
+                      Item is unused, unworn, and in its original packaging
+                    </Text>
+                  </View>
+                  <View style={styles.conditionItem}>
+                    <Ionicons name="checkmark" size={16} color={COLORS.success} />
+                    <Text style={styles.conditionText}>
+                      All tags, labels, and accessories are intact
+                    </Text>
+                  </View>
+                  <View style={styles.conditionItem}>
+                    <Ionicons name="checkmark" size={16} color={COLORS.success} />
+                    <Text style={styles.conditionText}>
+                      Proof of purchase (order ID or invoice) is provided
+                    </Text>
+                  </View>
                 </View>
               </View>
 
-              <View style={styles.policyPoint}>
-                <View style={styles.pointIcon}>
-                  <Ionicons name="server" size={16} color={COLORS.primary} />
-                </View>
-                <View style={styles.pointContent}>
-                  <Text style={styles.pointTitle}>Regular Security Audits</Text>
-                  <Text style={styles.pointDescription}>
-                    Our systems undergo regular security audits and updates to ensure your data remains protected against emerging threats.
-                  </Text>
+              {/* Non-returnable Items */}
+              <View style={styles.nonReturnableSection}>
+                <Text style={styles.nonReturnableTitle}>Non-returnable Items:</Text>
+                <View style={styles.nonReturnableList}>
+                  <View style={styles.nonReturnableItem}>
+                    <Ionicons name="close" size={16} color={COLORS.error} />
+                    <Text style={styles.nonReturnableText}>Perishable goods (e.g., food, beverages)</Text>
+                  </View>
+                  <View style={styles.nonReturnableItem}>
+                    <Ionicons name="close" size={16} color={COLORS.error} />
+                    <Text style={styles.nonReturnableText}>Personal care items (e.g., cosmetics, hygiene products)</Text>
+                  </View>
+                  <View style={styles.nonReturnableItem}>
+                    <Ionicons name="close" size={16} color={COLORS.error} />
+                    <Text style={styles.nonReturnableText}>Sale or clearance items</Text>
+                  </View>
+                  <View style={styles.nonReturnableItem}>
+                    <Ionicons name="close" size={16} color={COLORS.error} />
+                    <Text style={styles.nonReturnableText}>Digital or downloadable products</Text>
+                  </View>
                 </View>
               </View>
             </View>
           </View>
 
-          {/* Return & Refund Policy Section */}
+          {/* Return Process Section */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Ionicons name="return-down-back" size={22} color={COLORS.primary} />
-              <Text style={styles.sectionTitle}>Return & Refund Policy</Text>
+              <Ionicons name="arrow-redo" size={22} color={COLORS.primary} />
+              <Text style={styles.sectionTitle}>Return Process</Text>
+            </View>
+            
+            <View style={styles.policyCard}>
+              <View style={styles.processSteps}>
+                <View style={styles.processStep}>
+                  <View style={styles.stepNumber}>
+                    <Text style={styles.stepNumberText}>1</Text>
+                  </View>
+                  <View style={styles.stepContent}>
+                    <Text style={styles.stepTitle}>Go to My Orders</Text>
+                    <Text style={styles.stepDescription}>
+                      Navigate to <Text style={styles.bold}>My Orders</Text> → <Text style={styles.bold}>Request Return</Text> in the Baba Hub app
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.processStep}>
+                  <View style={styles.stepNumber}>
+                    <Text style={styles.stepNumberText}>2</Text>
+                  </View>
+                  <View style={styles.stepContent}>
+                    <Text style={styles.stepTitle}>Select Item & Reason</Text>
+                    <Text style={styles.stepDescription}>
+                      Choose the item and provide the reason for return
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.processStep}>
+                  <View style={styles.stepNumber}>
+                    <Text style={styles.stepNumberText}>3</Text>
+                  </View>
+                  <View style={styles.stepContent}>
+                    <Text style={styles.stepTitle}>Review Process</Text>
+                    <Text style={styles.stepDescription}>
+                      Our team will review your request within <Text style={styles.bold}>48 hours</Text>
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.processStep}>
+                  <View style={styles.stepNumber}>
+                    <Text style={styles.stepNumberText}>4</Text>
+                  </View>
+                  <View style={styles.stepContent}>
+                    <Text style={styles.stepTitle}>Pickup Arrangement</Text>
+                    <Text style={styles.stepDescription}>
+                      Once approved, pickup or drop-off will be arranged based on your location
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+          </View>
+
+          {/* Refunds Section */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="card" size={22} color={COLORS.primary} />
+              <Text style={styles.sectionTitle}>Refunds</Text>
+            </View>
+            
+            <View style={styles.policyCard}>
+              <View style={styles.refundInfo}>
+                <View style={styles.refundTimeline}>
+                  <Ionicons name="time" size={20} color={COLORS.primary} />
+                  <Text style={styles.refundTimelineText}>
+                    Refunds processed within <Text style={styles.highlight}>5–7 business days</Text> after approval
+                  </Text>
+                </View>
+
+                <View style={styles.refundDetails}>
+                  <View style={styles.refundPoint}>
+                    <Ionicons name="arrow-forward" size={16} color={COLORS.primary} />
+                    <Text style={styles.refundPointText}>
+                      Refunds will be made to your original payment method (card, bank, or wallet)
+                    </Text>
+                  </View>
+                  <View style={styles.refundPoint}>
+                    <Ionicons name="arrow-forward" size={16} color={COLORS.primary} />
+                    <Text style={styles.refundPointText}>
+                      Shipping and service charges are non-refundable unless the item was damaged or incorrect
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+          </View>
+
+          {/* Damaged or Incorrect Items Section */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="warning" size={22} color={COLORS.warning} />
+              <Text style={styles.sectionTitle}>Damaged or Incorrect Items</Text>
             </View>
             
             <View style={styles.policyCard}>
               <View style={styles.warningBanner}>
                 <Ionicons name="information-circle" size={20} color={COLORS.warning} />
                 <Text style={styles.warningText}>
-                  We currently do not accept returns once the order is confirmed and delivered.
+                  Contact us within 48 hours of delivery for damaged, defective, or wrong items
                 </Text>
               </View>
 
-              <View style={styles.exceptionSection}>
-                <Text style={styles.exceptionTitle}>Exceptions for Damaged or Incorrect Items</Text>
+              <View style={styles.damagedItemsInfo}>
+                <Text style={styles.damagedItemsTitle}>Required Information:</Text>
                 
-                <View style={styles.exceptionPoint}>
-                  <View style={styles.bulletPoint} />
-                  <Text style={styles.exceptionText}>
-                    If the product is damaged or incorrect upon delivery
-                  </Text>
+                <View style={styles.requirementList}>
+                  <View style={styles.requirementItem}>
+                    <View style={styles.requirementIcon}>
+                      <Ionicons name="camera" size={16} color={COLORS.primary} />
+                    </View>
+                    <Text style={styles.requirementText}>
+                      Clear photos of the damaged/incorrect item
+                    </Text>
+                  </View>
+                  
+                  <View style={styles.requirementItem}>
+                    <View style={styles.requirementIcon}>
+                      <Ionicons name="document" size={16} color={COLORS.primary} />
+                    </View>
+                    <Text style={styles.requirementText}>
+                      Your order ID and delivery details
+                    </Text>
+                  </View>
                 </View>
-                
-                <View style={styles.exceptionPoint}>
-                  <View style={styles.bulletPoint} />
-                  <Text style={styles.exceptionText}>
-                    Please contact our customer support within 3 days of receiving your order
-                  </Text>
-                </View>
-                
-                <View style={styles.exceptionPoint}>
-                  <View style={styles.bulletPoint} />
-                  <Text style={styles.exceptionText}>
-                    Provide clear photos of the damaged/incorrect item
-                  </Text>
-                </View>
-                
-                <View style={styles.exceptionPoint}>
-                  <View style={styles.bulletPoint} />
-                  <Text style={styles.exceptionText}>
-                    Include your order number and delivery details
-                  </Text>
-                </View>
-              </View>
 
-              <View style={styles.noteBox}>
-                <Text style={styles.noteTitle}>Important Note:</Text>
-                <Text style={styles.noteText}>
-                  Refunds are processed within 5-7 business days after approval. The refund will be credited to your original payment method.
-                </Text>
+                <View style={styles.resolutionBox}>
+                  <Text style={styles.resolutionTitle}>Resolution:</Text>
+                  <Text style={styles.resolutionText}>
+                    We'll arrange a replacement or full refund at no extra cost
+                  </Text>
+                </View>
               </View>
             </View>
           </View>
 
-          {/* Shipping & Delivery Policy Section */}
+          {/* Exchange Policy Section */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Ionicons name="cube" size={22} color={COLORS.primary} />
-              <Text style={styles.sectionTitle}>Shipping & Delivery Policy</Text>
+              <Ionicons name="swap-horizontal" size={22} color={COLORS.primary} />
+              <Text style={styles.sectionTitle}>Exchange Policy</Text>
             </View>
             
             <View style={styles.policyCard}>
-              <View style={styles.deliveryInfo}>
-                <View style={styles.deliveryItem}>
-                  <View style={styles.deliveryIcon}>
-                    <Ionicons name="time" size={20} color={COLORS.primary} />
-                  </View>
-                  <View style={styles.deliveryContent}>
-                    <Text style={styles.deliveryTitle}>Delivery Timeframe</Text>
-                    <Text style={styles.deliveryDescription}>
-                      3–7 working days depending on your city and product availability
-                    </Text>
-                  </View>
+              <View style={styles.exchangeInfo}>
+                <View style={styles.exchangeNotice}>
+                  <Ionicons name="information-circle" size={24} color={COLORS.primary} />
+                  <Text style={styles.exchangeNoticeText}>
+                    We currently do not support direct exchanges
+                  </Text>
                 </View>
-
-                <View style={styles.deliveryItem}>
-                  <View style={styles.deliveryIcon}>
-                    <Ionicons name="business" size={20} color={COLORS.primary} />
-                  </View>
-                  <View style={styles.deliveryContent}>
-                    <Text style={styles.deliveryTitle}>Trusted Couriers</Text>
-                    <Text style={styles.deliveryDescription}>
-                      We deliver products through trusted courier services to ensure safe and timely delivery
-                    </Text>
-                  </View>
-                </View>
-
-                <View style={styles.deliveryItem}>
-                  <View style={styles.deliveryIcon}>
-                    <Ionicons name="notifications" size={20} color={COLORS.primary} />
-                  </View>
-                  <View style={styles.deliveryContent}>
-                    <Text style={styles.deliveryTitle}>Order Tracking</Text>
-                    <Text style={styles.deliveryDescription}>
-                      Once your order is shipped, you will receive a confirmation message with tracking details
-                    </Text>
-                  </View>
-                </View>
-              </View>
-
-              <View style={styles.trackingSection}>
-                <Text style={styles.trackingTitle}>Track Your Order</Text>
-                <Text style={styles.trackingDescription}>
-                  You can track your order in real-time through the tracking link provided in your confirmation message.
+                <Text style={styles.exchangeAlternative}>
+                  You may return your item and place a new order for the desired product
                 </Text>
-              </View>
-            </View>
-          </View>
-
-          {/* Non-Returnable Items */}
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Ionicons name="close-circle" size={22} color={COLORS.error} />
-              <Text style={styles.sectionTitle}>Non-Returnable Items</Text>
-            </View>
-            
-            <View style={styles.policyCard}>
-              <View style={styles.nonReturnableList}>
-                <View style={styles.nonReturnableItem}>
-                  <Ionicons name="close" size={16} color={COLORS.error} />
-                  <Text style={styles.nonReturnableText}>Personalized or custom-made products</Text>
-                </View>
-                <View style={styles.nonReturnableItem}>
-                  <Ionicons name="close" size={16} color={COLORS.error} />
-                  <Text style={styles.nonReturnableText}>Perishable goods and groceries</Text>
-                </View>
-                <View style={styles.nonReturnableItem}>
-                  <Ionicons name="close" size={16} color={COLORS.error} />
-                  <Text style={styles.nonReturnableText}>Intimate hygiene products</Text>
-                </View>
-                <View style={styles.nonReturnableItem}>
-                  <Ionicons name="close" size={16} color={COLORS.error} />
-                  <Text style={styles.nonReturnableText}>Digital products and software</Text>
-                </View>
-                <View style={styles.nonReturnableItem}>
-                  <Ionicons name="close" size={16} color={COLORS.error} />
-                  <Text style={styles.nonReturnableText}>Products without original packaging</Text>
-                </View>
               </View>
             </View>
           </View>
@@ -302,26 +336,24 @@ const ReturnPolicyScreen = () => {
             <Text style={styles.ctaText}>
               Our support team is here to help you with any questions about returns, refunds, or delivery issues.
             </Text>
-            <View style={styles.ctaButtons}>
-              <TouchableOpacity style={[styles.ctaButton, styles.emailButton]} onPress={handleContactSupport}>
-                <Ionicons name="mail" size={20} color={COLORS.white} />
-                <Text style={styles.ctaButtonText}>Email Support</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.ctaButton, styles.callButton]} onPress={handleCallSupport}>
-                <Ionicons name="call" size={20} color={COLORS.white} />
-                <Text style={styles.ctaButtonText}>Call Support</Text>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity style={styles.ctaButton} onPress={handleContactSupport}>
+              <Ionicons name="mail" size={20} color={COLORS.primary} />
+              <Text style={styles.ctaButtonText}>Email Support</Text>
+            </TouchableOpacity>
           </View>
 
-          {/* Last Updated */}
+          {/* Last Updated - Moved to End */}
           <View style={styles.updateSection}>
+            <Ionicons name="calendar-outline" size={16} color={COLORS.grayLight} />
             <Text style={styles.updateText}>
-              Last updated: {new Date().toLocaleDateString('en-US', { 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-              })}
+              Last updated: October 21, 2025
+            </Text>
+          </View>
+
+          {/* Footer */}
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>
+              Baba Hub - Your trusted shopping partner
             </Text>
           </View>
         </ScrollView>
@@ -355,7 +387,7 @@ const styles = StyleSheet.create({
   },
   headerBackground: {
     backgroundColor: COLORS.primary,
-    paddingTop: height * 0.06,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight + 10 : height * 0.06,
     paddingBottom: height * 0.03,
   },
   headerContent: {
@@ -370,7 +402,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.2)',
   },
   headerTitle: {
-    fontSize: width * 0.045,
+    fontSize: width < 400 ? 18 : 20,
     fontWeight: '800',
     color: COLORS.white,
     letterSpacing: 0.5,
@@ -408,20 +440,21 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   heroTitle: {
-    fontSize: width * 0.06,
+    fontSize: width < 400 ? 20 : 24,
     fontWeight: '800',
     color: COLORS.dark,
     marginBottom: 8,
     textAlign: 'center',
   },
   heroSubtitle: {
-    fontSize: width * 0.038,
+    fontSize: width < 400 ? 14 : 16,
     color: COLORS.gray,
     textAlign: 'center',
     lineHeight: 22,
   },
   section: {
     backgroundColor: COLORS.white,
+    marginTop: width * 0.05,
     marginHorizontal: width * 0.05,
     marginBottom: width * 0.04,
     borderRadius: 20,
@@ -439,7 +472,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   sectionTitle: {
-    fontSize: width * 0.04,
+    fontSize: width < 400 ? 16 : 18,
     fontWeight: '700',
     color: COLORS.dark,
   },
@@ -449,33 +482,137 @@ const styles = StyleSheet.create({
     padding: 0,
     overflow: 'hidden',
   },
-  policyPoint: {
-    flexDirection: 'row',
+  welcomeText: {
+    fontSize: width < 400 ? 14 : 16,
+    color: COLORS.darkLight,
+    lineHeight: 22,
     padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.light,
+    textAlign: 'center',
   },
-  pointIcon: {
+  eligibilityInfo: {
+    padding: 16,
+  },
+  eligibilityPeriod: {
+    fontSize: width < 400 ? 16 : 18,
+    fontWeight: '700',
+    color: COLORS.dark,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  eligibilitySubtitle: {
+    fontSize: width < 400 ? 14 : 16,
+    color: COLORS.gray,
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  conditionList: {
+    gap: 12,
+  },
+  conditionItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  conditionText: {
+    fontSize: width < 400 ? 14 : 16,
+    color: COLORS.darkLight,
+    flex: 1,
+    lineHeight: 20,
+  },
+  nonReturnableSection: {
+    backgroundColor: COLORS.light,
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.grayLight + '30',
+  },
+  nonReturnableTitle: {
+    fontSize: width < 400 ? 14 : 16,
+    fontWeight: '700',
+    color: COLORS.dark,
+    marginBottom: 12,
+  },
+  nonReturnableList: {
+    gap: 10,
+  },
+  nonReturnableItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  nonReturnableText: {
+    fontSize: width < 400 ? 13 : 15,
+    color: COLORS.gray,
+    flex: 1,
+    lineHeight: 20,
+  },
+  processSteps: {
+    padding: 16,
+    gap: 20,
+  },
+  processStep: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  stepNumber: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: COLORS.primary + '15',
+    backgroundColor: COLORS.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
   },
-  pointContent: {
+  stepNumberText: {
+    fontSize: width < 400 ? 14 : 16,
+    fontWeight: '700',
+    color: COLORS.white,
+  },
+  stepContent: {
     flex: 1,
   },
-  pointTitle: {
-    fontSize: width * 0.038,
+  stepTitle: {
+    fontSize: width < 400 ? 14 : 16,
     fontWeight: '700',
     color: COLORS.dark,
     marginBottom: 4,
   },
-  pointDescription: {
-    fontSize: width * 0.035,
+  stepDescription: {
+    fontSize: width < 400 ? 13 : 15,
     color: COLORS.gray,
+    lineHeight: 20,
+  },
+  refundInfo: {
+    padding: 16,
+  },
+  refundTimeline: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.primary + '10',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 16,
+    gap: 10,
+  },
+  refundTimelineText: {
+    fontSize: width < 400 ? 14 : 16,
+    fontWeight: '600',
+    color: COLORS.dark,
+    textAlign: 'center',
+    flex: 1,
+  },
+  refundDetails: {
+    gap: 12,
+  },
+  refundPoint: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  refundPointText: {
+    fontSize: width < 400 ? 14 : 16,
+    color: COLORS.darkLight,
+    flex: 1,
     lineHeight: 20,
   },
   warningBanner: {
@@ -488,120 +625,84 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   warningText: {
-    fontSize: width * 0.035,
+    fontSize: width < 400 ? 14 : 16,
     fontWeight: '600',
     color: COLORS.warning,
     flex: 1,
     lineHeight: 20,
   },
-  exceptionSection: {
+  damagedItemsInfo: {
     padding: 16,
   },
-  exceptionTitle: {
-    fontSize: width * 0.038,
+  damagedItemsTitle: {
+    fontSize: width < 400 ? 14 : 16,
     fontWeight: '700',
     color: COLORS.dark,
     marginBottom: 12,
   },
-  exceptionPoint: {
+  requirementList: {
+    gap: 12,
+    marginBottom: 16,
+  },
+  requirementItem: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 8,
+    alignItems: 'center',
     gap: 10,
   },
-  bulletPoint: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: COLORS.primary,
-    marginTop: 6,
-  },
-  exceptionText: {
-    fontSize: width * 0.035,
-    color: COLORS.gray,
-    flex: 1,
-    lineHeight: 20,
-  },
-  noteBox: {
-    backgroundColor: COLORS.primary + '10',
-    padding: 16,
+  requirementIcon: {
+    width: 24,
+    height: 24,
     borderRadius: 12,
-    margin: 16,
-    borderLeftWidth: 4,
-    borderLeftColor: COLORS.primary,
-  },
-  noteTitle: {
-    fontSize: width * 0.035,
-    fontWeight: '700',
-    color: COLORS.primary,
-    marginBottom: 4,
-  },
-  noteText: {
-    fontSize: width * 0.035,
-    color: COLORS.darkLight,
-    lineHeight: 20,
-  },
-  deliveryInfo: {
-    padding: 16,
-  },
-  deliveryItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 20,
-  },
-  deliveryIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
     backgroundColor: COLORS.primary + '15',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
   },
-  deliveryContent: {
+  requirementText: {
+    fontSize: width < 400 ? 14 : 16,
+    color: COLORS.darkLight,
     flex: 1,
-  },
-  deliveryTitle: {
-    fontSize: width * 0.038,
-    fontWeight: '700',
-    color: COLORS.dark,
-    marginBottom: 4,
-  },
-  deliveryDescription: {
-    fontSize: width * 0.035,
-    color: COLORS.gray,
     lineHeight: 20,
   },
-  trackingSection: {
-    backgroundColor: COLORS.accent + '10',
+  resolutionBox: {
+    backgroundColor: COLORS.success + '10',
     padding: 16,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.light,
+    borderRadius: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: COLORS.success,
   },
-  trackingTitle: {
-    fontSize: width * 0.038,
+  resolutionTitle: {
+    fontSize: width < 400 ? 14 : 16,
     fontWeight: '700',
-    color: COLORS.accent,
+    color: COLORS.success,
     marginBottom: 4,
   },
-  trackingDescription: {
-    fontSize: width * 0.035,
+  resolutionText: {
+    fontSize: width < 400 ? 14 : 16,
     color: COLORS.darkLight,
     lineHeight: 20,
   },
-  nonReturnableList: {
+  exchangeInfo: {
     padding: 16,
+    alignItems: 'center',
   },
-  nonReturnableItem: {
+  exchangeNotice: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: COLORS.primary + '10',
+    padding: 16,
+    borderRadius: 12,
     marginBottom: 12,
     gap: 10,
   },
-  nonReturnableText: {
-    fontSize: width * 0.035,
-    color: COLORS.gray,
-    flex: 1,
+  exchangeNoticeText: {
+    fontSize: width < 400 ? 14 : 16,
+    fontWeight: '700',
+    color: COLORS.primary,
+  },
+  exchangeAlternative: {
+    fontSize: width < 400 ? 14 : 16,
+    color: COLORS.darkLight,
+    textAlign: 'center',
     lineHeight: 20,
   },
   ctaSection: {
@@ -622,60 +723,74 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   ctaTitle: {
-    fontSize: width * 0.045,
+    fontSize: width < 400 ? 18 : 20,
     fontWeight: '800',
     color: COLORS.white,
     marginBottom: 8,
     textAlign: 'center',
   },
   ctaText: {
-    fontSize: width * 0.038,
+    fontSize: width < 400 ? 14 : 16,
     color: COLORS.white,
     textAlign: 'center',
     marginBottom: 20,
     lineHeight: 22,
     opacity: 0.9,
   },
-  ctaButtons: {
-    flexDirection: width < 400 ? 'column' : 'row',
-    gap: 12,
-    width: '100%',
-  },
   ctaButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    borderRadius: 16,
-    flex: width < 400 ? 0 : 1,
-    gap: 8,
-    minHeight: 56,
-  },
-  emailButton: {
     backgroundColor: COLORS.white,
-  },
-  callButton: {
-    backgroundColor: COLORS.accent,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 16,
+    minWidth: '80%',
+    gap: 8,
   },
   ctaButtonText: {
-    fontSize: width * 0.038,
+    fontSize: width < 400 ? 16 : 18,
     fontWeight: '700',
-  },
-  emailButtonText: {
     color: COLORS.primary,
   },
-  callButtonText: {
-    color: COLORS.white,
-  },
   updateSection: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: width * 0.05,
+    justifyContent: 'center',
+    marginHorizontal: width * 0.05,
+    marginBottom: width * 0.04,
+    padding: 16,
+    backgroundColor: COLORS.white,
+    borderRadius: 12,
+    gap: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 3,
   },
   updateText: {
-    fontSize: width * 0.032,
+    fontSize: width < 400 ? 12 : 14,
+    color: COLORS.grayLight,
+    fontWeight: '500',
+    fontStyle: 'italic',
+  },
+  footer: {
+    alignItems: 'center',
+    paddingHorizontal: width * 0.05,
+    marginTop: 10,
+  },
+  footerText: {
+    fontSize: width < 400 ? 12 : 14,
     color: COLORS.grayLight,
     fontStyle: 'italic',
+  },
+  highlight: {
+    color: COLORS.primary,
+    fontWeight: '700',
+  },
+  bold: {
+    fontWeight: '700',
   },
   // White Navigation Bar Spacer for iOS
   navigationBarSpacer: {

@@ -90,14 +90,6 @@ const CustomerSupportScreen = () => {
     Linking.openURL('tel:0845000000');
   };
 
-  const handleWhatsAppPress = () => {
-    const message = "Hello BabaHub Support, I need assistance with:";
-    const url = `https://wa.me/27845000000?text=${encodeURIComponent(message)}`;
-    Linking.openURL(url).catch(() => {
-      alert('WhatsApp is not installed on your device');
-    });
-  };
-
   const toggleQuestion = (id) => {
     setExpandedQuestion(expandedQuestion === id ? null : id);
   };
@@ -213,46 +205,23 @@ const CustomerSupportScreen = () => {
               <Text style={styles.sectionTitle}>Quick Contact</Text>
             </View>
             
-            {/* WhatsApp Support */}
-            <TouchableOpacity style={[styles.contactCard, styles.whatsappCard]} onPress={handleWhatsAppPress}>
-              <View style={styles.contactIconContainer}>
-                <Ionicons name="logo-whatsapp" size={28} color={COLORS.white} />
-              </View>
-              <View style={styles.contactInfo}>
-                <Text style={styles.contactMethod}>WhatsApp Support</Text>
-                <Text style={styles.contactDetail}>Instant messaging support</Text>
-                <Text style={styles.responseTime}>• Quick response • 24/7 available</Text>
-              </View>
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>Fastest</Text>
-              </View>
-            </TouchableOpacity>
-
             {/* Email Support */}
-            <TouchableOpacity style={styles.contactCard} onPress={handleEmailPress}>
+            <TouchableOpacity style={[styles.contactCard, styles.emailCard]} onPress={handleEmailPress}>
               <View style={[styles.contactIconContainer, styles.emailIcon]}>
-                <Ionicons name="mail" size={24} color={COLORS.primary} />
+                <Ionicons name="mail" size={24} color={COLORS.white} />
               </View>
               <View style={styles.contactInfo}>
                 <Text style={styles.contactMethod}>Email Support</Text>
                 <Text style={styles.contactDetail}>babahubsa@gmail.com</Text>
                 <Text style={styles.responseTime}>Response time: Within 2 hours</Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color={COLORS.gray} />
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>Recommended</Text>
+              </View>
             </TouchableOpacity>
 
             {/* Phone Support */}
-            <TouchableOpacity style={styles.contactCard} onPress={handleCallPress}>
-              <View style={[styles.contactIconContainer, styles.phoneIcon]}>
-                <Ionicons name="call" size={24} color={COLORS.primary} />
-              </View>
-              <View style={styles.contactInfo}>
-                <Text style={styles.contactMethod}>Phone Support</Text>
-                <Text style={styles.contactDetail}>084 500 0000</Text>
-                <Text style={styles.responseTime}>Mon-Fri: 8AM-6PM • Sat: 9AM-2PM</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={COLORS.gray} />
-            </TouchableOpacity>
+           
           </View>
 
           {/* Support Services */}
@@ -320,21 +289,15 @@ const CustomerSupportScreen = () => {
             
             <View style={styles.hoursContainer}>
               <View style={styles.hoursRow}>
-                <Text style={styles.hoursDay}>Monday - Friday</Text>
+                <Text style={styles.hoursDay}>Monday - Saturday</Text>
                 <View style={styles.hoursTimeBadge}>
                   <Text style={styles.hoursTime}>8:00 AM - 6:00 PM</Text>
                 </View>
               </View>
               <View style={styles.hoursRow}>
-                <Text style={styles.hoursDay}>Saturday</Text>
-                <View style={styles.hoursTimeBadge}>
-                  <Text style={styles.hoursTime}>9:00 AM - 2:00 PM</Text>
-                </View>
-              </View>
-              <View style={styles.hoursRow}>
                 <Text style={styles.hoursDay}>Sunday & Holidays</Text>
                 <View style={[styles.hoursTimeBadge, styles.emergencyBadge]}>
-                  <Text style={styles.emergencyText}>Emergency Support</Text>
+                  <Text style={styles.emergencyText}>Email Support Only</Text>
                 </View>
               </View>
             </View>
@@ -344,18 +307,12 @@ const CustomerSupportScreen = () => {
           <View style={styles.ctaSection}>
             <Text style={styles.ctaTitle}>Need Immediate Help?</Text>
             <Text style={styles.ctaText}>
-              Don't hesitate to reach out. Our team is ready to assist you with any issues or questions.
+              Don't hesitate to reach out. Our team is ready to assist you with any issues or questions during our support hours.
             </Text>
-            <View style={styles.ctaButtons}>
-              <TouchableOpacity style={[styles.ctaButton, styles.whatsappButton]} onPress={handleWhatsAppPress}>
-                <Ionicons name="logo-whatsapp" size={20} color={COLORS.white} />
-                <Text style={styles.ctaButtonText}>Chat on WhatsApp</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.ctaButton, styles.callButton]} onPress={handleCallPress}>
-                <Ionicons name="call" size={20} color={COLORS.white} />
-                <Text style={styles.ctaButtonText}>Call Now</Text>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity style={[styles.ctaButton, styles.emailButton]} onPress={handleEmailPress}>
+              <Ionicons name="mail" size={20} color={COLORS.white} />
+              <Text style={styles.ctaButtonText}>Contact Through Email</Text>
+            </TouchableOpacity>
           </View>
         </ScrollView>
       </View>
@@ -391,7 +348,7 @@ const styles = StyleSheet.create({
   },
   headerBackground: {
     backgroundColor: COLORS.primary,
-    paddingTop: height * 0.06,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight + 10 : height * 0.06,
     paddingBottom: height * 0.03,
   },
   headerContent: {
@@ -406,7 +363,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.2)',
   },
   headerTitle: {
-    fontSize: width * 0.045,
+    fontSize: width < 400 ? 18 : 20,
     fontWeight: '800',
     color: COLORS.white,
     letterSpacing: 0.5,
@@ -418,14 +375,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 30,
+    paddingBottom: Platform.OS === 'ios' ? 30 : 20,
   },
   heroSection: {
     alignItems: 'center',
     paddingVertical: height * 0.04,
     paddingHorizontal: width * 0.05,
     backgroundColor: COLORS.white,
-    marginHorizontal: width * 0.05,
+    marginHorizontal: Math.max(width * 0.03, 10),
     marginTop: height * 0.03,
     borderRadius: 20,
     shadowColor: '#000',
@@ -444,24 +401,25 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   heroTitle: {
-    fontSize: width * 0.06,
+    fontSize: width < 400 ? 20 : 24,
     fontWeight: '800',
     color: COLORS.dark,
     marginBottom: 8,
     textAlign: 'center',
   },
   heroSubtitle: {
-    fontSize: width * 0.038,
+    fontSize: width < 400 ? 14 : 16,
     color: COLORS.gray,
     textAlign: 'center',
     lineHeight: 22,
+    paddingHorizontal: 10,
   },
   section: {
     backgroundColor: COLORS.white,
-    marginHorizontal: width * 0.05,
+    marginHorizontal: Math.max(width * 0.03, 10),
     marginBottom: width * 0.04,
     borderRadius: 20,
-    padding: width * 0.05,
+    padding: Math.max(width * 0.04, 15),
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
@@ -476,7 +434,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   sectionTitle: {
-    fontSize: width * 0.04,
+    fontSize: width < 400 ? 16 : 18,
     fontWeight: '700',
     color: COLORS.dark,
   },
@@ -489,10 +447,11 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     borderWidth: 1,
     borderColor: COLORS.light,
+    minHeight: 80,
   },
-  whatsappCard: {
-    backgroundColor: '#25D366',
-    borderColor: '#25D366',
+  emailCard: {
+    backgroundColor: COLORS.primary + '08',
+    borderColor: COLORS.primary + '30',
   },
   contactIconContainer: {
     width: 48,
@@ -503,7 +462,7 @@ const styles = StyleSheet.create({
     marginRight: 15,
   },
   emailIcon: {
-    backgroundColor: COLORS.primary + '15',
+    backgroundColor: COLORS.primary,
   },
   phoneIcon: {
     backgroundColor: COLORS.accent + '15',
@@ -512,32 +471,32 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   contactMethod: {
-    fontSize: width * 0.038,
+    fontSize: width < 400 ? 14 : 16,
     fontWeight: '700',
     color: COLORS.dark,
     marginBottom: 2,
   },
   contactDetail: {
-    fontSize: width * 0.035,
+    fontSize: width < 400 ? 13 : 15,
     color: COLORS.darkLight,
     marginBottom: 4,
   },
   responseTime: {
-    fontSize: width * 0.032,
+    fontSize: width < 400 ? 12 : 13,
     color: COLORS.gray,
     fontWeight: '500',
   },
   badge: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.primary + '15',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
     marginLeft: 8,
   },
   badgeText: {
-    fontSize: width * 0.03,
+    fontSize: width < 400 ? 10 : 12,
     fontWeight: '700',
-    color: '#25D366',
+    color: COLORS.primary,
   },
   servicesGrid: {
     flexDirection: 'row',
@@ -545,7 +504,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   serviceCard: {
-    width: '48%',
+    width: width < 400 ? '48%' : '48%',
     backgroundColor: COLORS.background,
     padding: 16,
     borderRadius: 16,
@@ -562,24 +521,24 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   serviceTitle: {
-    fontSize: width * 0.035,
+    fontSize: width < 400 ? 13 : 15,
     fontWeight: '700',
     color: COLORS.dark,
     marginBottom: 4,
     textAlign: 'center',
   },
   serviceDesc: {
-    fontSize: width * 0.032,
+    fontSize: width < 400 ? 11 : 13,
     color: COLORS.gray,
     textAlign: 'center',
     lineHeight: 16,
   },
   faqSection: {
     backgroundColor: COLORS.white,
-    marginHorizontal: width * 0.05,
+    marginHorizontal: Math.max(width * 0.03, 10),
     marginBottom: width * 0.04,
     borderRadius: 20,
-    padding: width * 0.05,
+    padding: Math.max(width * 0.04, 15),
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
@@ -603,13 +562,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   faqTitle: {
-    fontSize: width * 0.04,
+    fontSize: width < 400 ? 16 : 18,
     fontWeight: '700',
     color: COLORS.dark,
     marginBottom: 4,
   },
   faqSubtitle: {
-    fontSize: width * 0.035,
+    fontSize: width < 400 ? 13 : 15,
     color: COLORS.gray,
   },
   hoursContainer: {
@@ -618,15 +577,16 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   hoursRow: {
-    flexDirection: 'row',
+    flexDirection: width < 400 ? 'column' : 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: width < 400 ? 'flex-start' : 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.light,
+    gap: width < 400 ? 8 : 0,
   },
   hoursDay: {
-    fontSize: width * 0.035,
+    fontSize: width < 400 ? 14 : 16,
     fontWeight: '600',
     color: COLORS.dark,
   },
@@ -637,7 +597,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   hoursTime: {
-    fontSize: width * 0.035,
+    fontSize: width < 400 ? 13 : 15,
     fontWeight: '600',
     color: COLORS.primary,
   },
@@ -645,60 +605,54 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.warning + '15',
   },
   emergencyText: {
-    fontSize: width * 0.035,
+    fontSize: width < 400 ? 13 : 15,
     fontWeight: '600',
     color: COLORS.warning,
   },
   ctaSection: {
     backgroundColor: COLORS.white,
-    marginHorizontal: width * 0.05,
+    marginHorizontal: Math.max(width * 0.03, 10),
     borderRadius: 20,
-    padding: width * 0.05,
+    padding: Math.max(width * 0.04, 15),
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
     shadowRadius: 12,
     elevation: 6,
     alignItems: 'center',
+    marginBottom: Platform.OS === 'ios' ? 30 : 20,
   },
   ctaTitle: {
-    fontSize: width * 0.045,
+    fontSize: width < 400 ? 18 : 20,
     fontWeight: '800',
     color: COLORS.dark,
     marginBottom: 8,
     textAlign: 'center',
   },
   ctaText: {
-    fontSize: width * 0.038,
+    fontSize: width < 400 ? 14 : 16,
     color: COLORS.gray,
     textAlign: 'center',
     marginBottom: 20,
     lineHeight: 22,
-  },
-  ctaButtons: {
-    flexDirection: width < 400 ? 'column' : 'row',
-    gap: 12,
-    width: '100%',
+    paddingHorizontal: 10,
   },
   ctaButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 16,
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
     borderRadius: 16,
-    flex: width < 400 ? 0 : 1,
+    width: '100%',
     gap: 8,
     minHeight: 56,
   },
-  whatsappButton: {
-    backgroundColor: '#25D366',
-  },
-  callButton: {
+  emailButton: {
     backgroundColor: COLORS.primary,
   },
   ctaButtonText: {
-    fontSize: width * 0.038,
+    fontSize: width < 400 ? 16 : 18,
     fontWeight: '700',
     color: COLORS.white,
   },
@@ -733,7 +687,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   modalTitle: {
-    fontSize: width * 0.045,
+    fontSize: width < 400 ? 18 : 20,
     fontWeight: '800',
     color: COLORS.dark,
     flex: 1,
@@ -759,7 +713,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   faqQuestionText: {
-    fontSize: width * 0.038,
+    fontSize: width < 400 ? 14 : 16,
     fontWeight: '600',
     color: COLORS.dark,
     flex: 1,
@@ -772,7 +726,7 @@ const styles = StyleSheet.create({
     borderTopColor: COLORS.light,
   },
   faqAnswerText: {
-    fontSize: width * 0.035,
+    fontSize: width < 400 ? 13 : 15,
     color: COLORS.gray,
     lineHeight: 20,
   },
@@ -790,7 +744,7 @@ const styles = StyleSheet.create({
     minWidth: 120,
   },
   cancelButtonText: {
-    fontSize: width * 0.038,
+    fontSize: width < 400 ? 14 : 16,
     fontWeight: '700',
     color: COLORS.white,
     textAlign: 'center',

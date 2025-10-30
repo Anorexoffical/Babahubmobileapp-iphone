@@ -8,6 +8,7 @@ import {
   Dimensions, 
   StatusBar,
   Platform,
+  Linking
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -45,11 +46,7 @@ const PrivacyPolicyScreen = () => {
   };
 
   const handleEmailPress = () => {
-    Linking.openURL('mailto:babahubsa@gmail.com');
-  };
-
-  const handlePhonePress = () => {
-    Linking.openURL('tel:0845000000');
+    Linking.openURL('mailto:babahubsa@gmail.com?subject=Privacy Policy Inquiry&body=Hello BabaHub Support Team,');
   };
 
   return (
@@ -58,7 +55,7 @@ const PrivacyPolicyScreen = () => {
       
       {/* Main Content */}
       <View style={styles.container}>
-        {/* Premium Header - Same as CustomerSupportScreen */}
+        {/* Premium Header */}
         <View style={styles.header}>
           <View style={styles.headerBackground}>
             <View style={styles.headerContent}>
@@ -86,7 +83,6 @@ const PrivacyPolicyScreen = () => {
             </View>
             <Text style={styles.heroTitle}>Privacy Policy</Text>
             <Text style={styles.heroSubtitle}>Your Privacy Matters to Us</Text>
-            <Text style={styles.lastUpdated}>Last Updated: December 2024</Text>
           </View>
 
           <View style={styles.content}>
@@ -294,29 +290,29 @@ const PrivacyPolicyScreen = () => {
               </View>
             </View>
 
-            {/* Contact Section */}
+            {/* Contact Section - Email Only */}
             <View style={styles.contactSection}>
               <Text style={styles.contactTitle}>Contact Us</Text>
               <Text style={styles.contactText}>
-                For privacy-related questions or to exercise your rights:
+                For privacy-related questions or to exercise your rights, please contact our support team via email:
               </Text>
               
               <View style={styles.contactMethods}>
-                <TouchableOpacity style={styles.contactItem} onPress={handleEmailPress}>
-                  <Ionicons name="mail" size={20} color={COLORS.primary} />
-                  <Text style={styles.contactDetail}>babahubsa@gmail.com</Text>
-                </TouchableOpacity>
-                
-                <TouchableOpacity style={styles.contactItem} onPress={handlePhonePress}>
-                  <Ionicons name="call" size={20} color={COLORS.primary} />
-                  <Text style={styles.contactDetail}>084 500 0000</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.contactItem}>
-                  <Ionicons name="help-circle" size={20} color={COLORS.primary} />
-                  <Text style={styles.contactDetail}>In-app Support Center</Text>
+                <TouchableOpacity style={styles.emailButton} onPress={handleEmailPress}>
+                  <View style={styles.emailButtonContent}>
+                    <Ionicons name="mail" size={24} color={COLORS.white} />
+                    <View style={styles.emailButtonText}>
+                      <Text style={styles.emailButtonTitle}>Email Support</Text>
+                      <Text style={styles.emailButtonSubtitle}>babahubsa@gmail.com</Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color={COLORS.white} />
+                  </View>
                 </TouchableOpacity>
               </View>
+
+              <Text style={styles.responseNote}>
+                We typically respond to all privacy-related inquiries within 24-48 hours.
+              </Text>
             </View>
 
             {/* Final Note */}
@@ -324,6 +320,13 @@ const PrivacyPolicyScreen = () => {
               <Ionicons name="information-circle" size={24} color={COLORS.primary} />
               <Text style={styles.finalNoteText}>
                 By using BabaHub, you acknowledge that you have read and understood this Privacy Policy. We are committed to continuously improving our privacy practices.
+              </Text>
+            </View>
+
+            {/* Last Updated - Moved to Bottom */}
+            <View style={styles.updateSection}>
+              <Text style={styles.updateText}>
+                Last updated: October 21, 2024
               </Text>
             </View>
           </View>
@@ -345,7 +348,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  // Updated Header Styles to match CustomerSupportScreen
   header: {
     backgroundColor: COLORS.primary,
     borderBottomLeftRadius: 25,
@@ -359,7 +361,7 @@ const styles = StyleSheet.create({
   },
   headerBackground: {
     backgroundColor: COLORS.primary,
-    paddingTop: height * 0.06,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight + 10 : height * 0.06,
     paddingBottom: height * 0.03,
   },
   headerContent: {
@@ -374,7 +376,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.2)',
   },
   headerTitle: {
-    fontSize: width * 0.045,
+    fontSize: width < 400 ? 18 : 20,
     fontWeight: '800',
     color: COLORS.white,
     letterSpacing: 0.5,
@@ -386,7 +388,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   contentContainer: {
-    paddingBottom: height * 0.05,
+    paddingBottom: 30,
   },
   heroSection: {
     alignItems: 'center',
@@ -412,22 +414,17 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   heroTitle: {
-    fontSize: width * 0.07,
+    fontSize: width < 400 ? 22 : 26,
     fontWeight: '800',
     color: COLORS.dark,
     marginBottom: 5,
     textAlign: 'center',
   },
   heroSubtitle: {
-    fontSize: width * 0.04,
+    fontSize: width < 400 ? 16 : 18,
     color: COLORS.gray,
     marginBottom: 8,
     textAlign: 'center',
-  },
-  lastUpdated: {
-    fontSize: width * 0.032,
-    color: COLORS.grayLight,
-    fontStyle: 'italic',
   },
   content: {
     padding: width * 0.05,
@@ -444,9 +441,9 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   introText: {
-    fontSize: width * 0.038,
+    fontSize: width < 400 ? 14 : 16,
     color: COLORS.dark,
-    lineHeight: 24,
+    lineHeight: 22,
     textAlign: 'center',
   },
   brandText: {
@@ -479,13 +476,13 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   sectionTitle: {
-    fontSize: width * 0.04,
+    fontSize: width < 400 ? 16 : 18,
     fontWeight: '700',
     color: COLORS.dark,
     flex: 1,
   },
   sectionText: {
-    fontSize: width * 0.036,
+    fontSize: width < 400 ? 14 : 16,
     color: COLORS.darkLight,
     lineHeight: 22,
     marginBottom: 15,
@@ -494,7 +491,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   subsectionTitle: {
-    fontSize: width * 0.038,
+    fontSize: width < 400 ? 15 : 17,
     fontWeight: '600',
     color: COLORS.dark,
     marginBottom: 10,
@@ -513,7 +510,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   bulletText: {
-    fontSize: width * 0.035,
+    fontSize: width < 400 ? 14 : 16,
     color: COLORS.darkLight,
     flex: 1,
     lineHeight: 20,
@@ -533,7 +530,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   securityItem: {
-    width: '48%',
+    width: width < 400 ? '48%' : '48%',
     backgroundColor: COLORS.background,
     padding: 12,
     borderRadius: 12,
@@ -541,14 +538,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   securityTitle: {
-    fontSize: width * 0.032,
+    fontSize: width < 400 ? 12 : 14,
     fontWeight: '600',
     color: COLORS.dark,
     marginTop: 8,
     textAlign: 'center',
   },
   securityText: {
-    fontSize: width * 0.03,
+    fontSize: width < 400 ? 11 : 13,
     color: COLORS.gray,
     textAlign: 'center',
     marginTop: 4,
@@ -563,7 +560,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   usageText: {
-    fontSize: width * 0.035,
+    fontSize: width < 400 ? 14 : 16,
     color: COLORS.darkLight,
     marginLeft: 12,
     flex: 1,
@@ -584,13 +581,13 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   partnerName: {
-    fontSize: width * 0.035,
+    fontSize: width < 400 ? 14 : 16,
     fontWeight: '600',
     color: COLORS.dark,
     marginBottom: 4,
   },
   partnerDesc: {
-    fontSize: width * 0.033,
+    fontSize: width < 400 ? 13 : 15,
     color: COLORS.gray,
     lineHeight: 18,
   },
@@ -603,7 +600,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   noteText: {
-    fontSize: width * 0.035,
+    fontSize: width < 400 ? 14 : 16,
     color: COLORS.dark,
     fontWeight: '500',
     marginLeft: 8,
@@ -615,7 +612,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   rightItem: {
-    width: '48%',
+    width: width < 400 ? '48%' : '48%',
     alignItems: 'center',
     padding: 12,
     backgroundColor: COLORS.background,
@@ -623,14 +620,14 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   rightTitle: {
-    fontSize: width * 0.032,
+    fontSize: width < 400 ? 12 : 14,
     fontWeight: '600',
     color: COLORS.dark,
     marginTop: 8,
     textAlign: 'center',
   },
   rightText: {
-    fontSize: width * 0.03,
+    fontSize: width < 400 ? 11 : 13,
     color: COLORS.gray,
     textAlign: 'center',
     marginTop: 4,
@@ -647,32 +644,54 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   contactTitle: {
-    fontSize: width * 0.04,
+    fontSize: width < 400 ? 18 : 20,
     fontWeight: '700',
     color: COLORS.dark,
     marginBottom: 10,
+    textAlign: 'center',
   },
   contactText: {
-    fontSize: width * 0.036,
+    fontSize: width < 400 ? 14 : 16,
     color: COLORS.darkLight,
-    marginBottom: 15,
+    marginBottom: 20,
     lineHeight: 22,
+    textAlign: 'center',
   },
   contactMethods: {
     gap: 10,
   },
-  contactItem: {
+  emailButton: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 15,
+  },
+  emailButtonContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
-    backgroundColor: COLORS.background,
-    borderRadius: 12,
+    justifyContent: 'space-between',
   },
-  contactDetail: {
-    fontSize: width * 0.035,
-    color: COLORS.primary,
-    fontWeight: '500',
+  emailButtonText: {
+    flex: 1,
     marginLeft: 12,
+  },
+  emailButtonTitle: {
+    fontSize: width < 400 ? 16 : 18,
+    fontWeight: '700',
+    color: COLORS.white,
+    marginBottom: 4,
+  },
+  emailButtonSubtitle: {
+    fontSize: width < 400 ? 14 : 16,
+    color: COLORS.white,
+    opacity: 0.9,
+  },
+  responseNote: {
+    fontSize: width < 400 ? 12 : 14,
+    color: COLORS.gray,
+    textAlign: 'center',
+    fontStyle: 'italic',
+    marginTop: 10,
   },
   finalNote: {
     flexDirection: 'row',
@@ -682,17 +701,29 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderLeftWidth: 4,
     borderLeftColor: COLORS.primary,
+    marginBottom: 20,
   },
   finalNoteText: {
-    fontSize: width * 0.035,
+    fontSize: width < 400 ? 14 : 16,
     color: COLORS.dark,
     marginLeft: 12,
     flex: 1,
     lineHeight: 20,
   },
+  updateSection: {
+    alignItems: 'center',
+    paddingVertical: 15,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.light,
+  },
+  updateText: {
+    fontSize: width < 400 ? 12 : 14,
+    color: COLORS.grayLight,
+    fontStyle: 'italic',
+  },
   // White Navigation Bar Spacer for iOS
   navigationBarSpacer: {
-    height: Platform.OS === 'ios' ? 34 : 0, // Height of iOS home indicator
+    height: Platform.OS === 'ios' ? 34 : 0,
     backgroundColor: COLORS.white,
   },
 });

@@ -601,7 +601,7 @@ const ProductItem = ({ item, onPress, onWishlistToggle, isInWishlist, index, onA
             </View>
             
             <View style={styles.priceContainer}>
-              <Text style={styles.price}>${price.toFixed(2)}</Text>
+              <Text style={styles.price}>R{price.toFixed(2)}</Text>
               <View style={styles.cartButtonContainer}>
                 <TouchableOpacity
                   style={[

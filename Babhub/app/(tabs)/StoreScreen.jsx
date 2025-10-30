@@ -584,7 +584,7 @@ const TrendingProductCard = ({ item, index }) => {
           <Text style={styles.trendingName} numberOfLines={2}>{item.name}</Text>
           
           <View style={styles.trendingPriceContainer}>
-            <Text style={styles.trendingPrice}>${item.price.toFixed(2)}</Text>
+            <Text style={styles.trendingPrice}>R{item.price.toFixed(2)}</Text>
             <View style={styles.ratingContainer}>
               <View style={styles.stars}>
                 {[1, 2, 3, 4, 5].map((star) => (
@@ -766,7 +766,7 @@ const ProductItem = ({ item, onPress, onWishlistToggle, isInWishlist, index, onA
             </View>
             
             <View style={styles.priceContainer}>
-              <Text style={styles.price}>${price.toFixed(2)}</Text>
+              <Text style={styles.price}>R{price.toFixed(2)}</Text>
               <View style={styles.cartButtonContainer}>
                 <TouchableOpacity
                   style={[
