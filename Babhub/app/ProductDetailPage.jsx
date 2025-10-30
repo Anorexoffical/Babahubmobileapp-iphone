@@ -298,37 +298,60 @@ const ProductDetailPage = () => {
 
   const selectedColorTextColor = getTextColorForBackground(selectedColor);
 
+  // Generate unique variant ID for cart identification
+  const getVariantId = () => {
+    const selectedVariant = product.variants[selectedColorIndex];
+    const sizeObj = selectedVariant.sizes[selectedSizeIndex];
+    return `${product._id}_${selectedVariant.color}_${sizeObj.size}`;
+  };
+
   const handleAddToCart = async () => {
     const selectedVariant = product.variants[selectedColorIndex];
     const sizeObj = selectedVariant.sizes[selectedSizeIndex];
 
     const newItem = {
       id: product._id,
+      variantId: getVariantId(), // Unique identifier for this specific variant
       title: product.name,
       image: product.image,
       color: selectedVariant.color,
+      colorCode: selectedVariant.colorCode,
       size: sizeObj.size,
       price: sizeObj.price,
-      quantity
+      quantity: quantity,
+      maxStock: sizeObj.stock // Store max stock for validation
     };
 
     try {
       const storedCart = await AsyncStorage.getItem('cart');
       const cart = storedCart ? JSON.parse(storedCart) : [];
 
-      // Check if this exact variant already exists in cart
+      // Check if this exact variant already exists in cart using variantId
       const existingItemIndex = cart.findIndex(
-        item => item.id === newItem.id && 
-               item.color === newItem.color && 
-               item.size === newItem.size
+        item => item.variantId === newItem.variantId
       );
 
       if (existingItemIndex >= 0) {
-        // If item exists, just update the quantity (no limit for same item)
-        cart[existingItemIndex].quantity += newItem.quantity;
+        // If item exists, check if we can add more quantity
+        const existingItem = cart[existingItemIndex];
+        const newTotalQuantity = existingItem.quantity + newItem.quantity;
+        
+        if (newTotalQuantity > existingItem.maxStock) {
+          Alert.alert(
+            'Stock Limit', 
+            `You can only add ${existingItem.maxStock} of this variant. You already have ${existingItem.quantity} in cart.`,
+            [{ text: 'OK' }]
+          );
+          return;
+        }
+        
+        // Update the quantity for existing variant
+        cart[existingItemIndex].quantity = newTotalQuantity;
       } else {
         // Check if adding a new product would exceed the 3 unique product limit
-        if (cart.length >= 3) {
+        // Count unique product IDs (not variants)
+        const uniqueProductIds = new Set(cart.map(item => item.id));
+        if (uniqueProductIds.size >= 3 && !uniqueProductIds.has(newItem.id)) {
           setShowLimitModal(true);
           return;
         }
@@ -355,6 +378,8 @@ const ProductDetailPage = () => {
   const handleIncrement = () => {
     if (quantity < stock) {
       setQuantity(prev => prev + 1);
+    } else {
+      Alert.alert('Stock Limit', `Only ${stock} items available in stock.`);
     }
   };
 
@@ -511,7 +536,7 @@ const ProductDetailPage = () => {
             </View>
             <Text style={styles.successModalTitle}>Added to Cart! 🎉</Text>
             <Text style={styles.successModalText}>
-              {quantity} {product.name} has been added to your shopping cart.
+              {quantity} {product.name} ({selectedColorName}, {sizes[selectedSizeIndex]?.size}) has been added to your shopping cart.
             </Text>
             <View style={styles.successModalButtons}>
               <TouchableOpacity 
@@ -608,7 +633,7 @@ const ProductDetailPage = () => {
           {/* Price Section */}
           <View style={styles.priceContainer}>
             <View>
-              <Text style={styles.price}>${price.toFixed(2)}</Text>
+              <Text style={styles.price}>R{price.toFixed(2)}</Text>
             </View>
             {stock > 0 && (
               <View style={styles.deliveryInfo}>
@@ -640,6 +665,7 @@ const ProductDetailPage = () => {
                   onPress={() => {
                     setSelectedColorIndex(index);
                     setSelectedSizeIndex(0);
+                    setQuantity(1); // Reset quantity when color changes
                   }}
                 >
                   {selectedColorIndex === index && (
@@ -693,7 +719,10 @@ const ProductDetailPage = () => {
                     selectedSizeIndex === index && [styles.selectedSizeOption, { backgroundColor: selectedColor }],
                     sizeObj.stock === 0 && styles.outOfStockSizeOption
                   ]}
-                  onPress={() => setSelectedSizeIndex(index)}
+                  onPress={() => {
+                    setSelectedSizeIndex(index);
+                    setQuantity(1); // Reset quantity when size changes
+                  }}
                   disabled={sizeObj.stock === 0}
                 >
                   <Text style={[
@@ -807,7 +836,7 @@ const ProductDetailPage = () => {
                 />
               </Animated.View>
               <Text style={styles.buttonText}>
-                {stock <= 0 ? 'Out of Stock' : `Add to Cart • $${(price * quantity).toFixed(2)}`}
+                {stock <= 0 ? 'Out of Stock' : `Add to Cart • R${(price * quantity).toFixed(2)}`}
               </Text>
               {stock > 0 && (
                 <View style={styles.buttonBadge}>

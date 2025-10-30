@@ -18,8 +18,8 @@ router.post("/payfast/initiate-payment", async (req, res) => {
     const orderID = `${Date.now()}-${crypto.randomBytes(2).toString("hex")}`;
 
     // For sandbox test
-    const merchant_id = "10036171";
-    const merchant_key = "731ry9o3bmz2d";
+    const merchant_id = "22877843";
+    const merchant_key = "t7cgh8hxcbncq";
     const return_url = "https://account.babahub.co/payment/payfast/success";
     const cancel_url = "https://account.babahub.co/payment/payfast/cancel";
     const notify_url = "https://account.babahub.co/payment/payfast/notifyurl";
@@ -46,7 +46,7 @@ router.post("/payfast/initiate-payment", async (req, res) => {
     paymentData.signature = generateSignature(paymentData);
     
     // For sandbox testing
-    res.json({ paymentUrl: `https://sandbox.payfast.co.za/eng/process?${Object.keys(paymentData).map(key => `${key}=${encodeURIComponent(paymentData[key])}`).join("&")}` });
+    res.json({ paymentUrl: `https://www.payfast.co.za/eng/process?${Object.keys(paymentData).map(key => `${key}=${encodeURIComponent(paymentData[key])}`).join("&")}` });
 
   } catch (err) {
     res.status(500).json({ error: "Error initiating payment" });
