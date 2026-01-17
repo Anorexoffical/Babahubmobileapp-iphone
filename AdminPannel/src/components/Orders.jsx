@@ -16,7 +16,7 @@ import {
 import { Table, Pagination, Badge, Form, Button, Card, Alert, Modal, Row, Col } from 'react-bootstrap';
 import Topbar from './Topbar';
 import '../Style/Orders.css';
-import axios from 'axios';
+import http from '../api/http';
 
 const Orders = () => {
   const [orders, setOrders] = useState([]);
@@ -36,7 +36,7 @@ const Orders = () => {
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const res = await axios.get('https://account.babahub.co/api/order/get');
+      const res = await http.get('/api/order/get');
       setOrders(res.data);
     } catch (error) {
       console.error('Error fetching orders:', error);
@@ -89,7 +89,7 @@ const Orders = () => {
 
   const handleUpdateStatus = async (orderId, newStatus) => {
     try {
-      const response = await axios.put(`https://account.babahub.co/api/order/update-status/${orderId}`, {
+      const response = await http.put(`/api/order/update-status/${orderId}`, {
         status: newStatus
       });
       

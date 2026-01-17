@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FiPlus, FiTrash2, FiStar, FiImage, FiDollarSign, FiUpload, FiSave, FiCheckCircle, FiAlertCircle } from 'react-icons/fi';
 import { Modal, Button, Spinner, Form, Row, Col, Alert, Badge } from 'react-bootstrap';
-import axios from 'axios';
+import http from '../api/http';
 
 const AddProduct = ({ 
   show, 
@@ -205,7 +205,7 @@ const AddProduct = ({
       });
 
       // Make API call with proper error handling
-      const response = await axios.post('https://account.babahub.co/api/products', formData, {
+      const response = await http.post('/api/products', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },

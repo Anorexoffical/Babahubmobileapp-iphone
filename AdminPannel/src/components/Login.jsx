@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import http from '../api/http';
 import logo from "../assets/logo.png";
 import '../Style/Login.css';
 
@@ -59,7 +59,7 @@ const Login = ({ onLogin }) => {
 
     setIsLoading(true);
     try {
-      const response = await axios.post("https://account.babahub.co/api/users/login", {
+      const response = await http.post("/api/users/login", {
         email: formData.userName,   
         password: formData.password,
         role: "admin"

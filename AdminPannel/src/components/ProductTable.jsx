@@ -17,7 +17,8 @@ import AddProduct from './AddProduct.jsx';
 import EditProduct from './EditProduct.jsx';
 import '../Style/ProductTable.css';
 import Topbar from './Topbar.jsx';
-import axios from 'axios';
+import http from '../api/http';
+import { resolveImageUrl } from '../utils/url';
 
 const ProductTable = () => {
   const [products, setProducts] = useState([]);
@@ -49,7 +50,7 @@ const ProductTable = () => {
     try {
       setLoading(true);
       setError('');
-      const res = await axios.get('https://account.babahub.co/api/products');
+      const res = await http.get('/api/products');
       setProducts(res.data);
     } catch (err) {
       console.error('Failed to fetch products:', err);
@@ -61,41 +62,23 @@ const ProductTable = () => {
 
   const productsPerPage = 8;
 
-  const handleAddProduct = async (product) => {
-    setIsSubmitting(true);
-    try {
-      const res = await axios.post('https://account.babahub.co/api/products', product);
-      setProducts([...products, res.data]);
-      setShowAddModal(false);
-      setSuccessMessage(`Product "${res.data.name}" added successfully!`);
-      setTimeout(() => setSuccessMessage(''), 3000);
-    } catch (err) {
-      console.error('Error adding product:', err);
-      setError('Failed to add product. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
+  const handleAddProduct = (product) => {
+    setProducts([...products, product]);
+    setShowAddModal(false);
+    setSuccessMessage(`Product "${product.name}" added successfully!`);
+    setTimeout(() => setSuccessMessage(''), 3000);
   };
 
   const handleAddProductError = (errorMsg) => {
     setError(errorMsg);
   };
 
-  const handleUpdateProduct = async (product) => {
-    setIsSubmitting(true);
-    try {
-      const res = await axios.put(`https://account.babahub.co/api/products/${editingProduct._id}`, product);
-      setProducts(products.map(p => p._id === editingProduct._id ? res.data : p));
-      setShowEditModal(false);
-      setEditingProduct(null);
-      setSuccessMessage(`Product "${res.data.name}" updated successfully!`);
-      setTimeout(() => setSuccessMessage(''), 3000);
-    } catch (err) {
-      console.error('Error updating product:', err);
-      setError('Failed to update product. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
+  const handleUpdateProduct = (product) => {
+    setProducts(products.map(p => p._id === product._id ? product : p));
+    setShowEditModal(false);
+    setEditingProduct(null);
+    setSuccessMessage(`Product "${product.name}" updated successfully!`);
+    setTimeout(() => setSuccessMessage(''), 3000);
   };
 
   const calculateTotalStock = (variants) => {
@@ -285,7 +268,7 @@ const ProductTable = () => {
                 {selectedProduct.image && (
                   <div className="mb-3">
                     <img 
-                      src={selectedProduct.image} 
+                      src={resolveImageUrl(selectedProduct.image)} 
                       alt={selectedProduct.name} 
                       style={{ maxWidth: '200px', borderRadius: '8px' }} 
                     />

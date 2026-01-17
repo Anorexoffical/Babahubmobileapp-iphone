@@ -2,15 +2,17 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
+const env = require('./config/env');
 
 
 const app = express();
 
 // app.use(cors());
+const allowedOrigins = env.CORS_ALLOWED_ORIGINS.split(',').map(o => o.trim()).filter(Boolean);
 app.use(cors({
-  origin: ["https://account.babahub.co","http://localhost:3001", "http://localhost:5173"], // Allow only your production domain
-  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
-  credentials: true
+  origin: allowedOrigins,
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+  credentials: true,
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));  // <-- needed for PayFast notifyurl
@@ -33,10 +35,10 @@ app.use("/api/users", UserRoutes);
 
 
 
-mongoose.connect("mongodb://127.0.0.1:27017/Babhub") 
+mongoose.connect(env.MONGODB_URI)
   .then(() => console.log('Connected to the database.'))
   .catch((err) => console.error('Failed to connect to the database.', err));
 
-  app.listen(3001, () => {
-  console.log("Server is running on port 3001");
+app.listen(env.PORT, () => {
+  console.log(`Server is running on port ${env.PORT} (env: ${env.NODE_ENV})`);
 });

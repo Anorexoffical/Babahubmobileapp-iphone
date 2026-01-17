@@ -2,9 +2,10 @@ const express = require('express');
 const router = express.Router();
 const crypto = require("crypto");
 const Order = require("../Models/OrderModel.js");
+const env = require('../config/env');
 
 // PayFast Payment Integration
-const generateSignature = (data, passPhrase = "Legendtailor786") => {
+const generateSignature = (data, passPhrase = env.PAYFAST_PASSPHRASE) => {
   const getString = Object.keys(data)
     .filter(key => data[key])
     .map(key => `${key}=${encodeURIComponent(data[key].trim()).replace(/%20/g, "+")}`)
@@ -17,12 +18,11 @@ router.post("/payfast/initiate-payment", async (req, res) => {
     const { name, email, phone, address, items, subtotal, tax, total } = req.body;
     const orderID = `${Date.now()}-${crypto.randomBytes(2).toString("hex")}`;
 
-    // For sandbox test
-    const merchant_id = "22877843";
-    const merchant_key = "t7cgh8hxcbncq";
-    const return_url = "https://account.babahub.co/payment/payfast/success";
-    const cancel_url = "https://account.babahub.co/payment/payfast/cancel";
-    const notify_url = "https://account.babahub.co/payment/payfast/notifyurl";
+    const merchant_id = env.PAYFAST_MERCHANT_ID;
+    const merchant_key = env.PAYFAST_MERCHANT_KEY;
+    const return_url = env.PAYFAST_RETURN_URL;
+    const cancel_url = env.PAYFAST_CANCEL_URL;
+    const notify_url = env.PAYFAST_NOTIFY_URL;
 
     console.log(items);
     
@@ -45,8 +45,8 @@ router.post("/payfast/initiate-payment", async (req, res) => {
     console.log(paymentData);
     paymentData.signature = generateSignature(paymentData);
     
-    // For sandbox testing
-    res.json({ paymentUrl: `https://www.payfast.co.za/eng/process?${Object.keys(paymentData).map(key => `${key}=${encodeURIComponent(paymentData[key])}`).join("&")}` });
+    const processBase = `https://${env.PAYFAST_PROCESS_HOST}/eng/process`;
+    res.json({ paymentUrl: `${processBase}?${Object.keys(paymentData).map(key => `${key}=${encodeURIComponent(paymentData[key])}`).join("&")}` });
 
   } catch (err) {
     res.status(500).json({ error: "Error initiating payment" });
