@@ -1,4 +1,4 @@
-import axios from "axios";
+import http from "../api/http";
 import { useState } from "react";
 import {
   FiDollarSign,
@@ -31,8 +31,8 @@ function Reports() {
 
     setLoading(true);
     try {
-      const response = await axios.get(
-        `https://account.babahub.co/api/order/searchByDate?fromDate=${fromDate}&toDate=${toDate}&status=${status}`
+      const response = await http.get(
+        `/api/order/searchByDate?fromDate=${fromDate}&toDate=${toDate}&status=${status}`
       );
 
       const data = response.data;

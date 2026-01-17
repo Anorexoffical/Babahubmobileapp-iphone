@@ -4,11 +4,11 @@ const crypto = require("crypto");
 const axios = require('axios');
 // const mongoose = require("mongoose");
 const Order = require("../../Models/OrderModel");
+const env = require('../../config/env');
 
 
-const passPhrase = "Legendtailor786";
-const testingMode = false;
-const pfHost = testingMode ? "sandbox.payfast.co.za" : "www.payfast.co.za";
+const passPhrase = env.PAYFAST_PASSPHRASE;
+const pfHost = env.PAYFAST_PROCESS_HOST;
 
 
 const pfValidSignature = (pfData, pfParamString, pfPassphrase = null) => {

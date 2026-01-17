@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { FiSearch, FiUser, FiMail, FiCalendar, FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import Topbar from "./Topbar";
-import axios from "axios";
+import http from "../api/http";
 import "../Style/CustomerRecords.css";
 
 const CustomerRecords = () => {
@@ -14,7 +14,7 @@ const CustomerRecords = () => {
   useEffect(() => {
     const fetchCustomers = async () => {
       try {
-        const response = await axios.get("https://account.babahub.co/api/users/customers");
+        const response = await http.get("/api/users/customers");
         setCustomers(response.data);
       } catch (error) {
         console.error("Error fetching customers:", error);

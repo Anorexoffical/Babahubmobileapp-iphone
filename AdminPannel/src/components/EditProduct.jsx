@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { FiSave, FiTrash2, FiStar, FiImage, FiDollarSign, FiUpload, FiPlus } from 'react-icons/fi'; // Added FiPlus import
 import { Modal, Button, Spinner, Form, Row, Col, Alert, Badge } from 'react-bootstrap';
-import axios from 'axios';
+import http from '../api/http';
+import { resolveImageUrl } from '../utils/url';
 
 const EditProduct = ({ 
   show, 
@@ -28,6 +29,7 @@ const EditProduct = ({
 
   const [successMessage, setSuccessMessage] = useState('');
   const [imagePreview, setImagePreview] = useState('');
+  const objectUrlRef = useRef(null);
 
   // Set form data when editingProduct changes
   useEffect(() => {
@@ -38,10 +40,20 @@ const EditProduct = ({
       });
       
       if (editingProduct.image) {
-        setImagePreview(editingProduct.image);
+        setImagePreview(resolveImageUrl(editingProduct.image));
       }
     }
   }, [editingProduct]);
+
+  // Cleanup object URL on unmount
+  useEffect(() => {
+    return () => {
+      if (objectUrlRef.current) {
+        URL.revokeObjectURL(objectUrlRef.current);
+        objectUrlRef.current = null;
+      }
+    };
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -53,11 +65,15 @@ const EditProduct = ({
     setUpdatedProduct({ ...updatedProduct, mainImage: file });
     
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setImagePreview(e.target.result);
-      };
-      reader.readAsDataURL(file);
+      // Revoke previous object URL if any
+      if (objectUrlRef.current) {
+        URL.revokeObjectURL(objectUrlRef.current);
+      }
+      const url = URL.createObjectURL(file);
+      objectUrlRef.current = url;
+      setImagePreview(url);
+      // Reset input value to allow reselecting same file later
+      e.target.value = '';
     }
   };
 
@@ -127,7 +143,7 @@ const EditProduct = ({
       
       formData.append('variants', JSON.stringify(updatedProduct.variants));
 
-      const response = await axios.put(`https://account.babahub.co/api/products/${editingProduct._id}`, formData, {
+      const response = await http.put(`/api/products/${editingProduct._id}`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       
