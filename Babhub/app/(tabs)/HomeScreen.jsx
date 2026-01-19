@@ -26,6 +26,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
 import Toast from 'react-native-toast-message';
 import NetInfo from '@react-native-community/netinfo';
+import http from '../../src/api/http';
 
 const { width, height } = Dimensions.get('window');
 
@@ -158,30 +159,9 @@ const popularSearches = [
   'Fitness Trackers'
 ];
 
-// Function to correctly get full image URL for product images
-const getImageUrl = (imagePath) => {
-  if (!imagePath) return '';
-  if (imagePath.startsWith('http')) return imagePath;
-  
-  const normalizedPath = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
-  return `https://account.babahub.co${normalizedPath}`;
-};
 
-// Function to ensure image URL is in the correct format for cart
-const normalizeImageUrl = (imageUrl) => {
-  if (!imageUrl) return '';
-  
-  if (imageUrl.includes('babahub.co')) {
-    return imageUrl;
-  }
-  
-  if (imageUrl.startsWith('http')) {
-    return imageUrl;
-  }
-  
-  const normalizedPath = imageUrl.startsWith('/') ? imageUrl : `/${imageUrl}`;
-  return `https://account.babahub.co${normalizedPath}`;
-};
+// Import image utilities
+import { getImageUrl, normalizeImageUrl } from '../../src/utils/image';
 
 // UPDATED: Internet Status Bar Component for Android - Removed Retry Button
 const InternetStatusBar = ({ isOnline }) => {
@@ -778,9 +758,6 @@ const HomeScreen = () => {
   const bannerRef = useRef(null);
   const searchInputRef = useRef(null);
 
-  // API base URL
-  const API_BASE_URL = 'https://account.babahub.co';
-
   // IMPROVED Internet connection check using NetInfo
   const checkConnection = useCallback(async () => {
     setConnectionChecking(true);
@@ -963,13 +940,8 @@ const HomeScreen = () => {
     try {
       setLoading(true);
       
-      const response = await fetch(`${API_BASE_URL}/api/products/featured`);
+      const {data} = await http.get('/products/featured');
       
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
       
       const productsData = data.products || data;
       setProducts(productsData);

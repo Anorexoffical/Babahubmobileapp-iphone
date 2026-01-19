@@ -18,6 +18,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SplashScreen from 'expo-splash-screen';
+import http from '../src/api/http';
+import { getImageUrl } from '../src/utils/image';
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -74,7 +76,6 @@ const COLORS = {
   whatsapp: '#25D366',
 };
 
-const BASE_URL = 'https://account.babahub.co';
 
 // Product Image Component
 const ProductImage = ({ imageUrl, style }) => {
@@ -236,17 +237,31 @@ const CartScreen = () => {
   // Fetch stock information for cart items
   const fetchStockForCartItems = async (items) => {
     const stockData = {};
-    
     try {
       for (const item of items) {
         if (!stockData[item.id]) {
-          const response = await fetch(`${BASE_URL}/api/products/${item.id}`);
-          const product = await response.json();
-          
+          let product;
+          try {
+            const res = await http.get(`/products/${item.id}`);
+            // Defensive: check for valid data
+            if (res && res.data && typeof res.data === 'object' && !Array.isArray(res.data)) {
+              product = res.data;
+            } else {
+              console.error('Unexpected product response:', res);
+              continue;
+            }
+          } catch (err) {
+            // Axios error: log response if available
+            if (err.response) {
+              console.error('API error response:', err.response.status, err.response.data);
+            } else {
+              console.error('API error:', err.message);
+            }
+            continue;
+          }
           // Find the stock for this specific variant
           const variant = product.variants?.find(v => v.color === item.color);
           const sizeObj = variant?.sizes?.find(s => s.size === item.size);
-          
           if (sizeObj) {
             stockData[item.id] = {
               ...stockData[item.id],
@@ -255,7 +270,6 @@ const CartScreen = () => {
           }
         }
       }
-      
       setProductStock(stockData);
     } catch (error) {
       console.error('Error fetching stock data:', error);
@@ -394,7 +408,7 @@ const CartScreen = () => {
                   <View key={`${item.id}-${item.color}-${item.size}-${index}`} style={styles.cartItem}>
                     <View style={styles.itemImageContainer}>
                       <ProductImage 
-                        imageUrl={`${BASE_URL}${item.image}`}
+                        imageUrl={getImageUrl(item.image)}
                         style={styles.itemImage}
                       />
                       {/* Improved Quantity Badge - Bigger and more visible */}

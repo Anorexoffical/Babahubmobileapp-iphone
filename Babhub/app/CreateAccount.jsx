@@ -20,6 +20,7 @@ import { useRouter } from "expo-router";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import LottieView from "lottie-react-native";
+import http from "../src/api/http";
 
 const { width, height } = Dimensions.get("window");
 
@@ -271,72 +272,142 @@ const CreateAccount = () => {
     return Object.keys(newErrors).length === 0;
   };
 
+  // const handleCreateAccount = async () => {
+  //   if (!validateForm()) {
+  //     setTimeout(() => {
+  //       scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+  //     }, 100);
+  //     return;
+  //   }
+
+  //   setIsLoading(true);
+
+  //   try {
+  //     const response = await fetch(
+  //       "https://account.babahub.co/api/users/register",
+  //       {
+  //         method: "POST",
+  //         headers: { 
+  //           "Content-Type": "application/json",
+  //           "Accept": "application/json"
+  //         },
+  //         body: JSON.stringify({ 
+  //           name: name.trim(),
+  //           email: email.toLowerCase().trim(), 
+  //           dob, 
+  //           password: password.toLowerCase(), // Ensure password is lowercase
+  //           role: "customer"
+  //         }),
+  //       }
+  //     );
+
+  //     const data = await response.json();
+  //     console.log("Registration response:", data);
+
+  //     if (response.ok) {
+  //       // Show success modal with confetti instead of alert
+  //       setShowSuccessModal(true);
+  //     } else {
+  //       // Enhanced error messages for existing users
+  //       let errorMessage = data.message || "Something went wrong";
+        
+  //       if (errorMessage.toLowerCase().includes("email") || errorMessage.toLowerCase().includes("already")) {
+  //         errorMessage = `An account with email ${email} already exists. Please try signing in or use a different email address.`;
+  //       } else if (errorMessage.toLowerCase().includes("user") || errorMessage.toLowerCase().includes("exists")) {
+  //         errorMessage = "This user already exists. Please try signing in or use different credentials.";
+  //       } else if (data.errors) {
+  //         // Handle validation errors from server
+  //         const serverErrors = Object.values(data.errors).join(', ');
+  //         errorMessage = serverErrors || "Please check your information and try again.";
+  //       }
+        
+  //       Alert.alert(
+  //         "Registration Failed",
+  //         errorMessage,
+  //         [{ text: "OK" }]
+  //       );
+  //     }
+  //   } catch (err) {
+  //     console.error("Registration error:", err);
+  //     Alert.alert(
+  //       "Connection Error",
+  //       "Unable to connect to server. Please check your internet connection and try again.",
+  //       [{ text: "OK" }]
+  //     );
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
+
   const handleCreateAccount = async () => {
-    if (!validateForm()) {
-      setTimeout(() => {
-        scrollViewRef.current?.scrollTo({ y: 0, animated: true });
-      }, 100);
-      return;
-    }
+  if (!validateForm()) {
+    setTimeout(() => {
+      scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+    }, 100);
+    return;
+  }
 
-    setIsLoading(true);
+  setIsLoading(true);
 
-    try {
-      const response = await fetch(
-        "https://account.babahub.co/api/users/register",
-        {
-          method: "POST",
-          headers: { 
-            "Content-Type": "application/json",
-            "Accept": "application/json"
-          },
-          body: JSON.stringify({ 
-            name: name.trim(),
-            email: email.toLowerCase().trim(), 
-            dob, 
-            password: password.toLowerCase(), // Ensure password is lowercase
-            role: "customer"
-          }),
-        }
-      );
+  try {
+    const response = await http.post('/users/register', {
+      name: name.trim(),
+      email: email.toLowerCase().trim(),
+      dob,
+      password: password.toLowerCase(), // keep backend-compatible
+      role: 'customer',
+    });
 
-      const data = await response.json();
-      console.log("Registration response:", data);
+    const data = response.data;
+    console.log('Registration response:', data);
 
-      if (response.ok) {
-        // Show success modal with confetti instead of alert
-        setShowSuccessModal(true);
+    // Success
+    setShowSuccessModal(true);
+
+  } catch (error) {
+    console.error('Registration error:', error);
+
+    let errorMessage = 'Something went wrong';
+
+    // Server responded with error
+    if (error.response && error.response.data) {
+      const serverMessage = error.response.data.message || '';
+
+      if (
+        serverMessage.toLowerCase().includes('email') ||
+        serverMessage.toLowerCase().includes('already')
+      ) {
+        errorMessage = `An account with email ${email} already exists. Please try signing in or use a different email address.`;
+      } else if (
+        serverMessage.toLowerCase().includes('user') ||
+        serverMessage.toLowerCase().includes('exists')
+      ) {
+        errorMessage =
+          'This user already exists. Please try signing in or use different credentials.';
+      } else if (error.response.data.errors) {
+        // Validation errors from backend
+        const serverErrors = Object.values(error.response.data.errors).join(', ');
+        errorMessage =
+          serverErrors || 'Please check your information and try again.';
       } else {
-        // Enhanced error messages for existing users
-        let errorMessage = data.message || "Something went wrong";
-        
-        if (errorMessage.toLowerCase().includes("email") || errorMessage.toLowerCase().includes("already")) {
-          errorMessage = `An account with email ${email} already exists. Please try signing in or use a different email address.`;
-        } else if (errorMessage.toLowerCase().includes("user") || errorMessage.toLowerCase().includes("exists")) {
-          errorMessage = "This user already exists. Please try signing in or use different credentials.";
-        } else if (data.errors) {
-          // Handle validation errors from server
-          const serverErrors = Object.values(data.errors).join(', ');
-          errorMessage = serverErrors || "Please check your information and try again.";
-        }
-        
-        Alert.alert(
-          "Registration Failed",
-          errorMessage,
-          [{ text: "OK" }]
-        );
+        errorMessage = serverMessage || errorMessage;
       }
-    } catch (err) {
-      console.error("Registration error:", err);
-      Alert.alert(
-        "Connection Error",
-        "Unable to connect to server. Please check your internet connection and try again.",
-        [{ text: "OK" }]
-      );
-    } finally {
-      setIsLoading(false);
     }
-  };
+    // Network / timeout error
+    else if (error.message === 'Network Error') {
+      errorMessage =
+        'Unable to connect to server. Please check your internet connection and try again.';
+    }
+
+    Alert.alert(
+      'Registration Failed',
+      errorMessage,
+      [{ text: 'OK' }]
+    );
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const handleSuccessContinue = () => {
     setShowSuccessModal(false);
