@@ -25,6 +25,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
 import NetInfo from '@react-native-community/netinfo';
+import http from '../../src/api/http';
 
 const { width, height } = Dimensions.get('window');
 
@@ -209,30 +210,8 @@ const popularSearches = [
   'Flash Sale'
 ];
 
-// Function to correctly get full image URL for product images
-const getImageUrl = (imagePath) => {
-  if (!imagePath) return '';
-  if (imagePath.startsWith('http')) return imagePath;
-  
-  const normalizedPath = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
-  return `https://account.babahub.co${normalizedPath}`;
-};
-
-// Function to ensure image URL is in the correct format for cart
-const normalizeImageUrl = (imageUrl) => {
-  if (!imageUrl) return '';
-  
-  if (imageUrl.includes('babahub.co')) {
-    return imageUrl;
-  }
-  
-  if (imageUrl.startsWith('http')) {
-    return imageUrl;
-  }
-  
-  const normalizedPath = imageUrl.startsWith('/') ? imageUrl : `/${imageUrl}`;
-  return `https://account.babahub.co${normalizedPath}`;
-};
+// Import image utilities
+import { getImageUrl, normalizeImageUrl } from '../../src/utils/image';
 
 // IMPROVED Internet Status Bar Component using NetInfo
 const InternetStatusBar = ({ isOnline, onRetry }) => {
@@ -918,8 +897,6 @@ const StoreScreen = () => {
   const contentOpacity = useRef(new Animated.Value(1)).current;
   const contentTranslateY = useRef(new Animated.Value(0)).current;
 
-  // API base URL
-  const API_BASE_URL = 'https://account.babahub.co';
 
   // IMPROVED: Internet connection check using NetInfo
   const checkConnection = useCallback(async () => {
@@ -1133,27 +1110,23 @@ const StoreScreen = () => {
       setLoading(true);
       
       // Get all products (not just featured ones)
-      const response = await fetch(`${API_BASE_URL}/api/products`);
+      const {data} = await http.get('/products');
       
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
+      const productsData = data.products || data;
       
       // Set all products (including both featured and non-featured)
-      setProducts(data);
-      setFilteredProducts(data);
+      setProducts(productsData);
+      setFilteredProducts(productsData);
       
       // NEW: Extract categories from all products and update state
-      const extractedCategories = extractCategoriesFromProducts(data);
+      const extractedCategories = extractCategoriesFromProducts(productsData);
       setCategories(extractedCategories);
-      console.log('All products loaded:', data.length);
-      console.log('Featured products count:', data.filter(product => product.isFeatured === true).length);
+      console.log('All products loaded:', productsData.length);
+      console.log('Featured products count:', productsData.filter(product => product.isFeatured === true).length);
       console.log('Categories extracted:', extractedCategories);
       
       // Cache all products for offline use
-      await AsyncStorage.setItem('cached_products', JSON.stringify(data));
+      await AsyncStorage.setItem('cached_products', JSON.stringify(productsData));
       setHasCachedData(true);
       
     } catch (err) {

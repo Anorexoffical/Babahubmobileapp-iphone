@@ -21,6 +21,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import http from '../src/api/http';
+import { getImageUrl } from '../src/utils/image';
 
 const { width, height } = Dimensions.get('window');
 
@@ -110,7 +112,6 @@ const COLORS = {
   errorLight: '#FEE2E2',
 };
 
-const BASE_URL = 'https://account.babahub.co';
 
 // Enhanced Premium Brand-Aligned Popup Modal Component
 const CustomPopup = ({ visible, title, message, type = 'info', onClose, showCloseButton = true }) => {
@@ -587,22 +588,18 @@ const Checkout = () => {
     };
 
     try {
-      const response = await fetch("https://account.babahub.co/api/order/payfast/initiate-payment", {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "Accept": "application/json"
-        },
-        body: JSON.stringify(orderData),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      
-      if (data.paymentUrl) {
+      const res = await http.post(
+        '/order/payfast/initiate-payment',
+        JSON.stringify(orderData),
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+          },
+        }
+      );
+      const data = res.data;
+      if (data?.paymentUrl) {
         await AsyncStorage.setItem("latestPaymentUrl", data.paymentUrl);
         
         // Clear cart on successful order creation
@@ -826,7 +823,7 @@ const Checkout = () => {
               {cartItems.map((item, index) => (
                 <View key={`${item.id}-${index}`} style={styles.orderItem}>
                   <ProductImage 
-                    imageUrl={`${BASE_URL}${item.image}`}
+                    imageUrl={getImageUrl(item.image)}
                     style={styles.orderItemImage}
                   />
                   

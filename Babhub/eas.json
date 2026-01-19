@@ -11,6 +11,7 @@
         "gradleCommand": ":app:assembleRelease"
       },
       "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "https://staging.babahub.co/api",
         "EAS_SKIP_AUTO_FINGERPRINT": "1",
         "NPM_CONFIG_LEGACY_PEER_DEPS": "true"
       }
@@ -22,6 +23,7 @@
         "gradleCommand": ":app:bundleRelease"
       },
       "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "https://account.babahub.co/api",
         "EAS_SKIP_AUTO_FINGERPRINT": "1",
         "NPM_CONFIG_LEGACY_PEER_DEPS": "true"
       }
@@ -34,6 +36,7 @@
         "gradleCommand": ":app:assembleDebug"
       },
       "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "http://192.168.18.131:3001/api",
         "EAS_SKIP_AUTO_FINGERPRINT": "1",
         "NPM_CONFIG_LEGACY_PEER_DEPS": "true"
       }

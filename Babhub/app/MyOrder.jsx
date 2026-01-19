@@ -21,6 +21,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from './contexts/AuthContext';
+import http from '../src/api/http';
 
 const { width, height } = Dimensions.get('window');
 
@@ -89,19 +90,17 @@ const MyOrder = () => {
           return;
         }
 
-        const response = await fetch(
-          `https://account.babahub.co/api/order/myorder?userEmail=${user.email}`
+        const { data } = await http.get(
+          `/order/myorder?userEmail=${user.email}`
         );
 
-        const data = await response.json();
-
-        if (response.ok) {
-          setOrders(data);
-        } else {
-          console.error("Failed to fetch orders:", data);
-        }
+        setOrders(data);
       } catch (error) {
-        console.error("Error fetching orders:", error);
+        if (error.response && error.response.data) {
+          console.error("Failed to fetch orders:", error.response.data);
+        } else {
+          console.error("Error fetching orders:", error);
+        }
       } finally {
         setLoading(false);
       }

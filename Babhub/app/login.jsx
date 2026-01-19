@@ -21,6 +21,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import Mybutton from '../components/Mybutton';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useAuth } from './contexts/AuthContext';
+import http from '../src/api/http';
 
 const { width, height } = Dimensions.get('window');
 
@@ -159,58 +160,127 @@ const Login = () => {
     return Object.keys(newErrors).length === 0;
   };
 
+  // const handleLogin = async () => {
+  //   if (!validateInputs()) return;
+
+  //   setIsLoading(true);
+
+  //   try {
+  //     const response = await fetch("https://account.babahub.co/api/users/login", {
+  //       method: "POST",
+  //       headers: { "Content-Type": "application/json" },
+  //       body: JSON.stringify({
+  //         email,
+  //         password,
+  //         role: "customer",
+  //       }),
+  //     });
+
+  //     const data = await response.json();
+  //     console.log("Login response:", data);
+
+  //     if (response.ok) {
+  //       const { user } = data;
+  //       const authToken = "mock-or-jwt"; // replace with real JWT later
+  //       await signIn(authToken, user);
+  //       router.replace("/(tabs)/HomeScreen");
+  //     } else {
+  //       let errorMessage = data.message || "Invalid credentials";
+        
+  //       if (data.message?.toLowerCase().includes('email') || data.message?.toLowerCase().includes('not found')) {
+  //         errorMessage = "This email address isn't registered with BabaHub. Please check your email or create a new account.";
+  //       } else if (data.message?.toLowerCase().includes('password') || data.message?.toLowerCase().includes('invalid')) {
+  //         errorMessage = "The password you entered is incorrect. Please check your password and try again.";
+  //       } else if (data.message?.toLowerCase().includes('account') || data.message?.toLowerCase().includes('suspended')) {
+  //         errorMessage = "There seems to be a problem with your account. Please contact support for assistance.";
+  //       }
+        
+  //       showErrorPopup(errorMessage);
+  //     }
+  //   } catch (err) {
+  //     console.error("Login error:", err.message);
+  //     let connectionErrorMessage = "We're having trouble connecting to our servers. Please check your internet connection and try again.";
+      
+  //     if (err.message.includes('Network request failed')) {
+  //       connectionErrorMessage = "We're having trouble connecting to our servers. Please check your internet connection and try again.";
+  //     } else {
+  //       connectionErrorMessage = "Something went wrong. Please try again in a moment.";
+  //     }
+      
+  //     showErrorPopup(connectionErrorMessage);
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
+
   const handleLogin = async () => {
-    if (!validateInputs()) return;
+  if (!validateInputs()) return;
 
-    setIsLoading(true);
+  setIsLoading(true);
 
-    try {
-      const response = await fetch("https://account.babahub.co/api/users/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email,
-          password,
-          role: "customer",
-        }),
-      });
+  try {
+    const response = await http.post('/users/login', {
+      email,
+      password,
+      role: 'customer',
+    });
 
-      const data = await response.json();
-      console.log("Login response:", data);
+    // Axios puts response data in response.data
+    const data = response.data;
+    console.log('Login response:', data);
 
-      if (response.ok) {
-        const { user } = data;
-        const authToken = "mock-or-jwt"; // replace with real JWT later
-        await signIn(authToken, user);
-        router.replace("/(tabs)/HomeScreen");
+    const { user, token } = data;
+
+    // Use real token if backend sends it
+    const authToken = token || 'mock-or-jwt';
+
+    await signIn(authToken, user);
+    router.replace('/(tabs)/HomeScreen');
+
+  } catch (error) {
+    console.error('Login error:', error);
+
+    let errorMessage =
+      "Something went wrong. Please try again in a moment.";
+
+    // Axios error with server response
+    if (error.response && error.response.data) {
+      const serverMessage = error.response.data.message || '';
+
+      if (
+        serverMessage.toLowerCase().includes('email') ||
+        serverMessage.toLowerCase().includes('not found')
+      ) {
+        errorMessage =
+          "This email address isn't registered with BabaHub. Please check your email or create a new account.";
+      } else if (
+        serverMessage.toLowerCase().includes('password') ||
+        serverMessage.toLowerCase().includes('invalid')
+      ) {
+        errorMessage =
+          "The password you entered is incorrect. Please check your password and try again.";
+      } else if (
+        serverMessage.toLowerCase().includes('account') ||
+        serverMessage.toLowerCase().includes('suspended')
+      ) {
+        errorMessage =
+          "There seems to be a problem with your account. Please contact support for assistance.";
       } else {
-        let errorMessage = data.message || "Invalid credentials";
-        
-        if (data.message?.toLowerCase().includes('email') || data.message?.toLowerCase().includes('not found')) {
-          errorMessage = "This email address isn't registered with BabaHub. Please check your email or create a new account.";
-        } else if (data.message?.toLowerCase().includes('password') || data.message?.toLowerCase().includes('invalid')) {
-          errorMessage = "The password you entered is incorrect. Please check your password and try again.";
-        } else if (data.message?.toLowerCase().includes('account') || data.message?.toLowerCase().includes('suspended')) {
-          errorMessage = "There seems to be a problem with your account. Please contact support for assistance.";
-        }
-        
-        showErrorPopup(errorMessage);
+        errorMessage = serverMessage;
       }
-    } catch (err) {
-      console.error("Login error:", err.message);
-      let connectionErrorMessage = "We're having trouble connecting to our servers. Please check your internet connection and try again.";
-      
-      if (err.message.includes('Network request failed')) {
-        connectionErrorMessage = "We're having trouble connecting to our servers. Please check your internet connection and try again.";
-      } else {
-        connectionErrorMessage = "Something went wrong. Please try again in a moment.";
-      }
-      
-      showErrorPopup(connectionErrorMessage);
-    } finally {
-      setIsLoading(false);
     }
-  };
+    // Network / timeout error
+    else if (error.message === 'Network Error') {
+      errorMessage =
+        "We're having trouble connecting to our servers. Please check your internet connection and try again.";
+    }
+
+    showErrorPopup(errorMessage);
+  } finally {
+    setIsLoading(false);
+  }
+};
+
 
   const handleCreateAccount = () => {
     router.push('/CreateAccount'); 

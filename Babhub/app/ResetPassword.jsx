@@ -300,53 +300,54 @@ const ResetPassword = () => {
 
     setIsLoading(true);
 
-    try {
-      const response = await fetch("https://account.babahub.co/api/users/reset-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, newPassword }),
-      });
-
-      const responseText = await response.text();
-      let data;
-
       try {
-        data = JSON.parse(responseText);
-      } catch (parseError) {
-        throw new Error('Invalid server response');
-      }
+        const { data } = await http.post(
+          "/users/reset-password",
+          { email, newPassword },
+          { headers: { "Content-Type": "application/json" } }
+        );
 
-      if (response.ok && data.success) {
-        // Mark reset as completed to prevent going back
-        setResetCompleted(true);
-        
-        // Show success modal instead of alert
-        setShowSuccessModal(true);
-        
-      } else {
-        let errorMessage = "We couldn't reset your password";
-        
-        if (data.message?.toLowerCase().includes('weak')) {
-          errorMessage = "Please choose a stronger password";
-        } else if (data.message?.toLowerCase().includes('same')) {
-          errorMessage = "Please choose a different password";
+        if (data && data.success) {
+          // Mark reset as completed to prevent going back
+          setResetCompleted(true);
+          // Show success modal instead of alert
+          setShowSuccessModal(true);
         } else {
-          errorMessage = data.message || errorMessage;
+          let errorMessage = "We couldn't reset your password";
+          if (data?.message?.toLowerCase().includes('weak')) {
+            errorMessage = "Please choose a stronger password";
+          } else if (data?.message?.toLowerCase().includes('same')) {
+            errorMessage = "Please choose a different password";
+          } else {
+            errorMessage = data?.message || errorMessage;
+          }
+          Alert.alert("Reset Failed", errorMessage);
         }
-        
-        Alert.alert("Reset Failed", errorMessage);
+      } catch (error) {
+        console.error('Reset password error:', error);
+        if (error.response && error.response.data) {
+          let errorMessage = "We couldn't reset your password";
+          const data = error.response.data;
+          if (typeof data === 'object') {
+            if (data.message?.toLowerCase().includes('weak')) {
+              errorMessage = "Please choose a stronger password";
+            } else if (data.message?.toLowerCase().includes('same')) {
+              errorMessage = "Please choose a different password";
+            } else {
+              errorMessage = data.message || errorMessage;
+            }
+          } else if (typeof data === 'string') {
+            errorMessage = data;
+          }
+          Alert.alert("Reset Failed", errorMessage);
+        } else if (error.message && error.message.includes('Network request failed')) {
+          Alert.alert("Connection Lost", "Please check your internet connection");
+        } else {
+          Alert.alert("Error", "Please try again");
+        }
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      console.error('Reset password error:', error);
-      
-      if (error.message.includes('Network request failed')) {
-        Alert.alert("Connection Lost", "Please check your internet connection");
-      } else {
-        Alert.alert("Error", "Please try again");
-      }
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   const handleBackToRecovery = () => {

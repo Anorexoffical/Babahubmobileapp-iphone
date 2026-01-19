@@ -18,6 +18,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import http from '../src/api/http';
+import { getImageUrl } from '../src/utils/image';
 
 const { width, height } = Dimensions.get('window');
 
@@ -119,12 +121,12 @@ const ProductDetailPage = () => {
 
   useEffect(() => {
     if (id) {
-      fetch(`https://account.babahub.co/api/products/${id}`)
-        .then(res => res.json())
-        .then(data => {
+      http.get(`/products/${id}`)
+        .then(res => {
+          const data = res.data;
           setProduct(data);
           setLoading(false);
-          
+
           // Start animations when product data is loaded
           Animated.parallel([
             Animated.timing(fadeAnim, {
@@ -575,7 +577,7 @@ const ProductDetailPage = () => {
                 </View>
               )}
               <Image
-                source={{ uri: `https://account.babahub.co${product.image}` }}
+                source={{ uri: getImageUrl(product.image) }}
                 style={[styles.productImage, { opacity: imageLoaded ? 1 : 0 }]}
                 resizeMode="cover"
                 onLoad={() => setImageLoaded(true)}

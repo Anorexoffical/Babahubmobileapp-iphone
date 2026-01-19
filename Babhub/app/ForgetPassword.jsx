@@ -16,6 +16,7 @@ import {
   StatusBar,
 } from 'react-native';
 import React, { useState, useRef, useEffect } from 'react';
+import http from '../src/api/http';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
@@ -209,54 +210,44 @@ const ForgetPassword = () => {
     setIsLoading(true);
     
     try {
-      const response = await fetch("https://account.babahub.co/api/users/forgot-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, dob }),
-      });
+      const { data } = await http.post(
+        "/users/forgot-password",
+        { email, dob },
+        { headers: { "Content-Type": "application/json" } }
+      );
 
-      const data = await response.json();
-
-      if (response.ok && data.success) {
+      if (data && data.success) {
         // ✅ Store both email AND timestamp for ResetPassword
         await SecureStore.setItemAsync('reset_email', email);
         await SecureStore.setItemAsync('reset_timestamp', Date.now().toString());
-        
         // Clear any previous errors
         setErrors({});
-        
         // Show success modal instead of alert
         setShowSuccessModal(true);
-        
       } else {
         let errorMessage = "We couldn't verify your account details.";
-        
-        if (data.message?.toLowerCase().includes('email')) {
+        if (data?.message?.toLowerCase().includes('email')) {
           errorMessage = "📧 This email address isn't registered with BabaHub.\n\nPlease check if you entered the correct email address or create a new account.";
-        } else if (data.message?.toLowerCase().includes('date') || data.message?.toLowerCase().includes('dob')) {
+        } else if (data?.message?.toLowerCase().includes('date') || data?.message?.toLowerCase().includes('dob')) {
           errorMessage = "📅 The date of birth doesn't match our records.\n\nPlease check your birth date and try again. Make sure you're using the same date you used when creating your account.";
-        } else if (data.message?.toLowerCase().includes('not found') || data.message?.toLowerCase().includes('no account')) {
+        } else if (data?.message?.toLowerCase().includes('not found') || data?.message?.toLowerCase().includes('no account')) {
           errorMessage = "🔍 We couldn't find an account with these details.\n\nPlease check your email and date of birth, or create a new account if you don't have one.";
-        } else if (data.message?.toLowerCase().includes('invalid')) {
+        } else if (data?.message?.toLowerCase().includes('invalid')) {
           errorMessage = "❌ The information you provided doesn't match our records.\n\nPlease double-check your email address and date of birth.";
         } else {
-          errorMessage = data.message || "We're having trouble verifying your account. Please check your details and try again.";
+          errorMessage = data?.message || "We're having trouble verifying your account. Please check your details and try again.";
         }
-        
         setErrorMessage(errorMessage);
         setShowErrorModal(true);
       }
     } catch (error) {
       console.error('Recovery error:', error);
-      
       let connectionErrorMessage = "📡 Connection Issue\n\nWe're having trouble connecting to our servers. Please check your internet connection and try again.";
-      
-      if (error.message.includes('Network request failed')) {
+      if (error.message && error.message.includes('Network request failed')) {
         connectionErrorMessage = "📡 Connection Issue\n\nWe're having trouble connecting to our servers. Please check your internet connection and try again.";
       } else {
         connectionErrorMessage = "⚠️ Something went wrong\n\nPlease try again in a moment. If the problem continues, contact our support team.";
       }
-      
       setErrorMessage(connectionErrorMessage);
       setShowErrorModal(true);
     } finally {

@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
+import { getImageUrl, normalizeImageUrl } from '../../src/utils/image';
 
 const { width, height } = Dimensions.get('window');
 
@@ -39,40 +40,7 @@ const COLORS = {
 // Maximum unique items allowed in cart
 const MAX_CART_ITEMS = 3;
 
-// Function to correctly get full image URL for product images
-const getImageUrl = (imagePath) => {
-  if (!imagePath) {
-    return 'https://via.placeholder.com/150/6366F1/FFFFFF?text=No+Image';
-  }
-  
-  // If it's already a full URL, return as is
-  if (imagePath.startsWith('http')) {
-    return imagePath;
-  }
-  
-  // If it's a relative path, construct the full URL
-  const normalizedPath = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
-  return `https://account.babahub.co${normalizedPath}`;
-};
 
-// Function to ensure image URL is in the correct format for cart
-const normalizeImageUrl = (imageUrl) => {
-  if (!imageUrl) return '';
-  
-  // If it's already a full URL with babahub.co, return as is
-  if (imageUrl.includes('babahub.co')) {
-    return imageUrl;
-  }
-  
-  // If it's a placeholder or external URL, return as is
-  if (imageUrl.startsWith('http')) {
-    return imageUrl;
-  }
-  
-  // Otherwise, construct the full URL
-  const normalizedPath = imageUrl.startsWith('/') ? imageUrl : `/${imageUrl}`;
-  return `https://account.babahub.co${normalizedPath}`;
-};
 
 const WishlistScreen = () => {
   const [wishlistItems, setWishlistItems] = useState([]);
