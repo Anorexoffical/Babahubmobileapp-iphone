@@ -98,7 +98,8 @@ router.post("/payfast/initiate-payment", async (req, res) => {
 // Fetch all orders
 router.get("/get", async (req, res) => {
   try {
-    const orders = await Order.find().sort({ createdAt: -1 });
+    // Use lean() so missing fields (e.g. legacy paymentStatus) stay missing.
+    const orders = await Order.find().sort({ createdAt: -1 }).lean();
     res.status(200).json(orders);
   } catch (err) {
     res.status(500).json({ error: "Error fetching orders" });
@@ -167,10 +168,14 @@ router.get("/myorder", async (req, res) => {
     const { userEmail } = req.query;
     console.log("Fetching orders for email:", userEmail);
 
-    const filter = {};
-    if (userEmail) {
-      filter.email = userEmail; // Changed from userName to email
+    if (!userEmail) {
+      return res.status(400).json({ error: "userEmail is required" });
     }
+
+    const filter = {
+      email: userEmail,
+      paymentStatus: "COMPLETE",
+    };
 
     const orders = await Order.find(filter).sort({ createdAt: -1 });
     console.log(`Found ${orders.length} orders for email: ${userEmail}`);

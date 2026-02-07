@@ -327,7 +327,8 @@ const Orders = () => {
                     <th>Customer</th>
                     <th>Date</th>
                     <th>Amount</th>
-                    <th>Status</th>
+                    <th>Payment Status</th>
+                    <th>Delivery Status</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -347,6 +348,7 @@ const Orders = () => {
                         </td>
                         <td>{new Date(order.createdAt).toLocaleDateString()}</td>
                         <td>R {order.totalAmountAfterTax}</td>
+                        <td>{order.paymentStatus ?? '—'}</td>
                         <td>
                           <Badge 
                             style={getStatusStyle(order.deliveryStatus)}
