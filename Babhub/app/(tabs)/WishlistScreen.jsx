@@ -37,9 +37,6 @@ const COLORS = {
   error: '#DC2626',
 };
 
-// Maximum unique items allowed in cart
-const MAX_CART_ITEMS = 3;
-
 
 
 const WishlistScreen = () => {

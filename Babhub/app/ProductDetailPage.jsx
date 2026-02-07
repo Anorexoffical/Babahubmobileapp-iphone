@@ -93,7 +93,6 @@ const ProductDetailPage = () => {
 
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [showLimitModal, setShowLimitModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [selectedColorIndex, setSelectedColorIndex] = useState(0);
@@ -350,13 +349,6 @@ const ProductDetailPage = () => {
         // Update the quantity for existing variant
         cart[existingItemIndex].quantity = newTotalQuantity;
       } else {
-        // Check if adding a new product would exceed the 3 unique product limit
-        // Count unique product IDs (not variants)
-        const uniqueProductIds = new Set(cart.map(item => item.id));
-        if (uniqueProductIds.size >= 3 && !uniqueProductIds.has(newItem.id)) {
-          setShowLimitModal(true);
-          return;
-        }
         cart.push(newItem);
       }
 
@@ -476,44 +468,6 @@ const ProductDetailPage = () => {
       >
         <Ionicons name="cart" size={responsiveFont(30)} color={COLORS.primary} />
       </Animated.View>
-
-      {/* Limit Modal */}
-      <Modal
-        visible={showLimitModal}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setShowLimitModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalIconContainer}>
-              <Ionicons name="alert-circle" size={responsiveFont(50)} color={COLORS.error} />
-            </View>
-            <Text style={styles.modalTitle}>Cart Limit Reached</Text>
-            <Text style={styles.modalText}>
-              You can only add up to 3 different products to your cart. Please remove some items to add new ones.
-            </Text>
-            <View style={styles.modalButtons}>
-              <TouchableOpacity 
-                style={[styles.modalButton, styles.modalSecondaryButton]}
-                onPress={() => setShowLimitModal(false)}
-              >
-                <Text style={styles.modalSecondaryButtonText}>Continue Shopping</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.modalButton, styles.viewCartButton]}
-                onPress={() => {
-                  setShowLimitModal(false);
-                  router.push('/CartScreen');
-                }}
-              >
-                <Ionicons name="cart" size={responsiveFont(18)} color={COLORS.white} style={styles.buttonIcon} />
-                <Text style={styles.modalButtonText}>View Cart</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
 
       {/* Success Modal */}
       <Modal

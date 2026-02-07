@@ -55,8 +55,7 @@ const COLORS = {
   cardBackground: '#FFFFFF',
 };
 
-// Maximum unique items allowed in cart
-const MAX_CART_ITEMS = 3;
+
 
 // UPDATED: Home banners data with attractive images and better text
 const homeBanners = [
@@ -836,17 +835,6 @@ const HomeScreen = () => {
   // Enhanced Add to Cart function
   const handleAddToCart = async (product) => {
     try {
-      // Check cart limit
-      const uniqueItems = new Set(cartItems.map(item => item.id));
-      if (uniqueItems.size >= MAX_CART_ITEMS && !uniqueItems.has(product._id)) {
-        Toast.show({
-          type: 'error',
-          text1: 'Cart Limit Reached',
-          text2: `Maximum ${MAX_CART_ITEMS} unique items allowed in cart`,
-        });
-        return;
-      }
-
       const price = product.variants?.[0]?.sizes?.[0]?.price || product.price || 0;
       
       const cartItem = {

@@ -41,14 +41,12 @@ router.post("/payfast/notifyurl", async (req, res) => {
     try {
         console.log("inside the notifyurl route")
 
-        // const pfData = req.body
-
         const pfData = JSON.parse(JSON.stringify(req.body));
 
         let pfParamString = "";
         for (const key in pfData) {
             if (key !== 'signature') {
-                pfParamString += `${key}=${encodeURIComponent(pfData[key].trim()).replace(/%20/g, "+")}&`;
+                pfParamString += `${key}=${encodeURIComponent(String(pfData[key]).trim()).replace(/%20/g, "+")}&`;
             }
         }
         pfParamString = pfParamString.slice(0, -1);
@@ -62,41 +60,39 @@ router.post("/payfast/notifyurl", async (req, res) => {
             console.log(pfData);
             if (pfData['payment_status'] === "COMPLETE") {
 
-                console.log("Saving order to database...");
+                const orderRef = pfData["m_payment_id"] || pfData["custom_str1"] || pfData["item_name"];
+                if (!orderRef) {
+                    console.error("Missing order reference in ITN payload");
+                    return res.status(400).send("Missing order reference");
+                }
 
-                const items = JSON.parse(pfData["custom_str1"]); 
-                const addressData = JSON.parse(pfData["custom_str2"]); 
-                const totalAmount = parseFloat(pfData["amount_gross"]); 
-                const payFastTax = parseFloat(pfData["amount_fee"]); 
-                const totalAmountAfterTax = parseFloat(pfData["amount_net"]); 
-        
-                const formattedItems = items.map((item) => ({
-                //   productID: new mongoose.Types.ObjectId(), 
-                  title: item.title,
-                  price: item.price,
-                  quantity: item.quantity,
-                  size: item.size,
-                  color: item.color,
-                  subTotal: item.price * item.quantity, 
-                }));
-        
-                const newOrder = new Order({
-                  
-                  orderID: pfData["item_name"],
-                  name: pfData["name_first"],
-                  email: pfData["email_address"],
-                  phoneNO: pfData["custom_str3"],
-                  address: addressData.address,
-                  totalAmount,
-                  payFastTax: payFastTax,
-                  totalAmountAfterTax: totalAmountAfterTax,
-                  pf_payment_id: pfData["pf_payment_id"],
-                  items: formattedItems,
-                });
-        
-                await newOrder.save();
-                console.log("Order saved successfully:", newOrder);
-                res.status(200).send("OK");
+                const totalAmount = parseFloat(pfData["amount_gross"]);
+                const payFastTax = parseFloat(pfData["amount_fee"]);
+                const totalAmountAfterTax = parseFloat(pfData["amount_net"]);
+
+                console.log("Updating order in database...", orderRef);
+
+                const updated = await Order.findOneAndUpdate(
+                    { orderID: orderRef },
+                    {
+                        $set: {
+                            pf_payment_id: pfData["pf_payment_id"],
+                            totalAmount: Number.isFinite(totalAmount) ? totalAmount : undefined,
+                            payFastTax: Number.isFinite(payFastTax) ? String(payFastTax) : undefined,
+                            totalAmountAfterTax: Number.isFinite(totalAmountAfterTax) ? String(totalAmountAfterTax) : undefined,
+                            paymentStatus: "COMPLETE",
+                        },
+                    },
+                    { new: true }
+                );
+
+                if (!updated) {
+                    console.error("Order not found for ITN:", orderRef);
+                    return res.status(404).send("Order not found");
+                }
+
+                console.log("Order updated successfully:", updated.orderID);
+                return res.status(200).send("OK");
 
             }
 
@@ -120,9 +116,24 @@ router.get("/payfast/success", (req, res) => {
 });
 
 //  payment cancellation later have to make complete page
-router.get("/payfast/cancel", (req, res) => {
-    console.log("Payment was cancelled by the user");
-    res.send("Payment Cancelled. Please try again if needed.");
+router.get("/payfast/cancel", async (req, res) => {
+    try {
+        const orderRef = req.query?.m_payment_id || req.query?.orderID;
+        console.log("Payment was cancelled by the user", { orderRef });
+
+        if (orderRef) {
+            await Order.findOneAndUpdate(
+                { orderID: String(orderRef), paymentStatus: "PENDING" },
+                { $set: { paymentStatus: "CANCELLED" } },
+                { new: true }
+            );
+        }
+
+        res.send("Payment Cancelled. Please try again if needed.");
+    } catch (err) {
+        console.error("Error handling PayFast cancel:", err);
+        res.status(500).send("Payment Cancelled. Please try again if needed.");
+    }
 });
 
 module.exports = router;
