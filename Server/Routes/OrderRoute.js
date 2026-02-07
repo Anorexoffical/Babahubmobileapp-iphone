@@ -7,25 +7,61 @@ const env = require('../config/env');
 // PayFast Payment Integration
 const generateSignature = (data, passPhrase = env.PAYFAST_PASSPHRASE) => {
   const getString = Object.keys(data)
-    .filter(key => data[key])
-    .map(key => `${key}=${encodeURIComponent(data[key].trim()).replace(/%20/g, "+")}`)
-    .join("&") + (passPhrase ? `&passphrase=${encodeURIComponent(passPhrase.trim()).replace(/%20/g, "+")}` : "");
+    .filter((key) => data[key] !== undefined && data[key] !== null && String(data[key]).trim() !== "")
+    .map((key) => `${key}=${encodeURIComponent(String(data[key]).trim()).replace(/%20/g, "+")}`)
+    .join("&") + (passPhrase ? `&passphrase=${encodeURIComponent(String(passPhrase).trim()).replace(/%20/g, "+")}` : "");
   return crypto.createHash("md5").update(getString).digest("hex");
 };
 
 router.post("/payfast/initiate-payment", async (req, res) => {
   try {
     const { name, email, phone, address, items, subtotal, tax, total } = req.body;
-    const orderID = `${Date.now()}-${crypto.randomBytes(2).toString("hex")}`;
+    const orderID = `OID-${Date.now()}-${crypto.randomBytes(2).toString("hex")}`;
 
     const merchant_id = env.PAYFAST_MERCHANT_ID;
     const merchant_key = env.PAYFAST_MERCHANT_KEY;
-    const return_url = env.PAYFAST_RETURN_URL;
-    const cancel_url = env.PAYFAST_CANCEL_URL;
+    const addQueryParam = (url, key, value) => {
+      if (!url) return url;
+      const separator = url.includes("?") ? "&" : "?";
+      return `${url}${separator}${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`;
+    };
+
+    const return_url = addQueryParam(env.PAYFAST_RETURN_URL, "m_payment_id", orderID);
+    const cancel_url = addQueryParam(env.PAYFAST_CANCEL_URL, "m_payment_id", orderID);
     const notify_url = env.PAYFAST_NOTIFY_URL;
 
-    console.log(items);
-    
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ error: "Cart is empty" });
+    }
+
+    // Persist the full order details on our side.
+    // PayFast custom_str fields are limited to 255 chars, so we only pass the short order reference.
+    const formattedItems = items.map((item) => {
+      const price = Number(item.price) || 0;
+      const quantity = Number(item.quantity) || 1;
+      return {
+        title: item.title,
+        price,
+        quantity,
+        size: item.size,
+        color: item.color,
+        subTotal: price * quantity,
+      };
+    });
+
+    await Order.create({
+      orderID,
+      name,
+      email,
+      phoneNO: phone,
+      address,
+      totalAmount: Number(total),
+      payFastTax: String(tax ?? ""),
+      totalAmountAfterTax: String(total ?? ""),
+      items: formattedItems,
+      paymentStatus: "PENDING",
+    });
+
     const paymentData = {
       merchant_id, 
       merchant_key, 
@@ -36,19 +72,25 @@ router.post("/payfast/initiate-payment", async (req, res) => {
       email_address: email,
       m_payment_id: orderID, 
       amount: total, 
-      item_name: `OID-${orderID}`,
-      custom_str1: JSON.stringify(items.map(({ id, image, ...rest }) => rest)),
-      custom_str2: JSON.stringify({ address }),
-      custom_str3: phone, 
+      item_name: orderID,
+      custom_str1: orderID,
+      custom_str2: email,
+      custom_str3: phone,
     };
     
     console.log(paymentData);
     paymentData.signature = generateSignature(paymentData);
     
     const processBase = `https://${env.PAYFAST_PROCESS_HOST}/eng/process`;
-    res.json({ paymentUrl: `${processBase}?${Object.keys(paymentData).map(key => `${key}=${encodeURIComponent(paymentData[key])}`).join("&")}` });
+    res.json({
+      orderID,
+      paymentUrl: `${processBase}?${Object.keys(paymentData)
+        .map((key) => `${key}=${encodeURIComponent(String(paymentData[key]))}`)
+        .join("&")}`,
+    });
 
   } catch (err) {
+    console.error("Error initiating PayFast payment:", err);
     res.status(500).json({ error: "Error initiating payment" });
   }
 });

@@ -10,6 +10,11 @@ const OrderSchema = new mongoose.Schema({
   payFastTax: String,
   totalAmountAfterTax: String,
   pf_payment_id: String,
+  paymentStatus: {
+    type: String,
+    enum: ["PENDING", "COMPLETE", "CANCELLED"],
+    default: "PENDING",
+  },
   items: [
     {
       productID: mongoose.Schema.Types.ObjectId, 
