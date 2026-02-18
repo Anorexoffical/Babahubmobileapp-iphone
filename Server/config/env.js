@@ -2,7 +2,9 @@ const dotenvFlow = require('dotenv-flow');
 const { cleanEnv, str, port, bool } = require('envalid');
 
 // Load environment files according to NODE_ENV
-dotenvFlow.config({ node_env: process.env.NODE_ENV || 'development', path: __dirname + '/..' });
+// dotenvFlow.config({ node_env: process.env.NODE_ENV || 'development', path: __dirname + '/..' });
+dotenvFlow.config({ node_env: process.env.NODE_ENV || 'production', path: __dirname + '/..' });
+
 
 const env = cleanEnv(process.env, {
   NODE_ENV: str({ choices: ['development', 'production', 'test'], default: process.env.NODE_ENV || 'development' }),
