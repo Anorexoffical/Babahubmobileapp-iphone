@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 const User = require("./Models/UserModel");
 
 // connect to MongoDB
-mongoose.connect("mongodb://127.0.0.1:27017/Babhub", {
+mongoose.connect("mongodb://127.0.0.1:27018/Babhub", {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });
