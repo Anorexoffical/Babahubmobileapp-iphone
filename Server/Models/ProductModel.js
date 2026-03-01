@@ -18,6 +18,7 @@ const productSchema = new mongoose.Schema({
   brand: { type: String, required: true },
   category: { type: String, required: true },
   isFeatured: { type: Boolean, default: false },
+  isTrending: { type: Boolean, default: false },
   image: { type: String },
   variants: { type: [variantSchema], required: true }
 }, {

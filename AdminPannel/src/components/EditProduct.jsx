@@ -19,6 +19,7 @@ const EditProduct = ({
     category: '',
     mainImage: null,
     isFeatured: false,
+    isTrending: false,
     image: '',
     variants: [{
       color: '',
@@ -36,6 +37,7 @@ const EditProduct = ({
     if (editingProduct) {
       setUpdatedProduct({
         ...editingProduct,
+        isTrending: editingProduct.isTrending === true,
         mainImage: null
       });
       
@@ -79,6 +81,10 @@ const EditProduct = ({
 
   const handleToggleFeatured = () => {
     setUpdatedProduct(prev => ({ ...prev, isFeatured: !prev.isFeatured }));
+  };
+
+  const handleToggleTrending = () => {
+    setUpdatedProduct(prev => ({ ...prev, isTrending: !prev.isTrending }));
   };
 
   const handleVariantChange = (index, field, value) => {
@@ -136,6 +142,7 @@ const EditProduct = ({
       formData.append('brand', updatedProduct.brand);
       formData.append('category', updatedProduct.category);
       formData.append('isFeatured', updatedProduct.isFeatured);
+      formData.append('isTrending', updatedProduct.isTrending);
       
       if (updatedProduct.mainImage) {
         formData.append('mainImage', updatedProduct.mainImage);
@@ -240,19 +247,41 @@ const EditProduct = ({
                 </Form.Group>
               </Col>
               <Col md={6} className="d-flex align-items-end">
-                <Form.Check 
-                  type="switch"
-                  id="featured-product-switch"
-                  label={<span className="fw-medium text-muted">Featured Product</span>}
-                  checked={updatedProduct.isFeatured}
-                  onChange={handleToggleFeatured}
-                  className="ms-2"
-                />
-                {updatedProduct.isFeatured && (
-                  <Badge bg="warning" className="ms-2 d-flex align-items-center">
-                    <FiStar size={14} className="me-1" /> Featured
-                  </Badge>
-                )}
+                <div className="d-flex align-items-center flex-wrap gap-4">
+                  <div className="d-flex align-items-center">
+                    <Form.Check 
+                      type="switch"
+                      id="featured-product-switch"
+                      label={<span className="fw-medium text-muted">Featured Product</span>}
+                      checked={updatedProduct.isFeatured}
+                      onChange={handleToggleFeatured}
+                      className="ms-2"
+                      disabled={isSubmitting}
+                    />
+                    {updatedProduct.isFeatured && (
+                      <Badge bg="warning" className="ms-2 d-flex align-items-center">
+                        <FiStar size={14} className="me-1" /> Featured
+                      </Badge>
+                    )}
+                  </div>
+
+                  <div className="d-flex align-items-center">
+                    <Form.Check 
+                      type="switch"
+                      id="trending-product-switch"
+                      label={<span className="fw-medium text-muted">Trending Product</span>}
+                      checked={updatedProduct.isTrending}
+                      onChange={handleToggleTrending}
+                      className="ms-2"
+                      disabled={isSubmitting}
+                    />
+                    {updatedProduct.isTrending && (
+                      <Badge bg="info" className="ms-2 d-flex align-items-center">
+                        <FiStar size={14} className="me-1" /> Trending
+                      </Badge>
+                    )}
+                  </div>
+                </div>
               </Col>
               <Col md={12}>
                 <Form.Group>

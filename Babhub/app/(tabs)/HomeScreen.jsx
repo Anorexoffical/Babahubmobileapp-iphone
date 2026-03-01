@@ -388,10 +388,10 @@ const BannerItem = ({ item, index, currentIndex }) => {
         <Text style={styles.bannerTitle}>{item.title}</Text>
         <Text style={styles.bannerSubtitle}>{item.subtitle}</Text>
         
-        <TouchableOpacity style={styles.bannerButton}>
+        {/* <TouchableOpacity style={styles.bannerButton}>
           <Text style={styles.bannerButtonText}>Shop Now</Text>
           <Ionicons name="arrow-forward" size={16} color={COLORS.white} style={{ marginLeft: 8 }} />
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </View>
     </Animated.View>
   );
@@ -1464,10 +1464,10 @@ const HomeScreen = () => {
                 <View style={styles.section}>
                   <View style={styles.sectionHeader}>
                     <Text style={styles.sectionTitle}>Shop by Category</Text>
-                    <TouchableOpacity style={styles.seeAllButton}>
+                    {/* <TouchableOpacity style={styles.seeAllButton}>
                       <Text style={styles.seeAll}>See All</Text>
                       <Ionicons name="chevron-forward" size={16} color={COLORS.primary} />
-                    </TouchableOpacity>
+                    </TouchableOpacity> */}
                   </View>
                   <FlatList
                     data={featuredCategories}
@@ -2148,6 +2148,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     position: 'relative',
     elevation: 4,
+    marginBottom: 20,
   },
   bannerItem: {
     width: width - 40,
