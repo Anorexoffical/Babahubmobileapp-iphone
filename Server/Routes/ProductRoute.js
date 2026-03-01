@@ -20,14 +20,15 @@ const upload = multer({ storage });
 // ADD product with image
 router.post('/', upload.single('mainImage'), async (req, res) => {
   try {
-    const { name, description, brand, category, isFeatured, variants } = req.body;
+    const { name, description, brand, category, isFeatured, isTrending, variants } = req.body;
 
     const product = new Product({
       name,
       description,
       brand,
       category,
-      isFeatured,
+      isFeatured: isFeatured === 'true' || isFeatured === true,
+      isTrending: isTrending === 'true' || isTrending === true,
       variants: JSON.parse(variants), 
       image: req.file ? `/uploads/products/${req.file.filename}` : null
     });
@@ -43,7 +44,7 @@ router.post('/', upload.single('mainImage'), async (req, res) => {
 
 router.put('/:id', upload.single('mainImage'), async (req, res) => {
   try {
-    const { name, description, brand, category, isFeatured, variants } = req.body;
+    const { name, description, brand, category, isFeatured, isTrending, variants } = req.body;
 
     // Handle variants safely
     let parsedVariants = variants;
@@ -63,6 +64,11 @@ router.put('/:id', upload.single('mainImage'), async (req, res) => {
       isFeatured: isFeatured === 'true' || isFeatured === true,
       variants: parsedVariants
     };
+
+    // Only update isTrending if explicitly provided (avoids clearing it from older clients)
+    if (typeof isTrending !== 'undefined') {
+      updateData.isTrending = isTrending === 'true' || isTrending === true;
+    }
 
     // If a new image is uploaded, update it
     if (req.file) {
@@ -105,6 +111,16 @@ router.get('/featured', async (req, res) => {
     res.status(200).json(products);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching featured products', error });
+  }
+});
+
+// for trending products
+router.get('/trending', async (req, res) => {
+  try {
+    const products = await Product.find({ isTrending: true });
+    res.status(200).json(products);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching trending products', error });
   }
 });
 

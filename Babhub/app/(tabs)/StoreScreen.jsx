@@ -148,36 +148,7 @@ const featuredBrands = [
   },
 ];
 
-// New Trending Products Slider
-const trendingProducts = [
-  {
-    id: '1',
-    name: 'Wireless Earbuds Pro',
-    brand: 'TechGear',
-    price: 129.99,
-    image: 'https://images.unsplash.com/photo-1566206091558-7f218b696731?w=400&h=400&fit=crop&crop=center',
-    rating: 4.8,
-    reviews: 234
-  },
-  {
-    id: '2',
-    name: 'Designer Sunglasses',
-    brand: 'UrbanStyle',
-    price: 89.99,
-    image: 'https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=400&h=300&fit=crop',
-    rating: 4.6,
-    reviews: 189
-  },
-  {
-    id: '3',
-    name: 'Smart Fitness Watch',
-    brand: 'TechGear',
-    price: 199.99,
-    image: 'https://images.unsplash.com/photo-1544117519-31a4b719223d?w=400&h=300&fit=crop',
-    rating: 4.7,
-    reviews: 312
-  }
-];
+// Trending products are fetched dynamically from the backend
 
 // Search suggestions based on actual products and brands
 const searchSuggestions = [
@@ -431,10 +402,10 @@ const BannerItem = ({ item, index, currentIndex }) => {
         <Text style={styles.bannerTitle}>{item.title}</Text>
         <Text style={styles.bannerSubtitle}>{item.subtitle}</Text>
         
-        <TouchableOpacity style={styles.bannerButton}>
-          <Text style={styles.bannerButtonText}>Shop Now</Text>
-          <Ionicons name="arrow-forward" size={16} color={COLORS.white} style={{ marginLeft: 8 }} />
-        </TouchableOpacity>
+        {/* <TouchableOpacity style={styles.bannerButton}> */}
+          {/* <Text style={styles.bannerButtonText}>Shop Now</Text> */}
+          {/* <Ionicons name="arrow-forward" size={16} color={COLORS.white} style={{ marginLeft: 8 }} /> */}
+        {/* </TouchableOpacity> */}
       </View>
     </Animated.View>
   );
@@ -512,9 +483,12 @@ const MiddleBanner = ({ item }) => {
 };
 
 // New Trending Product Card - REMOVED Add to Cart button
-const TrendingProductCard = ({ item, index }) => {
+const TrendingProductCard = ({ item, index, onPress }) => {
   const cardOpacity = useRef(new Animated.Value(0)).current;
   const cardTranslateX = useRef(new Animated.Value(50)).current;
+  const imageUrl = getImageUrl(item.image);
+  const price = item.variants?.[0]?.sizes?.[0]?.price ?? item.price ?? 0;
+  const numericPrice = Number(price) || 0;
 
   useEffect(() => {
     Animated.sequence([
@@ -545,9 +519,13 @@ const TrendingProductCard = ({ item, index }) => {
         }
       ]}
     >
-      <TouchableOpacity style={styles.trendingCardInner} activeOpacity={0.9}>
+      <TouchableOpacity
+        style={styles.trendingCardInner}
+        activeOpacity={0.9}
+        onPress={() => onPress?.(item)}
+      >
         <Image 
-          source={{ uri: item.image }} 
+          source={{ uri: imageUrl }} 
           style={styles.trendingImage}
           resizeMode="cover"
         />
@@ -558,24 +536,26 @@ const TrendingProductCard = ({ item, index }) => {
         </View>
         
         <View style={styles.trendingContent}>
-          <Text style={styles.trendingBrand}>{item.brand}</Text>
-          <Text style={styles.trendingName} numberOfLines={2}>{item.name}</Text>
+          <Text style={styles.trendingBrand}>{item.brand || 'Popular Brand'}</Text>
+          <Text style={styles.trendingName} numberOfLines={2}>{item.name || 'New Product'}</Text>
           
           <View style={styles.trendingPriceContainer}>
-            <Text style={styles.trendingPrice}>R{item.price.toFixed(2)}</Text>
-            <View style={styles.ratingContainer}>
-              <View style={styles.stars}>
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <Ionicons 
-                    key={star} 
-                    name="star" 
-                    size={responsiveFont(12)} 
-                    color={star <= Math.floor(item.rating) ? COLORS.secondary : COLORS.grayLight} 
-                  />
-                ))}
+            <Text style={styles.trendingPrice}>R{numericPrice.toFixed(2)}</Text>
+            {typeof item.rating === 'number' && typeof item.reviews === 'number' && (
+              <View style={styles.ratingContainer}>
+                <View style={styles.stars}>
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <Ionicons 
+                      key={star} 
+                      name="star" 
+                      size={responsiveFont(12)} 
+                      color={star <= Math.floor(item.rating) ? COLORS.secondary : COLORS.grayLight} 
+                    />
+                  ))}
+                </View>
+                <Text style={styles.ratingText}>{item.rating} ({item.reviews})</Text>
               </View>
-              <Text style={styles.ratingText}>{item.rating} ({item.reviews})</Text>
-            </View>
+            )}
           </View>
         </View>
       </TouchableOpacity>
@@ -866,6 +846,7 @@ const StoreScreen = () => {
   const [cartItems, setCartItems] = useState([]);
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
+  const [trendingProducts, setTrendingProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -1062,9 +1043,11 @@ const StoreScreen = () => {
       if (connected) {
         await fetchWishlistAndCart();
         await fetchProducts();
+        await fetchTrendingProducts();
       } else {
         // Load cached products if available
         await loadCachedProducts();
+        setTrendingProducts([]);
       }
     };
     
@@ -1221,6 +1204,18 @@ const StoreScreen = () => {
     }
   };
 
+  // Fetch trending products from backend API
+  const fetchTrendingProducts = async () => {
+    try {
+      const { data } = await http.get('/products/trending');
+      const productsData = data?.products || data;
+      setTrendingProducts(Array.isArray(productsData) ? productsData : []);
+    } catch (err) {
+      console.error('Error fetching trending products:', err);
+      setTrendingProducts([]);
+    }
+  };
+
   // Enhanced animations on mount
   useEffect(() => {
     Animated.stagger(200, [
@@ -1372,10 +1367,12 @@ const StoreScreen = () => {
     const connected = await checkConnection();
     if (connected) {
       await fetchProducts();
+      await fetchTrendingProducts();
       await fetchWishlistAndCart();
     } else {
       // Reload cached data when offline
       await loadCachedProducts();
+      setTrendingProducts([]);
     }
     setRefreshing(false);
   };
@@ -1505,6 +1502,7 @@ const StoreScreen = () => {
       <TrendingProductCard 
         item={item}
         index={index}
+        onPress={handleProductPress}
       />
     );
   };
@@ -1759,10 +1757,10 @@ const StoreScreen = () => {
                 <View style={styles.section}>
                   <View style={styles.sectionHeader}>
                     <Text style={styles.sectionTitle}>Featured Brands</Text>
-                    <TouchableOpacity style={styles.seeAllButton}>
+                    {/* <TouchableOpacity style={styles.seeAllButton}>
                       <Text style={styles.seeAll}>See All</Text>
                       <Ionicons name="chevron-forward" size={responsiveFont(16)} color={COLORS.primary} />
-                    </TouchableOpacity>
+                    </TouchableOpacity> */}
                   </View>
                   <FlatList
                     data={featuredBrands}
@@ -1809,13 +1807,13 @@ const StoreScreen = () => {
 
                 {/* Summer Collection Banner - In the middle */}
                 <View style={styles.section}>
-                  <View style={styles.sectionHeader}>
+                  {/* <View style={styles.sectionHeader}>
                     <Text style={styles.sectionTitle}>Summer Collection</Text>
                     <TouchableOpacity style={styles.seeAllButton}>
                       <Text style={styles.seeAll}>View All</Text>
                       <Ionicons name="chevron-forward" size={responsiveFont(16)} color={COLORS.primary} />
                     </TouchableOpacity>
-                  </View>
+                  </View> */}
                   <View style={styles.bannerContainer}>
                     <FlatList
                       ref={bannerRef}
@@ -1885,7 +1883,7 @@ const StoreScreen = () => {
                   <FlatList
                     data={trendingProducts}
                     renderItem={renderTrendingProduct}
-                    keyExtractor={(item) => item.id}
+                    keyExtractor={(item, index) => (item?._id ?? item?.id ?? index).toString()}
                     horizontal
                     showsHorizontalScrollIndicator={false}
                     contentContainerStyle={styles.trendingList}
