@@ -13,6 +13,15 @@ import * as SplashScreen from 'expo-splash-screen';
 
 const { width, height } = Dimensions.get('window');
 
+// Responsive sizing helpers for splash visuals
+const LARGE_CIRCLE_SIZE = Math.min(width * 0.8, 320);
+const MEDIUM_CIRCLE_SIZE = Math.min(width * 0.55, 240);
+const SMALL_CIRCLE_SIZE = Math.min(width * 0.4, 180);
+const TINY_CIRCLE_SIZE = Math.min(width * 0.3, 130);
+
+const LOGO_BACKGROUND_SIZE = Math.min(width * 0.38, 160);
+const LOGO_SIZE = LOGO_BACKGROUND_SIZE * 0.7;
+
 // Enhanced Brand Color Palette
 const COLORS = {
   primary: '#6366F1',
@@ -185,29 +194,29 @@ const styles = StyleSheet.create({
     opacity: 0.1,
   },
   circle1: {
-    width: 300,
-    height: 300,
+    width: LARGE_CIRCLE_SIZE,
+    height: LARGE_CIRCLE_SIZE,
     backgroundColor: COLORS.primary,
     top: -100,
     right: -100,
   },
   circle2: {
-    width: 200,
-    height: 200,
+    width: MEDIUM_CIRCLE_SIZE,
+    height: MEDIUM_CIRCLE_SIZE,
     backgroundColor: COLORS.secondary,
     bottom: -50,
     left: -50,
   },
   circle3: {
-    width: 150,
-    height: 150,
+    width: SMALL_CIRCLE_SIZE,
+    height: SMALL_CIRCLE_SIZE,
     backgroundColor: COLORS.accent,
     top: '30%',
     left: -50,
   },
   circle4: {
-    width: 100,
-    height: 100,
+    width: TINY_CIRCLE_SIZE,
+    height: TINY_CIRCLE_SIZE,
     backgroundColor: COLORS.primaryLight,
     bottom: '20%',
     right: -30,
@@ -224,9 +233,9 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   logoBackground: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
+    width: LOGO_BACKGROUND_SIZE,
+    height: LOGO_BACKGROUND_SIZE,
+    borderRadius: LOGO_BACKGROUND_SIZE / 2,
     backgroundColor: COLORS.white,
     justifyContent: 'center',
     alignItems: 'center',
@@ -242,8 +251,8 @@ const styles = StyleSheet.create({
     borderColor: COLORS.primary + '20',
   },
   logo: {
-    width: 100,
-    height: 100,
+    width: LOGO_SIZE,
+    height: LOGO_SIZE,
   },
   logoOrnament1: {
     position: 'absolute',
