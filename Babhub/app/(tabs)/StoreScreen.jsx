@@ -29,6 +29,14 @@ import http from '../../src/api/http';
 
 const { width, height } = Dimensions.get('window');
 
+const banner1 = require('../../assets/images/banner1.jpeg');
+const banner2 = require('../../assets/images/banner2.jpeg');
+const banner3 = require('../../assets/images/banner3.jpeg');
+const brand1 = require('../../assets/images/babahubbgless.png');
+const brand2 = require('../../assets/images/LTbg.jpeg');
+const brand3 = require('../../assets/images/bluewave.jpeg');
+
+
 // Get status bar height for different devices
 const STATUS_BAR_HEIGHT = Platform.OS === 'ios' ? 44 : StatusBar.currentHeight || 28;
 
@@ -65,21 +73,21 @@ const COLORS = {
 const storeBanners = [
   {
     id: '1',
-    image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80',
+    image: banner1,
     title: 'Summer Collection',
     subtitle: 'Up to 50% off on new arrivals',
     type: 'sale'
   },
   {
     id: '2',
-    image: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80',
+    image: banner2,
     title: 'Premium Brands',
     subtitle: 'Shop from top designers',
     type: 'premium'
   },
   {
     id: '3',
-    image: 'https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80',
+    image: banner3,
     title: 'Flash Sale',
     subtitle: 'Limited time offers',
     type: 'flash'
@@ -117,34 +125,22 @@ const middleBanners = [
 // Featured brands with premium images
 const featuredBrands = [
   {
-    name: 'FashionHub',
+    name: 'Baba Hub',
     products: 265,
-    image: 'https://images.unsplash.com/photo-1566206091558-7f218b696731?w=400&h=400&fit=crop&crop=center',
-    discount: '30% OFF'
+    image: brand1,
+   
   },
   {
-    name: 'UrbanStyle',
+    name: 'Legend Tailor',
     products: 95,
-    image: 'https://images.unsplash.com/photo-1560343090-f0409e92791a?w=400&h=400&fit=crop&crop=center',
-    discount: '25% OFF'
+    image: brand2,
+   
   },
   {
-    name: 'EcoWear',
+    name: 'Bluewave',
     products: 36,
-    image: 'https://images.unsplash.com/photo-1569074187119-c87815b476da?w=400&h=400&fit=crop&crop=center',
-    discount: '40% OFF'
-  },
-  {
-    name: 'TechGear',
-    products: 142,
-    image: 'https://images.unsplash.com/photo-1468436139062-f60a71c5c892?w=400&h=400&fit=crop&crop=center',
-    discount: '15% OFF'
-  },
-  {
-    name: 'HomeEssentials',
-    products: 89,
-    image: 'https://images.unsplash.com/photo-1556228453-efd6c1ff04f6?w=400&h=400&fit=crop&crop=center',
-    discount: '20% OFF'
+    image: brand3,
+   
   },
 ];
 
@@ -378,6 +374,8 @@ const BannerItem = ({ item, index, currentIndex }) => {
     }
   };
 
+  const imageSource = typeof item.image === 'string' ? { uri: item.image } : item.image;
+
   return (
     <Animated.View 
       style={[
@@ -388,7 +386,7 @@ const BannerItem = ({ item, index, currentIndex }) => {
         }
       ]}
     >
-      <Image source={{ uri: item.image }} style={styles.bannerImage} />
+      <Image source={imageSource} style={styles.bannerImage} />
       
       <View style={styles.bannerOverlay} />
       
@@ -1525,13 +1523,15 @@ const StoreScreen = () => {
       <TouchableOpacity style={styles.brandCardInner} activeOpacity={0.8}>
         <View style={styles.brandImageContainer}>
           <Image 
-            source={{ uri: item.image }} 
+            source={typeof item.image === 'string' ? { uri: item.image } : item.image}
             style={styles.brandImage} 
             resizeMode="cover"
           />
-          <View style={styles.brandDiscount}>
-            <Text style={styles.brandDiscountText}>{item.discount}</Text>
-          </View>
+          {item.discount ? (
+            <View style={styles.brandDiscount}>
+              <Text style={styles.brandDiscountText}>{item.discount}</Text>
+            </View>
+          ) : null}
         </View>
         <Text style={styles.brandName} numberOfLines={1}>{item.name}</Text>
         <Text style={styles.brandProducts}>{item.products} products</Text>

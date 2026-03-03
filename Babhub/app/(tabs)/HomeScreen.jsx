@@ -30,6 +30,10 @@ import http from '../../src/api/http';
 
 const { width, height } = Dimensions.get('window');
 
+const banner1 = require('../../assets/images/banner1.jpeg');
+const banner2 = require('../../assets/images/banner2.jpeg');
+const banner3 = require('../../assets/images/banner3.jpeg');
+
 // Get status bar height for different devices
 const STATUS_BAR_HEIGHT = Platform.OS === 'ios' ? 44 : StatusBar.currentHeight || 28;
 
@@ -62,32 +66,25 @@ const homeBanners = [
 
   {
     id: '1',
-    image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80',
+    image: banner1,
     title: 'New Arrivals',
     subtitle: 'Fresh styles just for you',
     type: 'new'
   },
   {
     id: '2',
-    image: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80',
+    image: banner2,
     title: 'Premium Collection',
     subtitle: 'Luxury items at great prices',
     type: 'premium'
   },
   {
-    id: '3',
-    image: 'https://images.unsplash.com/photo-1556742044-3c52d6e88c62?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80',
-    title: 'Tech Deals',
-    subtitle: 'Latest gadgets with amazing offers',
-    type: 'tech'
-  },
-  {
-    id: '4',
-    image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80',
-    title: 'Flash Sale',
-    subtitle: 'Limited time offers - Shop now!',
-    type: 'flash'
-  }
+  id: '3',
+  image: banner3,
+  title: 'Wardrobe Upgrade',
+  subtitle: 'Upgrade your style at amazing prices',
+  type: 'fashion'
+ }
 ];
 
 // Featured categories for home
@@ -364,6 +361,8 @@ const BannerItem = ({ item, index, currentIndex }) => {
     }
   };
 
+  const imageSource = typeof item.image === 'string' ? { uri: item.image } : item.image;
+
   return (
     <Animated.View 
       style={[
@@ -374,7 +373,7 @@ const BannerItem = ({ item, index, currentIndex }) => {
         }
       ]}
     >
-      <Image source={{ uri: item.image }} style={styles.bannerImage} />
+      <Image source={imageSource} style={styles.bannerImage} />
       
       <View style={styles.bannerOverlay} />
       
