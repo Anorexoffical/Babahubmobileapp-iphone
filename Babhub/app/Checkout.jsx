@@ -490,9 +490,8 @@ const Checkout = () => {
   };
 
   const calculateTax = () => {
-    const subtotal = calculateSubtotal();
-    const tax = subtotal * 0.1; // 10% tax
-    return parseFloat(tax.toFixed(2));
+    // Tax is set to 0% in all cases
+    return 0;
   };
 
   const calculateShipping = () => {
@@ -883,7 +882,7 @@ const Checkout = () => {
                 </View>
 
                 <View style={styles.summaryRow}>
-                  <Text style={styles.summaryLabel}>Tax (10%)</Text>
+                  <Text style={styles.summaryLabel}>Tax (0%)</Text>
                   <Text style={styles.summaryValue}>R {calculateTax().toFixed(2)}</Text>
                 </View>
 
