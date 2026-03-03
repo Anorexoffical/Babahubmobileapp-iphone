@@ -37,4 +37,7 @@ if we need push notifcation for app store then we will use Firebase Cloud Messag
 
 
 
+expo 
 
+wisalmalik999@gmail.com
+Anorix@1234

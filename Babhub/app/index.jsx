@@ -1,9 +1,14 @@
 
 // app/index.jsx
 import React, { useEffect, useState, useRef } from 'react';
-import { View, StyleSheet, Animated } from 'react-native';
+import { View, StyleSheet, Animated, Dimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from './contexts/AuthContext';
+
+const { width } = Dimensions.get('window');
+
+// Responsive logo size for all screen widths
+const LOGO_SIZE = Math.min(width * 0.45, 240);
 
 const Index = () => {
   const [isSplashVisible, setSplashVisible] = useState(true);
@@ -80,7 +85,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#242323',
   },
   logo: {
-    width: 220,
-    height: 220,
+    width: LOGO_SIZE,
+    height: LOGO_SIZE,
   },
 });
