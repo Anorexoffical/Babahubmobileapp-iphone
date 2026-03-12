@@ -18,7 +18,17 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "blockedPermissions": [
+        "MODIFY_AUDIO_SETTINGS",
+        "RECORD_AUDIO",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "SYSTEM_ALERT_WINDOW",
+        "USE_BIOMETRIC",
+        "USE_FINGERPRINT",
+        "com.android.vending.CHECK_LICENSE"
+      ]
     },
     "web": {
       "bundler": "metro",
