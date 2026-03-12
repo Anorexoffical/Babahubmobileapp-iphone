@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'expo-router';
+import http from '../src/api/http';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import LottieView from 'lottie-react-native';
 import * as SecureStore from 'expo-secure-store';
