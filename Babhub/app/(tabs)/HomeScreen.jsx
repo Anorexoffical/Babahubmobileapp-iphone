@@ -34,8 +34,8 @@ const banner1 = require('../../assets/images/banner1.jpeg');
 const banner2 = require('../../assets/images/banner2.jpeg');
 const banner3 = require('../../assets/images/banner3.jpeg');
 
-// Get status bar height for different devices
-const STATUS_BAR_HEIGHT = Platform.OS === 'ios' ? 44 : StatusBar.currentHeight || 28;
+// Get status bar height for different devices using responsive utility
+const STATUS_BAR_HEIGHT = getSafeAreaTop();
 
 // Consistent color palette from store page
 const COLORS = {
@@ -158,6 +158,15 @@ const popularSearches = [
 
 // Import image utilities
 import { getImageUrl, normalizeImageUrl } from '../../src/utils/image';
+import { 
+  responsiveWidth, 
+  responsiveHeight, 
+  responsiveFont,
+  getSafeAreaTop,
+  getSafeAreaBottom,
+  getSpacing,
+  SCREEN_INFO
+} from '../../src/utils/responsive';
 
 // UPDATED: Internet Status Bar Component for Android - Removed Retry Button
 const InternetStatusBar = ({ isOnline }) => {
@@ -2044,15 +2053,15 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   cardContent: {
-    padding: 16,
+    padding: width * 0.04,
     backgroundColor: COLORS.cardBackground,
   },
   title: {
-    fontSize: width * 0.035, // Responsive font size
+    fontSize: width * 0.035,
     fontWeight: '700',
     color: COLORS.dark,
     marginBottom: 6,
-    height: 20,
+    minHeight: 20,
     lineHeight: 20,
   },
   brandContainer: {

@@ -2,7 +2,10 @@ import { Tabs, useRouter, useNavigation } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { useEffect } from 'react';
-import { View, ActivityIndicator, BackHandler } from 'react-native';
+import { View, ActivityIndicator, BackHandler, Dimensions } from 'react-native';
+
+const { width } = Dimensions.get('window');
+const tabFontSize = Math.max(Math.round((width / 375) * 11), 10);
 
 export default function TabLayout() {
   const { userToken, isLoading } = useAuth();
@@ -53,7 +56,7 @@ export default function TabLayout() {
         tabBarActiveTintColor: '#007BFF',
         tabBarInactiveTintColor: '#000000',
         tabBarLabelStyle: {
-          fontSize: 12,
+          fontSize: tabFontSize,
           fontWeight: '600',
         },
         tabBarIcon: ({ color, size }) => {

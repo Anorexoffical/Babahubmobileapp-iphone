@@ -1,0 +1,269 @@
+import { Dimensions, Platform, StatusBar } from 'react-native';
+
+const { width, height } = Dimensions.get('window');
+
+// iPhone screen dimensions reference
+const IPHONE_SCREENS = {
+  // Small screens
+  IPHONE_5: { width: 320, height: 568 },
+  IPHONE_SE_1: { width: 320, height: 568 },
+  
+  // Medium screens
+  IPHONE_6_7_8: { width: 375, height: 667 },
+  IPHONE_SE_2_3: { width: 375, height: 667 },
+  IPHONE_X_XS_11PRO: { width: 375, height: 812 },
+  IPHONE_12_13_MINI: { width: 375, height: 812 },
+  
+  // Large screens
+  IPHONE_6_7_8_PLUS: { width: 414, height: 736 },
+  IPHONE_XR_11: { width: 414, height: 896 },
+  IPHONE_XS_11PRO_MAX: { width: 414, height: 896 },
+  IPHONE_12_13_14: { width: 390, height: 844 },
+  IPHONE_12_13_14_PRO: { width: 390, height: 844 },
+  
+  // Extra large screens
+  IPHONE_12_13_14_PLUS: { width: 428, height: 926 },
+  IPHONE_12_13_14_PRO_MAX: { width: 428, height: 926 },
+  IPHONE_15: { width: 393, height: 852 },
+  IPHONE_15_PLUS: { width: 430, height: 932 },
+  IPHONE_15_PRO: { width: 393, height: 852 },
+  IPHONE_15_PRO_MAX: { width: 430, height: 932 },
+  IPHONE_16: { width: 393, height: 852 },
+  IPHONE_16_PLUS: { width: 430, height: 932 },
+  IPHONE_16_PRO: { width: 402, height: 874 },
+  IPHONE_16_PRO_MAX: { width: 440, height: 956 },
+  IPHONE_17_PRO: { width: 402, height: 874 },
+  IPHONE_17_PRO_MAX: { width: 440, height: 956 },
+};
+
+// Base dimensions (iPhone 6/7/8 as reference)
+const BASE_WIDTH = 375;
+const BASE_HEIGHT = 667;
+
+// Detect screen size category
+const getScreenCategory = () => {
+  if (width <= 320) return 'small'; // iPhone 5, SE 1st gen
+  if (width <= 375) return 'medium'; // iPhone 6/7/8, X, 11 Pro, 12/13 mini
+  if (width <= 414) return 'large'; // iPhone 6/7/8 Plus, XR, 11, XS Max, 11 Pro Max
+  return 'xlarge'; // iPhone 12/13/14/15/16/17 Pro Max
+};
+
+// Enhanced responsive width with better scaling
+export const responsiveWidth = (percentage) => {
+  const screenCategory = getScreenCategory();
+  let scaleFactor = 1;
+  
+  switch (screenCategory) {
+    case 'small':
+      scaleFactor = 0.85; // Slightly reduce for small screens
+      break;
+    case 'medium':
+      scaleFactor = 1;
+      break;
+    case 'large':
+      scaleFactor = 1.1;
+      break;
+    case 'xlarge':
+      scaleFactor = 1.15;
+      break;
+  }
+  
+  return (width * percentage) / 100 * scaleFactor;
+};
+
+// Enhanced responsive height with better scaling
+export const responsiveHeight = (percentage) => {
+  const screenCategory = getScreenCategory();
+  let scaleFactor = 1;
+  
+  switch (screenCategory) {
+    case 'small':
+      scaleFactor = 0.85;
+      break;
+    case 'medium':
+      scaleFactor = 1;
+      break;
+    case 'large':
+      scaleFactor = 1.05;
+      break;
+    case 'xlarge':
+      scaleFactor = 1.1;
+      break;
+  }
+  
+  return (height * percentage) / 100 * scaleFactor;
+};
+
+// Enhanced responsive font with better readability across all devices
+export const responsiveFont = (size) => {
+  const screenCategory = getScreenCategory();
+  const scale = width / BASE_WIDTH;
+  
+  let minScale, maxScale;
+  
+  switch (screenCategory) {
+    case 'small':
+      minScale = 0.85;
+      maxScale = 1;
+      break;
+    case 'medium':
+      minScale = 0.95;
+      maxScale = 1.1;
+      break;
+    case 'large':
+      minScale = 1;
+      maxScale = 1.2;
+      break;
+    case 'xlarge':
+      minScale = 1.05;
+      maxScale = 1.25;
+      break;
+    default:
+      minScale = 0.9;
+      maxScale = 1.2;
+  }
+  
+  const scaledSize = size * Math.max(Math.min(scale, maxScale), minScale);
+  
+  // Ensure minimum readable font size
+  return Math.max(scaledSize, 10);
+};
+
+// Moderate scale for elements that shouldn't scale too much
+export const moderateScale = (size, factor = 0.5) => {
+  const screenCategory = getScreenCategory();
+  const baseScale = width / BASE_WIDTH;
+  
+  let adjustedFactor = factor;
+  if (screenCategory === 'small') adjustedFactor = factor * 0.8;
+  if (screenCategory === 'xlarge') adjustedFactor = factor * 1.1;
+  
+  return size + (baseScale - 1) * size * adjustedFactor;
+};
+
+// Safe area calculations for all devices
+export const getSafeAreaTop = () => {
+  if (Platform.OS === 'ios') {
+    // Devices with notch
+    if (height >= 812) {
+      return responsiveHeight(6);
+    }
+    // Devices without notch
+    return responsiveHeight(3);
+  } else {
+    // Android
+    const statusBarHeight = StatusBar.currentHeight || 0;
+    return statusBarHeight + responsiveHeight(1);
+  }
+};
+
+export const getSafeAreaBottom = () => {
+  if (Platform.OS === 'ios') {
+    // Devices with home indicator
+    if (height >= 812) {
+      return responsiveHeight(3);
+    }
+    // Devices with home button
+    return responsiveHeight(1);
+  } else {
+    // Android - account for gesture navigation
+    const hasGestureNav = height / width > 1.9;
+    return hasGestureNav ? responsiveHeight(2) : responsiveHeight(3);
+  }
+};
+
+// Get appropriate padding for different screen sizes
+export const getScreenPadding = () => {
+  const screenCategory = getScreenCategory();
+  
+  switch (screenCategory) {
+    case 'small':
+      return {
+        horizontal: responsiveWidth(4),
+        vertical: responsiveHeight(1.5),
+      };
+    case 'medium':
+      return {
+        horizontal: responsiveWidth(5),
+        vertical: responsiveHeight(2),
+      };
+    case 'large':
+      return {
+        horizontal: responsiveWidth(5.5),
+        vertical: responsiveHeight(2.5),
+      };
+    case 'xlarge':
+      return {
+        horizontal: responsiveWidth(6),
+        vertical: responsiveHeight(3),
+      };
+    default:
+      return {
+        horizontal: responsiveWidth(5),
+        vertical: responsiveHeight(2),
+      };
+  }
+};
+
+// Get appropriate spacing for different screen sizes
+export const getSpacing = (multiplier = 1) => {
+  const screenCategory = getScreenCategory();
+  const baseSpacing = 8;
+  
+  let scale = 1;
+  switch (screenCategory) {
+    case 'small':
+      scale = 0.85;
+      break;
+    case 'medium':
+      scale = 1;
+      break;
+    case 'large':
+      scale = 1.1;
+      break;
+    case 'xlarge':
+      scale = 1.15;
+      break;
+  }
+  
+  return baseSpacing * multiplier * scale;
+};
+
+// Check if device has notch
+export const hasNotch = () => {
+  return Platform.OS === 'ios' && height >= 812;
+};
+
+// Get screen dimensions
+export const getScreenDimensions = () => ({
+  width,
+  height,
+  category: getScreenCategory(),
+  hasNotch: hasNotch(),
+});
+
+// Export screen info
+export const SCREEN_INFO = {
+  width,
+  height,
+  category: getScreenCategory(),
+  hasNotch: hasNotch(),
+  isSmallScreen: width <= 320,
+  isMediumScreen: width > 320 && width <= 375,
+  isLargeScreen: width > 375 && width <= 414,
+  isXLargeScreen: width > 414,
+};
+
+export default {
+  responsiveWidth,
+  responsiveHeight,
+  responsiveFont,
+  moderateScale,
+  getSafeAreaTop,
+  getSafeAreaBottom,
+  getScreenPadding,
+  getSpacing,
+  hasNotch,
+  getScreenDimensions,
+  SCREEN_INFO,
+};

@@ -12,6 +12,7 @@ import {
 import * as SplashScreen from 'expo-splash-screen';
 
 const { width, height } = Dimensions.get('window');
+const rf = (size) => Math.max((Math.min(width, height) / 400) * size, 10);
 
 // Responsive sizing helpers for splash visuals
 const LARGE_CIRCLE_SIZE = Math.min(width * 0.8, 320);
@@ -289,7 +290,7 @@ const styles = StyleSheet.create({
     marginBottom: 50,
   },
   title: {
-    fontSize: 42,
+    fontSize: rf(38),
     fontWeight: '800',
     color: COLORS.primary,
     letterSpacing: 1,
@@ -299,7 +300,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: rf(15),
     color: COLORS.gray,
     fontWeight: '500',
     letterSpacing: 0.5,
@@ -330,17 +331,17 @@ const styles = StyleSheet.create({
     animationDelay: '0.4s',
   },
   loadingText: {
-    fontSize: 14,
+    fontSize: rf(13),
     color: COLORS.gray,
     fontWeight: '500',
     letterSpacing: 0.3,
   },
   footer: {
     position: 'absolute',
-    bottom: 40,
+    bottom: height * 0.05,
   },
   footerText: {
-    fontSize: 12,
+    fontSize: rf(12),
     color: COLORS.grayLight,
     fontWeight: '400',
   },

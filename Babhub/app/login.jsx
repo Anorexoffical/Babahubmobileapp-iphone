@@ -22,14 +22,15 @@ import Mybutton from '../components/Mybutton';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useAuth } from './contexts/AuthContext';
 import http from '../src/api/http';
+import { 
+  responsiveWidth, 
+  responsiveHeight, 
+  responsiveFont,
+  moderateScale,
+  SCREEN_INFO
+} from '../src/utils/responsive';
 
 const { width, height } = Dimensions.get('window');
-
-// Responsive sizing functions
-const responsiveWidth = (percentage) => (width * percentage) / 100;
-const responsiveHeight = (percentage) => (height * percentage) / 100;
-const responsiveFont = (size) => (width * size) / 400;
-const moderateScale = (size, factor = 0.5) => size + (responsiveWidth(size) - size) * factor;
 
 // Enhanced Brand Color Palette
 const COLORS = {
