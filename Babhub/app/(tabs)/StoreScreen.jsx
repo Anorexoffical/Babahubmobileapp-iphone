@@ -178,6 +178,9 @@ const popularSearches = [
 
 // Import image utilities
 import { getImageUrl, normalizeImageUrl } from '../../src/utils/image';
+import { useAuthGuard } from '../contexts/useAuthGuard';
+import AuthLoginModal from '../contexts/AuthLoginModal';
+import { useAuth } from '../contexts/AuthContext';
 
 // IMPROVED Internet Status Bar Component using NetInfo
 const InternetStatusBar = ({ isOnline, onRetry }) => {
@@ -749,7 +752,7 @@ const ProductItem = ({ item, onPress, onWishlistToggle, isInWishlist, index, onA
 };
 
 // UPDATED Sticky Header Component - Bigger Cart Icon with Internet Status
-const StickyHeader = ({ user, cartItems, router, scrollY, isOnline }) => {
+const StickyHeader = ({ user, cartItems, router, scrollY, isOnline, onCartPress }) => {
   const headerHeight = responsiveHeight(10);
   const headerTranslate = scrollY.interpolate({
     inputRange: [0, headerHeight],
@@ -790,7 +793,7 @@ const StickyHeader = ({ user, cartItems, router, scrollY, isOnline }) => {
           {/* Big Cart Icon */}
           <TouchableOpacity
             style={styles.stickyCartButton}
-            onPress={() => router.push('../CartScreen')}
+            onPress={onCartPress}
           >
             <View style={styles.bigCartIconContainer}>
               <Ionicons name="cart" size={responsiveFont(28)} color={COLORS.primary} />
@@ -839,6 +842,8 @@ const CategoryFilter = ({ categories, selectedCategory, onCategorySelect }) => {
 };
 
 const StoreScreen = () => {
+  const { guardAction, authModalProps } = useAuthGuard();
+  const { isLoading: authLoading } = useAuth();
   const [searchText, setSearchText] = useState('');
   const [wishlist, setWishlist] = useState([]);
   const [cartItems, setCartItems] = useState([]);
@@ -1025,6 +1030,8 @@ const StoreScreen = () => {
     }
   };
 
+  const handleCartPress = () => guardAction(() => router.push('../CartScreen'));
+
   // Use focus effect to refresh data when screen comes into focus
   useFocusEffect(
     useCallback(() => {
@@ -1035,7 +1042,9 @@ const StoreScreen = () => {
   );
 
   // Initial data fetch
+  // Initial data fetch — wait for auth to resolve first
   useEffect(() => {
+    if (authLoading) return;
     const initializeData = async () => {
       const connected = await checkConnection();
       if (connected) {
@@ -1043,14 +1052,12 @@ const StoreScreen = () => {
         await fetchProducts();
         await fetchTrendingProducts();
       } else {
-        // Load cached products if available
         await loadCachedProducts();
         setTrendingProducts([]);
       }
     };
-    
     initializeData();
-  }, []);
+  }, [authLoading]);
 
   // Load cached products from AsyncStorage
   const loadCachedProducts = async () => {
@@ -1375,6 +1382,8 @@ const StoreScreen = () => {
     setRefreshing(false);
   };
 
+  const toggleWishlistGuarded = (product) => guardAction(() => toggleWishlist(product));
+
   const toggleWishlist = async (product) => {
     try {
       const price = product.variants?.[0]?.sizes?.[0]?.price || product.price || 0;
@@ -1485,7 +1494,7 @@ const StoreScreen = () => {
       <ProductItem 
         item={item}
         onPress={handleProductPress}
-        onWishlistToggle={toggleWishlist}
+        onWishlistToggle={toggleWishlistGuarded}
         isInWishlist={productInWishlist}
         index={index}
         onAddToCart={handleAddToCart}
@@ -1578,6 +1587,7 @@ const StoreScreen = () => {
         router={router}
         scrollY={scrollY}
         isOnline={isOnline}
+        onCartPress={handleCartPress}
       />
 
       <Animated.ScrollView 
@@ -1621,7 +1631,7 @@ const StoreScreen = () => {
               {/* Big Cart Icon in Main Header */}
               <TouchableOpacity
                 style={styles.bigHeaderCartButton}
-                onPress={() => router.push('../CartScreen')}
+                onPress={handleCartPress}
               >
                 <View style={styles.bigHeaderCartContainer}>
                   <Ionicons name="cart" size={responsiveFont(28)} color={COLORS.dark} />
@@ -1968,6 +1978,7 @@ const StoreScreen = () => {
           </View>
         </View>
       </Animated.ScrollView>
+      <AuthLoginModal {...authModalProps} />
       <Toast />
     </SafeAreaView>
   );

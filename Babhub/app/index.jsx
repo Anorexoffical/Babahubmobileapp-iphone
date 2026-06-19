@@ -42,12 +42,8 @@ const Index = () => {
           }).start(() => {
             setSplashVisible(false);
             
-            // Redirect based on authentication status
-            if (userToken) {
-              router.replace('/(tabs)/HomeScreen');
-            } else {
-              router.replace('/login');
-            }
+            // Always redirect to HomeScreen — login wall handles auth inside
+            router.replace('/(tabs)/HomeScreen');
           });
         }, 1500);
       });

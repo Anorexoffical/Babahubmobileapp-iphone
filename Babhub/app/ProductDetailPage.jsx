@@ -20,6 +20,8 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import http from '../src/api/http';
 import { getImageUrl } from '../src/utils/image';
+import { useAuthGuard } from './contexts/useAuthGuard';
+import AuthLoginModal from './contexts/AuthLoginModal';
 
 const { width, height } = Dimensions.get('window');
 
@@ -90,6 +92,7 @@ const isLightColor = (color) => {
 const ProductDetailPage = () => {
   const router = useRouter();
   const { id } = useLocalSearchParams();
+  const { guardAction, authModalProps } = useAuthGuard();
 
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -779,7 +782,7 @@ const ProductDetailPage = () => {
         <View style={styles.footerContent}>
           <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
             <TouchableOpacity 
-              onPress={handleAddToCart}
+              onPress={() => guardAction(handleAddToCart)}
               disabled={stock <= 0}
               style={[styles.addToCartButton, stock <= 0 && styles.disabledButton]}
             >
@@ -803,6 +806,8 @@ const ProductDetailPage = () => {
           </Animated.View>
         </View>
       </View>
+      {/* Auth Login Modal */}
+      <AuthLoginModal {...authModalProps} />
     </View>
   );
 };
