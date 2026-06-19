@@ -32,10 +32,9 @@ const COLORS = {
 
 const ProfileScreen = () => {
   const navigation = useNavigation();
-  const { user, signOut, userToken } = useAuth();
+  const { user, signOut, userToken, isAuthenticated } = useAuth();
   const [deleting, setDeleting] = React.useState(false);
   const router = useRouter();
-  const { user, signOut, isAuthenticated } = useAuth();
   const [loginModalVisible, setLoginModalVisible] = React.useState(false);
 
   // If user is not logged in, show login prompt instead of profile content
