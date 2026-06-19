@@ -165,19 +165,7 @@ const ProfileDetailsScreen = () => {
             />
           </View>
 
-          {/* Personal Details Card */}
-          <View style={styles.card}>
-            <View style={styles.cardHeader}>
-              <Ionicons name="information-circle-outline" size={responsive.font(22)} color={COLORS.primary} />
-              <Text style={styles.sectionTitle}>Personal Details</Text>
-            </View>
-            
-            <InfoItem 
-              label="Date of Birth" 
-              value={formatDate(user?.dob)} 
-              icon="calendar-outline"
-            />
-          </View>
+          {/* Personal Details Card (DOB removed) */}
 
           {/* Account Status Card */}
           <View style={styles.card}>

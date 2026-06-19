@@ -18,7 +18,7 @@ import {
 import React, { useState, useRef, useEffect } from "react";
 import { useRouter } from "expo-router";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
-import DateTimePickerModal from "react-native-modal-datetime-picker";
+// DateTimePickerModal removed: DOB no longer collected in the app
 import LottieView from "lottie-react-native";
 import http from "../src/api/http";
 
@@ -97,12 +97,12 @@ const CreateAccount = () => {
   const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [dob, setDob] = useState("");
+  // dob removed from registration form
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [nameFocus, setNameFocus] = useState(false);
   const [emailFocus, setEmailFocus] = useState(false);
-  const [dobFocus, setDobFocus] = useState(false);
+  // dob focus removed
   const [passwordFocus, setPasswordFocus] = useState(false);
   const [confirmPasswordFocus, setConfirmPasswordFocus] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
@@ -111,8 +111,7 @@ const CreateAccount = () => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
 
-  const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  // date picker state removed
 
   const [errors, setErrors] = useState({});
 
@@ -153,26 +152,7 @@ const CreateAccount = () => {
     }
   }, [showSuccessModal]);
 
-  const formatDate = (date) => {
-    const day = date.getDate().toString().padStart(2, "0");
-    const month = (date.getMonth() + 1).toString().padStart(2, "0");
-    const year = date.getFullYear();
-    return `${day}/${month}/${year}`;
-  };
-
-  const showDatepicker = () => {
-    setDatePickerVisibility(true);
-    setDobFocus(true);
-  };
-
-  const handleConfirmDate = (date) => {
-    setSelectedDate(date);
-    setDob(formatDate(date));
-    setDatePickerVisibility(false);
-    if (errors.dob) {
-      setErrors((prev) => ({ ...prev, dob: "" }));
-    }
-  };
+  // DOB helper functions removed (no longer collected)
 
   // Function to automatically convert all text to lowercase for passwords
   const handlePasswordChange = (text, field) => {
@@ -216,13 +196,10 @@ const CreateAccount = () => {
   const clearForm = () => {
     setName("");
     setEmail("");
-    setDob("");
     setPassword("");
     setConfirmPassword("");
-    setSelectedDate(new Date());
     setNameFocus(false);
     setEmailFocus(false);
-    setDobFocus(false);
     setPasswordFocus(false);
     setConfirmPasswordFocus(false);
     setAcceptedTerms(false);
@@ -253,7 +230,7 @@ const CreateAccount = () => {
         newErrors.email = "Please enter a valid email address";
       }
     }
-    if (!dob) newErrors.dob = "Date of birth is required";
+    // dob validation removed
     if (!password) {
       newErrors.password = "Password is required";
     } else if (password.length < 6) {
@@ -353,8 +330,7 @@ const CreateAccount = () => {
     const response = await http.post('/users/register', {
       name: name.trim(),
       email: email.toLowerCase().trim(),
-      dob,
-      password: password.toLowerCase(), // keep backend-compatible
+      password: password.toLowerCase(),
       role: 'customer',
     });
 
@@ -540,67 +516,12 @@ const CreateAccount = () => {
                     autoComplete="email"
                     textContentType="emailAddress"
                     returnKeyType="next"
-                    onSubmitEditing={showDatepicker}
+                    onSubmitEditing={() => passwordInputRef.current?.focus()}
                   />
                 </View>
                 {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
               </View>
-
-              {/* DOB Input */}
-              <View style={styles.inputContainer}>
-                <View style={styles.dobHeader}>
-                  <Text style={styles.label}>
-                    Date of Birth
-                    <Text style={styles.required}> *</Text>
-                  </Text>
-                  <View style={styles.dobHelper}>
-                    <MaterialIcons name="info" size={responsiveFont(14)} color={COLORS.primary} />
-                    <Text style={styles.dobHelperText}>For account recovery</Text>
-                  </View>
-                </View>
-                <TouchableOpacity 
-                  onPress={showDatepicker}
-                  disabled={isLoading}
-                >
-                  <View style={[
-                    styles.inputWrapper,
-                    dobFocus && styles.inputWrapperFocused,
-                    errors.dob && styles.inputWrapperError,
-                    isLoading && styles.inputDisabled,
-                    styles.dobInput,
-                  ]}>
-                    <MaterialIcons 
-                      name="calendar-today" 
-                      size={responsiveFont(20)} 
-                      color={dobFocus ? COLORS.primary : (errors.dob ? COLORS.error : COLORS.grayLight)} 
-                      style={styles.inputIcon}
-                    />
-                    <Text style={[dob ? styles.dobText : styles.placeholderText]}>
-                      {dob || "DD/MM/YYYY"}
-                    </Text>
-                    <MaterialIcons 
-                      name="arrow-drop-down" 
-                      size={responsiveFont(24)} 
-                      color={COLORS.gray} 
-                    />
-                  </View>
-                </TouchableOpacity>
-                {errors.dob ? (
-                  <Text style={styles.errorText}>{errors.dob}</Text>
-                ) : null}
-              </View>
-
-              {/* Date Picker Modal */}
-              <DateTimePickerModal
-                isVisible={isDatePickerVisible}
-                mode="date"
-                maximumDate={new Date()}
-                date={selectedDate}
-                onConfirm={handleConfirmDate}
-                onCancel={() => setDatePickerVisibility(false)}
-                buttonTextColorIOS={COLORS.primary}
-                accentColor={COLORS.primary}
-              />
+              {/* DOB removed from registration form */}
 
               {/* Password Input */}
               <View style={styles.inputContainer}>
@@ -828,8 +749,7 @@ const CreateAccount = () => {
             <Text style={styles.successMessage}>
               Your account has been created successfully!{"\n\n"}
               <Text style={styles.securityReminder}>
-                💡 Remember: Your date of birth will be used to verify your identity 
-                if you ever need to reset your password.
+                💡 For password resets we use secure verification methods tied to your email.
               </Text>
             </Text>
 
@@ -912,27 +832,6 @@ const styles = StyleSheet.create({
   required: {
     color: COLORS.error,
   },
-  // DOB Specific Styles
-  dobHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: responsiveHeight(0.8),
-  },
-  dobHelper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.primary + '15',
-    paddingHorizontal: responsiveWidth(2),
-    paddingVertical: responsiveHeight(0.4),
-    borderRadius: responsiveWidth(2),
-    gap: responsiveWidth(1),
-  },
-  dobHelperText: {
-    fontSize: responsiveFont(11),
-    color: COLORS.primary,
-    fontWeight: '600',
-  },
   // Input Styles
   inputWrapper: {
     flexDirection: 'row',
@@ -989,14 +888,7 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
     height: '100%',
   },
-  dobInput: {
-    justifyContent: 'space-between',
-  },
-  dobText: {
-    fontSize: responsiveFont(16),
-    color: COLORS.dark,
-    flex: 1,
-  },
+  // DOB styles removed
   placeholderText: {
     fontSize: responsiveFont(16),
     color: COLORS.grayLight,

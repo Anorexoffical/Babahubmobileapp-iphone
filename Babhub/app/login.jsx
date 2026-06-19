@@ -239,34 +239,42 @@ const Login = () => {
     router.replace('/(tabs)/HomeScreen');
 
   } catch (error) {
-    console.error('Login error:', error);
+    // Log concise error info (avoid printing full AxiosError object which includes stack)
+    const status = error.response?.status;
+    const serverMsg = error.response?.data?.message;
+    console.warn('Login failed', { status, serverMsg, message: error.message });
 
     let errorMessage =
       "Something went wrong. Please try again in a moment.";
 
     // Axios error with server response
     if (error.response && error.response.data) {
-      const serverMessage = error.response.data.message || '';
+      const serverMessage = (error.response.data.message || '').toLowerCase();
 
+      // More specific checks first: phrases indicating the account/email doesn't exist
       if (
-        serverMessage.toLowerCase().includes('email') ||
-        serverMessage.toLowerCase().includes('not found')
+        serverMessage.includes("doesn't exist") ||
+        serverMessage.includes('does not exist') ||
+        serverMessage.includes('not found') ||
+        serverMessage.includes('no account') ||
+        serverMessage.includes('not registered')
       ) {
         errorMessage =
           "This email address isn't registered with BabaHub. Please check your email or create a new account.";
       } else if (
-        serverMessage.toLowerCase().includes('password') ||
-        serverMessage.toLowerCase().includes('invalid')
+        serverMessage.includes('password') ||
+        serverMessage.includes('invalid') ||
+        serverMessage.includes('incorrect')
       ) {
         errorMessage =
           "The password you entered is incorrect. Please check your password and try again.";
       } else if (
-        serverMessage.toLowerCase().includes('account') ||
-        serverMessage.toLowerCase().includes('suspended')
+        serverMessage.includes('suspended') ||
+        serverMessage.includes('locked')
       ) {
         errorMessage =
           "There seems to be a problem with your account. Please contact support for assistance.";
-      } else {
+      } else if (serverMessage) {
         errorMessage = serverMessage;
       }
     }

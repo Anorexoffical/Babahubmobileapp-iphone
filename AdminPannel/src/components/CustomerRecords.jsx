@@ -80,7 +80,6 @@ const CustomerRecords = () => {
                     <tr>
                       <th>Customer</th>
                       <th>Email</th>
-                      <th>DOB</th>
                       <th>Status</th>
                       <th>Member Since</th>
                     </tr>
@@ -88,7 +87,7 @@ const CustomerRecords = () => {
                   <tbody>
                     {loading ? (
                       <tr>
-                        <td colSpan="5" className="text-center py-4">
+                        <td colSpan="4" className="text-center py-4">
                           <div className="spinner-border text-primary" role="status">
                             <span className="visually-hidden">Loading...</span>
                           </div>
@@ -113,14 +112,6 @@ const CustomerRecords = () => {
                               <div className="contact-item">
                                 <FiMail className="icon" />
                                 <span>{customer.email || 'N/A'}</span>
-                              </div>
-                            </div>
-                          </td>
-                          <td>
-                            <div className="contact-info">
-                              <div className="contact-item">
-                                <FiCalendar className="icon" />
-                                <span>{customer.dob ? new Date(customer.dob).toLocaleDateString() : 'N/A'}</span>
                               </div>
                             </div>
                           </td>

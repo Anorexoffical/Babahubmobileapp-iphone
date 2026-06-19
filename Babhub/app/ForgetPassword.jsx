@@ -19,7 +19,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import http from '../src/api/http';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import DateTimePickerModal from 'react-native-modal-datetime-picker';
+// Date picker removed: DOB no longer required for password recovery
 import * as SecureStore from 'expo-secure-store';
 
 const { width, height } = Dimensions.get('window');
@@ -97,14 +97,10 @@ const ForgetPassword = () => {
   const router = useRouter();
   const params = useLocalSearchParams();
   const [email, setEmail] = useState('');
-  const [dob, setDob] = useState('');
   const [emailFocus, setEmailFocus] = useState(false);
-  const [dobFocus, setDobFocus] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
-  // Date picker states
-  const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  // date picker removed
   const [errors, setErrors] = useState({});
 
   // Modal states
@@ -130,9 +126,8 @@ const ForgetPassword = () => {
         await SecureStore.deleteItemAsync('reset_timestamp');
         
         // Clear form fields
-        setEmail('');
-        setDob('');
-        setSelectedDate(new Date());
+          setEmail('');
+          setErrors({});
         setErrors({});
         
         // Remove the parameter from URL
@@ -159,28 +154,7 @@ const ForgetPassword = () => {
     ]).start();
   }, []);
 
-  // Format date function
-  const formatDate = (date) => {
-    const day = date.getDate().toString().padStart(2, "0");
-    const month = (date.getMonth() + 1).toString().padStart(2, "0");
-    const year = date.getFullYear();
-    return `${day}/${month}/${year}`;
-  };
-
-  // Date picker functions
-  const showDatepicker = () => {
-    setDatePickerVisibility(true);
-    setDobFocus(true);
-  };
-
-  const handleConfirmDate = (date) => {
-    setSelectedDate(date);
-    setDob(formatDate(date));
-    setDatePickerVisibility(false);
-    if (errors.dob) {
-      setErrors((prev) => ({ ...prev, dob: "" }));
-    }
-  };
+  // Date picker removed: DOB is no longer used
 
   const validateForm = () => {
     const newErrors = {};
@@ -194,9 +168,7 @@ const ForgetPassword = () => {
       }
     }
     
-    if (!dob) {
-      newErrors.dob = "Please select your date of birth";
-    }
+    // Only email required for recovery
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -212,7 +184,7 @@ const ForgetPassword = () => {
     try {
       const { data } = await http.post(
         "/users/forgot-password",
-        { email, dob },
+        { email },
         { headers: { "Content-Type": "application/json" } }
       );
 
@@ -228,12 +200,10 @@ const ForgetPassword = () => {
         let errorMessage = "We couldn't verify your account details.";
         if (data?.message?.toLowerCase().includes('email')) {
           errorMessage = "📧 This email address isn't registered with BabaHub.\n\nPlease check if you entered the correct email address or create a new account.";
-        } else if (data?.message?.toLowerCase().includes('date') || data?.message?.toLowerCase().includes('dob')) {
-          errorMessage = "📅 The date of birth doesn't match our records.\n\nPlease check your birth date and try again. Make sure you're using the same date you used when creating your account.";
         } else if (data?.message?.toLowerCase().includes('not found') || data?.message?.toLowerCase().includes('no account')) {
-          errorMessage = "🔍 We couldn't find an account with these details.\n\nPlease check your email and date of birth, or create a new account if you don't have one.";
+          errorMessage = "🔍 We couldn't find an account with this email.\n\nPlease check if you entered the correct email address or create a new account.";
         } else if (data?.message?.toLowerCase().includes('invalid')) {
-          errorMessage = "❌ The information you provided doesn't match our records.\n\nPlease double-check your email address and date of birth.";
+          errorMessage = "❌ The information you provided doesn't match our records.\n\nPlease double-check your email address.";
         } else {
           errorMessage = data?.message || "We're having trouble verifying your account. Please check your details and try again.";
         }
@@ -410,58 +380,7 @@ const ForgetPassword = () => {
                 ) : null}
               </View>
 
-              {/* DOB Input */}
-              <View style={styles.inputContainer}>
-                <Text style={styles.label}>
-                  Date of Birth
-                  <Text style={styles.required}> *</Text>
-                </Text>
-                <TouchableOpacity 
-                  onPress={showDatepicker}
-                  disabled={isLoading}
-                >
-                  <View style={[
-                    styles.inputWrapper,
-                    dobFocus && styles.inputWrapperFocused,
-                    errors.dob && styles.inputWrapperError,
-                    isLoading && styles.inputDisabled,
-                    styles.dobInput,
-                  ]}>
-                    <MaterialIcons 
-                      name="calendar-today" 
-                      size={responsiveFont(20)} 
-                      color={dobFocus ? COLORS.primary : (errors.dob ? COLORS.error : COLORS.grayLight)} 
-                      style={styles.inputIcon}
-                    />
-                    <Text style={[dob ? styles.dobText : styles.placeholderText]}>
-                      {dob || "Select your date of birth"}
-                    </Text>
-                    <MaterialIcons 
-                      name="arrow-drop-down" 
-                      size={responsiveFont(24)} 
-                      color={COLORS.gray} 
-                    />
-                  </View>
-                </TouchableOpacity>
-                {errors.dob ? (
-                  <View style={styles.errorContainer}>
-                    <MaterialIcons name="error-outline" size={responsiveFont(16)} color={COLORS.error} />
-                    <Text style={styles.errorText}>{errors.dob}</Text>
-                  </View>
-                ) : null}
-              </View>
-
-              {/* Date Picker Modal */}
-              <DateTimePickerModal
-                isVisible={isDatePickerVisible}
-                mode="date"
-                maximumDate={new Date()}
-                date={selectedDate}
-                onConfirm={handleConfirmDate}
-                onCancel={() => setDatePickerVisibility(false)}
-                buttonTextColorIOS={COLORS.primary}
-                accentColor={COLORS.primary}
-              />
+              {/* DOB removed: recovery is email-only */}
 
               {/* Verify Button */}
               <TouchableOpacity
@@ -701,14 +620,7 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
     height: '100%',
   },
-  dobInput: {
-    justifyContent: 'space-between',
-  },
-  dobText: {
-    fontSize: responsiveFont(16),
-    color: COLORS.dark,
-    flex: 1,
-  },
+  // dob styles removed
   placeholderText: {
     fontSize: responsiveFont(16),
     color: COLORS.grayLight,
