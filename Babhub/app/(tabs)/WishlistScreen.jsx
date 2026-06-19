@@ -15,6 +15,8 @@ import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import { getImageUrl, normalizeImageUrl } from '../../src/utils/image';
+import { useAuthGuard } from '../contexts/useAuthGuard';
+import AuthLoginModal from '../contexts/AuthLoginModal';
 
 const { width, height } = Dimensions.get('window');
 
@@ -49,10 +51,9 @@ const WishlistScreen = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   
-  // Refs for animations
   const router = useRouter();
+  const { guardAction, authModalProps } = useAuthGuard();
   
-  // Enhanced Animations
   const fadeAnim = useState(new Animated.Value(0))[0];
 
   useFocusEffect(
@@ -160,11 +161,10 @@ const WishlistScreen = () => {
   };
 
   const handleAddToCartPress = (item) => {
-    // Redirect to product detail page instead of showing popup
-    router.push({ 
+    guardAction(() => router.push({ 
       pathname: 'ProductDetailPage', 
       params: { id: item.id } 
-    });
+    }));
   };
 
   // FIXED: Navigation function for empty state
@@ -320,6 +320,7 @@ const WishlistScreen = () => {
           onRefresh={loadWishlist}
         />
       )}
+      <AuthLoginModal {...authModalProps} />
     </View>
   );
 };

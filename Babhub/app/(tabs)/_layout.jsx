@@ -1,53 +1,26 @@
-import { Tabs, useRouter, useNavigation } from 'expo-router';
+import { Tabs, useNavigation } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from '../contexts/AuthContext';
 import { useEffect } from 'react';
-import { View, ActivityIndicator, BackHandler, Dimensions } from 'react-native';
+import { BackHandler, Dimensions } from 'react-native';
 
 const { width } = Dimensions.get('window');
 const tabFontSize = Math.max(Math.round((width / 375) * 11), 10);
 
 export default function TabLayout() {
-  const { userToken, isLoading } = useAuth();
-  const router = useRouter();
   const navigation = useNavigation();
-
-  useEffect(() => {
-    if (!isLoading && !userToken) {
-      router.replace('/login');
-    }
-  }, [userToken, isLoading]);
 
   // Handle back button in tab navigator
   useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
-      // Get current route name
       const currentRoute = navigation.getState()?.routes[navigation.getState().index]?.name;
-      
-      // If we're on HomeScreen, minimize the app
       if (currentRoute === 'HomeScreen') {
         BackHandler.exitApp();
         return true;
       }
-      
-      // For other tabs, let the default back behavior work
       return false;
     });
-
     return () => backHandler.remove();
   }, [navigation]);
-
-  if (isLoading) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#3366FF" />
-      </View>
-    );
-  }
-
-  if (!userToken) {
-    return null;
-  }
 
   return (
     <Tabs
