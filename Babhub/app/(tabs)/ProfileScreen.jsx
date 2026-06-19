@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../contexts/AuthContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import http from '../../src/api/http';
 import AuthLoginModal from '../contexts/AuthLoginModal';
 
@@ -194,10 +195,9 @@ const ProfileScreen = () => {
                         console.log('Delete response status:', res.status, 'data:', res.data);
 
                         if (res && res.data && res.data.success) {
-                          // Clear local auth and navigate to login
                           await signOut();
-                          navigation.replace('login');
-                          Alert.alert('Account Deleted', 'Your account has been deleted successfully.');
+                          await AsyncStorage.multiRemove(['wishlist', 'cart', 'cached_products']);
+                          router.replace('/(tabs)/HomeScreen');
                         } else {
                           const message = (res && res.data && res.data.message) ? res.data.message : 'Unable to delete account';
                           Alert.alert('Delete Failed', message);
@@ -230,8 +230,8 @@ const ProfileScreen = () => {
         <TouchableOpacity
           style={styles.logoutButton}
           onPress={async () => {
-            await signOut(); 
-            navigation.replace("login");
+            await signOut();
+            router.replace('/(tabs)/HomeScreen');
           }}
         >
           <Ionicons name="log-out-outline" size={22} color={COLORS.error} />

@@ -98,35 +98,41 @@ export const responsiveHeight = (percentage) => {
 export const responsiveFont = (size) => {
   const screenCategory = getScreenCategory();
   const scale = width / BASE_WIDTH;
-  
+
+  // iPad detection
+  const isIPad = width >= 768;
+
   let minScale, maxScale;
-  
-  switch (screenCategory) {
-    case 'small':
-      minScale = 0.85;
-      maxScale = 1;
-      break;
-    case 'medium':
-      minScale = 0.95;
-      maxScale = 1.1;
-      break;
-    case 'large':
-      minScale = 1;
-      maxScale = 1.2;
-      break;
-    case 'xlarge':
-      minScale = 1.05;
-      maxScale = 1.25;
-      break;
-    default:
-      minScale = 0.9;
-      maxScale = 1.2;
+
+  if (isIPad) {
+    minScale = 1.0;
+    maxScale = 1.3;
+  } else {
+    switch (screenCategory) {
+      case 'small':  minScale = 0.82; maxScale = 0.92; break;
+      case 'medium': minScale = 0.90; maxScale = 1.00; break;
+      case 'large':  minScale = 0.95; maxScale = 1.05; break;
+      case 'xlarge': minScale = 0.98; maxScale = 1.10; break;
+      default:       minScale = 0.88; maxScale = 1.00;
+    }
   }
-  
+
   const scaledSize = size * Math.max(Math.min(scale, maxScale), minScale);
-  
-  // Ensure minimum readable font size
   return Math.max(scaledSize, 10);
+};
+
+// Compact font scale — use these named sizes everywhere for consistency
+// xs=11  sm=12  base=14  md=15  lg=16  xl=18  2xl=20  3xl=22  4xl=26
+export const fs = {
+  xs:   responsiveFont(11),
+  sm:   responsiveFont(12),
+  base: responsiveFont(14),
+  md:   responsiveFont(15),
+  lg:   responsiveFont(16),
+  xl:   responsiveFont(18),
+  x2l:  responsiveFont(20),
+  x3l:  responsiveFont(22),
+  x4l:  responsiveFont(26),
 };
 
 // Moderate scale for elements that shouldn't scale too much
@@ -258,6 +264,7 @@ export default {
   responsiveWidth,
   responsiveHeight,
   responsiveFont,
+  fs,
   moderateScale,
   getSafeAreaTop,
   getSafeAreaBottom,

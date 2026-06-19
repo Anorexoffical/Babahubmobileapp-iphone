@@ -745,7 +745,7 @@ const SpecialOfferBanner = () => {
 };
 
 const HomeScreen = () => {
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading, isAuthenticated } = useAuth();
   const { guardAction, authModalProps } = useAuthGuard();
   const [searchText, setSearchText] = useState('');
   const [wishlist, setWishlist] = useState([]);
@@ -816,6 +816,11 @@ const HomeScreen = () => {
 
   // Fetch wishlist and cart from AsyncStorage
   const fetchWishlistAndCart = async () => {
+    if (!isAuthenticated()) {
+      setWishlist([]);
+      setCartItems([]);
+      return;
+    }
     try {
       const wishlistData = await AsyncStorage.getItem('wishlist');
       if (wishlistData) {

@@ -12,8 +12,12 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { responsiveFont, responsiveWidth, responsiveHeight } from '../src/utils/responsive';
 
 const { width, height } = Dimensions.get('window');
+const rf = responsiveFont;
+const rw = responsiveWidth;
+const rh = responsiveHeight;
 
 // Brand Color Palette
 const COLORS = {

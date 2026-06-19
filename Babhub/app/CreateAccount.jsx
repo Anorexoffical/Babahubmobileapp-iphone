@@ -21,6 +21,7 @@ import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 // DateTimePickerModal removed: DOB no longer collected in the app
 import LottieView from "lottie-react-native";
 import http from "../src/api/http";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const { width, height } = Dimensions.get("window");
 
@@ -385,10 +386,11 @@ const CreateAccount = () => {
   }
 };
 
-  const handleSuccessContinue = () => {
+  const handleSuccessContinue = async () => {
     setShowSuccessModal(false);
     clearForm();
-    router.back();
+    await AsyncStorage.multiRemove(['wishlist', 'cart', 'cached_products']);
+    router.replace('/(tabs)/HomeScreen');
   };
 
   const handleBackToLogin = () => {
@@ -758,8 +760,8 @@ const CreateAccount = () => {
               onPress={handleSuccessContinue}
               activeOpacity={0.9}
             >
-              <Text style={styles.successButtonText}>Back to Login</Text>
-              <MaterialIcons name="arrow-back" size={responsiveFont(20)} color={COLORS.white} />
+              <Text style={styles.successButtonText}>Go to Home</Text>
+              <MaterialIcons name="home" size={responsiveFont(20)} color={COLORS.white} />
             </TouchableOpacity>
           </View>
 
