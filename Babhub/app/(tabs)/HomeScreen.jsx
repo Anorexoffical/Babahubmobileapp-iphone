@@ -24,6 +24,8 @@ import debounce from 'lodash.debounce';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
+import { useAuthGuard } from '../contexts/useAuthGuard';
+import AuthLoginModal from '../contexts/AuthLoginModal';
 import Toast from 'react-native-toast-message';
 import NetInfo from '@react-native-community/netinfo';
 import http from '../../src/api/http';
@@ -615,7 +617,7 @@ const ProductItem = ({ item, onPress, onWishlistToggle, isInWishlist, index, onA
 };
 
 // Sticky Header Component
-const StickyHeader = ({ user, cartItems, router, scrollY, isOnline }) => {
+const StickyHeader = ({ user, cartItems, router, scrollY, isOnline, onCartPress }) => {
   const headerHeight = 80;
   const headerTranslate = scrollY.interpolate({
     inputRange: [0, headerHeight],
@@ -655,7 +657,7 @@ const StickyHeader = ({ user, cartItems, router, scrollY, isOnline }) => {
         <View style={styles.stickyIcons}>
           <TouchableOpacity
             style={styles.stickyCartButton}
-            onPress={() => router.push('../CartScreen')}
+            onPress={onCartPress}
           >
             <View style={styles.bigCartIconContainer}>
               <Ionicons name="cart" size={28} color={COLORS.primary} />
@@ -743,7 +745,8 @@ const SpecialOfferBanner = () => {
 };
 
 const HomeScreen = () => {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
+  const { guardAction, authModalProps } = useAuthGuard();
   const [searchText, setSearchText] = useState('');
   const [wishlist, setWishlist] = useState([]);
   const [cartItems, setCartItems] = useState([]);
@@ -898,21 +901,20 @@ const HomeScreen = () => {
     }, [])
   );
 
-  // Initial data fetch
+  // Initial data fetch — wait for auth to resolve first
   useEffect(() => {
+    if (authLoading) return;
     const initializeData = async () => {
       const connected = await checkConnection();
       if (connected) {
         await fetchWishlistAndCart();
         await fetchProducts();
       } else {
-        // Load cached products if available
         await loadCachedProducts();
       }
     };
-    
     initializeData();
-  }, []);
+  }, [authLoading]);
 
   // Load cached products from AsyncStorage
   const loadCachedProducts = async () => {
@@ -1106,6 +1108,8 @@ const HomeScreen = () => {
     setRefreshing(false);
   };
 
+  const toggleWishlistGuarded = (product) => guardAction(() => toggleWishlist(product));
+
   const toggleWishlist = async (product) => {
     try {
       const price = product.variants?.[0]?.sizes?.[0]?.price || product.price || 0;
@@ -1220,7 +1224,7 @@ const HomeScreen = () => {
       <ProductItem 
         item={item}
         onPress={handleProductPress}
-        onWishlistToggle={toggleWishlist}
+        onWishlistToggle={toggleWishlistGuarded}
         isInWishlist={productInWishlist}
         index={index}
         onAddToCart={handleAddToCart}
@@ -1228,6 +1232,8 @@ const HomeScreen = () => {
       />
     );
   };
+
+  const handleCartPress = () => guardAction(() => router.push('../CartScreen'));
 
   // Split products for before and after special offer
   const firstHalfProducts = filteredProducts.slice(0, 4);
@@ -1271,6 +1277,7 @@ const HomeScreen = () => {
         router={router}
         scrollY={scrollY}
         isOnline={isOnline}
+        onCartPress={handleCartPress}
       />
 
       <Animated.ScrollView 
@@ -1313,7 +1320,7 @@ const HomeScreen = () => {
             <View style={styles.headerIcons}>
               <TouchableOpacity
                 style={styles.bigHeaderCartButton}
-                onPress={() => router.push('../CartScreen')}
+                onPress={handleCartPress}
               >
                 <View style={styles.bigHeaderCartContainer}>
                   <Ionicons name="cart" size={28} color={COLORS.dark} />
@@ -1543,6 +1550,7 @@ const HomeScreen = () => {
           </View>
         </View>
       </Animated.ScrollView>
+      <AuthLoginModal {...authModalProps} />
       <Toast />
     </SafeAreaView>
   );

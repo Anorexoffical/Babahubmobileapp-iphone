@@ -32,70 +32,62 @@ function RouteProtection({ children }) {
         }
       }
 
-      // Define protected routes
-      const protectedRoutes = [
-        '(tabs)', 
-        'CartScreen', 
-        'Checkout', 
-        'CustomerSupport', 
-        'MyOrder', 
-        'PrivacyPolicyScreen', 
-        'ProductDetailPage', 
+      // Routes that still require login (hard-protected, no login wall fallback)
+      const hardProtectedRoutes = [
+        'Checkout',
+        'CustomerSupport',
+        'MyOrder',
         'ProfileDetailsScreen',
         'OrderSuccessScreen',
         'PaymentScreen',
         'PaymentCancelledScreen',
-        'ReturnPolicyScreen',
       ];
 
-      // Define public routes
+      // Public routes (always accessible)
       const publicRoutes = [
-        'index', 
-        'login', 
-        'ForgetPassword', 
-        'CreateAccount', 
+        'index',
+        'login',
+        'ForgetPassword',
+        'CreateAccount',
         'ResetPassword',
-        '404'
+        '404',
+        // Tabs are now public — login wall is handled inside each tab action
+        '(tabs)',
+        'PrivacyPolicyScreen',
+        'ReturnPolicyScreen',
+        'ProductDetailPage',
+        // CartScreen accessible to all — checkout button is gated inside
+        'CartScreen',
       ];
 
       const currentRoute = segments[0] || 'index';
-      const isProtectedRoute = protectedRoutes.includes(currentRoute);
+      const isHardProtected = hardProtectedRoutes.includes(currentRoute);
       const isPublicRoute = publicRoutes.includes(currentRoute);
 
-      // 🔒 Allow payment callbacks even without auth
-      const isPaymentCallback = segments.some(segment => 
-        segment.includes('payment') || 
-        segment.includes('success') || 
+      // Allow payment callbacks without auth
+      const isPaymentCallback = segments.some(segment =>
+        segment.includes('payment') ||
+        segment.includes('success') ||
         segment.includes('cancel')
       );
+      if (isPaymentCallback) return;
 
-      // Allow payment callbacks to proceed without redirection
-      if (isPaymentCallback) {
-        return;
-      }
-
-      // 🔒 Redirect to login if accessing protected route without auth
-      if (isProtectedRoute && !userToken) {
+      // Redirect to login if accessing hard-protected route without auth
+      if (isHardProtected && !userToken) {
         router.replace('/login');
         return;
       }
 
-      // ✅ Allow free navigation between all auth pages without redirection
       const isAuthPage = ['login', 'CreateAccount', 'ForgetPassword', 'ResetPassword'].includes(currentRoute);
-      
-      if (isAuthPage) {
-        // Always allow navigation between auth pages
-        return;
-      }
 
-      // ✅ Redirect authenticated user away from auth pages only if they land directly on them
-      if (userToken && isAuthPage && segments.length === 1) {
+      // Redirect authenticated users away from auth pages
+      if (userToken && isAuthPage) {
         router.replace('/(tabs)/HomeScreen');
         return;
       }
 
-      // ❌ Handle unknown routes → go to 404
-      if (!isProtectedRoute && !isPublicRoute && currentRoute !== '404') {
+      // Handle unknown routes → 404
+      if (!isHardProtected && !isPublicRoute && currentRoute !== '404') {
         router.replace('/404');
         return;
       }

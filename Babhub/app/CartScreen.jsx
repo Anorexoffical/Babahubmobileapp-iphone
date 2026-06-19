@@ -20,6 +20,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SplashScreen from 'expo-splash-screen';
 import http from '../src/api/http';
 import { getImageUrl } from '../src/utils/image';
+import { useAuthGuard } from './contexts/useAuthGuard';
+import AuthLoginModal from './contexts/AuthLoginModal';
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -161,6 +163,7 @@ const ClearCartModal = ({ visible, onClose, onConfirm }) => {
 const CartScreen = () => {
   const router = useRouter();
   const params = useLocalSearchParams();
+  const { guardAction, authModalProps } = useAuthGuard();
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [appIsReady, setAppIsReady] = useState(false);
@@ -614,7 +617,7 @@ const CartScreen = () => {
             </View>
             <TouchableOpacity 
               style={styles.checkoutButton}
-              onPress={() => router.push('/Checkout')}
+              onPress={() => guardAction(() => router.push('/Checkout'))}
             >
               <View style={styles.checkoutButtonContent}>
                 <Text style={styles.checkoutText}>Checkout</Text>
@@ -633,6 +636,9 @@ const CartScreen = () => {
         onClose={hideClearCartModal}
         onConfirm={clearCart}
       />
+
+      {/* Auth Login Modal */}
+      <AuthLoginModal {...authModalProps} />
     </View>
   );
 };

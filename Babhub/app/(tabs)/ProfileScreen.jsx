@@ -2,8 +2,10 @@ import React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Dimensions, StatusBar, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { useRouter } from 'expo-router';
 import { useAuth } from '../contexts/AuthContext';
 import http from '../../src/api/http';
+import AuthLoginModal from '../contexts/AuthLoginModal';
 
 const { width, height } = Dimensions.get('window');
 
@@ -32,6 +34,36 @@ const ProfileScreen = () => {
   const navigation = useNavigation();
   const { user, signOut, userToken } = useAuth();
   const [deleting, setDeleting] = React.useState(false);
+  const router = useRouter();
+  const { user, signOut, isAuthenticated } = useAuth();
+  const [loginModalVisible, setLoginModalVisible] = React.useState(false);
+
+  // If user is not logged in, show login prompt instead of profile content
+  if (!isAuthenticated()) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', padding: 24 }]}>
+        <StatusBar backgroundColor={COLORS.primary} barStyle="light-content" />
+        <View style={styles.guestIconWrap}>
+          <Ionicons name="person-outline" size={56} color={COLORS.primary} />
+        </View>
+        <Text style={styles.guestTitle}>You're not logged in</Text>
+        <Text style={styles.guestSubtitle}>
+          Login to access your profile, orders, wishlist, and more.
+        </Text>
+        <TouchableOpacity
+          style={styles.guestLoginButton}
+          onPress={() => setLoginModalVisible(true)}
+        >
+          <Text style={styles.guestLoginText}>Login / Create Account</Text>
+        </TouchableOpacity>
+        <AuthLoginModal
+          visible={loginModalVisible}
+          onLoginSuccess={() => setLoginModalVisible(false)}
+          onDismiss={() => setLoginModalVisible(false)}
+        />
+      </View>
+    );
+  }
 
   // Generate monogram from user's name
   const getMonogram = () => {
@@ -409,5 +441,44 @@ const styles = StyleSheet.create({
     fontSize: width < 400 ? width * 0.028 : width * 0.03,
     color: COLORS.grayLight,
     fontWeight: '500',
+  },
+  guestIconWrap: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: '#EEF2FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  guestTitle: {
+    fontSize: width * 0.055,
+    fontWeight: '800',
+    color: COLORS.dark,
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  guestSubtitle: {
+    fontSize: width * 0.038,
+    color: COLORS.gray,
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 32,
+  },
+  guestLoginButton: {
+    backgroundColor: COLORS.primary,
+    paddingVertical: 16,
+    paddingHorizontal: 40,
+    borderRadius: 14,
+    elevation: 4,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  guestLoginText: {
+    color: COLORS.white,
+    fontSize: width * 0.042,
+    fontWeight: '700',
   },
 });
