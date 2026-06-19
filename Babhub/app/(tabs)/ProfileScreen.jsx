@@ -1,8 +1,9 @@
 import React from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Dimensions, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Dimensions, StatusBar, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
+import http from '../../src/api/http';
 
 const { width, height } = Dimensions.get('window');
 
@@ -29,7 +30,8 @@ const COLORS = {
 
 const ProfileScreen = () => {
   const navigation = useNavigation();
-  const { user, signOut } = useAuth();
+  const { user, signOut, userToken } = useAuth();
+  const [deleting, setDeleting] = React.useState(false);
 
   // Generate monogram from user's name
   const getMonogram = () => {
@@ -128,6 +130,68 @@ const ProfileScreen = () => {
             subtitle="Contact our support team"
             color={COLORS.primary}
             onPress={() => navigation.navigate('CustomerSupport')}
+          />
+
+          <MenuItem
+            icon="trash-outline"
+            title="Delete Account"
+            subtitle="Permanently delete your account"
+            color={COLORS.error}
+            onPress={() => {
+              if (!userToken) {
+                Alert.alert('Not Signed In', 'You must be signed in to delete your account.');
+                return;
+              }
+              // Confirmation dialog
+              Alert.alert(
+                'Delete Account',
+                "Are you sure you want to delete your account? This action cannot be undone. Your account will be removed and you will no longer be able to sign in.",
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  { text: 'Delete Account', style: 'destructive', onPress: async () => {
+                      if (deleting) return;
+                      try {
+                        setDeleting(true);
+                        // call API with token from auth context
+                        console.log('Deleting account: sending request to /users/delete-account');
+                        console.log('Using token present:', !!userToken);
+
+                        const res = await http.delete('/users/delete-account', {
+                          headers: { Authorization: `Bearer ${userToken}` }
+                        });
+
+                        console.log('Delete response status:', res.status, 'data:', res.data);
+
+                        if (res && res.data && res.data.success) {
+                          // Clear local auth and navigate to login
+                          await signOut();
+                          navigation.replace('login');
+                          Alert.alert('Account Deleted', 'Your account has been deleted successfully.');
+                        } else {
+                          const message = (res && res.data && res.data.message) ? res.data.message : 'Unable to delete account';
+                          Alert.alert('Delete Failed', message);
+                        }
+                      } catch (err) {
+                        console.error('Delete account error (full):', err);
+                        // Log axios response if available
+                        if (err.response) {
+                          console.error('Response status:', err.response.status);
+                          console.error('Response data:', err.response.data);
+                          Alert.alert('Delete Failed', err.response.data?.message || 'Server rejected the request');
+                        } else if (err.request) {
+                          console.error('No response received, request:', err.request);
+                          Alert.alert('Network Error', 'No response from server. Check your connection.');
+                        } else {
+                          Alert.alert('Error', err.message || 'Unable to delete account.');
+                        }
+                      } finally {
+                        setDeleting(false);
+                      }
+                  } },
+                ],
+                { cancelable: true }
+              );
+            }}
           />
         </View>
 

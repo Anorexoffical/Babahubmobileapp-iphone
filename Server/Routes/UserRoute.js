@@ -1,19 +1,22 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
+const jwt = require('jsonwebtoken');
+const env = require('../config/env');
 const User = require("../Models/UserModel");
+const authMiddleware = require('../Middleware/authMiddleware');
 
 const router = express.Router();
 
 router.post("/register", async (req, res) => {
-  const { name, email, dob, password } = req.body;
-  console.log("Incoming body:", req.body);
+  const { name, email, password } = req.body;
+  console.log("Incoming registration body:", { name, email });
 
   try {
     const existingUser = await User.findOne({ email });
-    if (existingUser) {
+    if (existingUser && !existingUser.isDeleted) {
       return res.status(400).json({ message: "User already exists" });
     }
-    const newUser = new User({ name, email, dob, password });
+    const newUser = new User({ name, email, password });
     await newUser.save();
 
     res.status(201).json({
@@ -22,7 +25,7 @@ router.post("/register", async (req, res) => {
         id: newUser._id,
         name: newUser.name,
         email: newUser.email,
-        dob: newUser.dob,
+        role: newUser.role,
       },
     });
   } catch (err) {
@@ -36,8 +39,8 @@ router.post("/login", async (req, res) => {
   try {
     const user = await User.findOne({ email, role });
     console.log("Found user:", user);
-    if (!user) {
-      return res.status(400).json({ message: "Invalid credentials " });
+    if (!user || user.isDeleted) {
+      return res.status(400).json({ message: "This account doesn't exist." });
     }
 
     const isMatch = await user.matchPassword(password);
@@ -45,14 +48,18 @@ router.post("/login", async (req, res) => {
       return res.status(400).json({ message: "password Incorrect" });
     }
 
+    // issue JWT
+    const secret = process.env.JWT_SECRET || env.JWT_SECRET || 'secretkey';
+    const token = jwt.sign({ id: user._id }, secret, { expiresIn: '7d' });
+
     res.json({
       message: "Login successful",
+      token,
       user: {
         id: user._id,
         name: user.name,
         email: user.email,
         role: user.role,
-        dob: user.dob,
       },
     });
   } catch (err) {
@@ -63,7 +70,7 @@ router.post("/login", async (req, res) => {
 // Get customers (role: customer)
 router.get("/customers", async (req, res) => {
   try {
-    const customers = await User.find({ role: "customer" }).select("-password");
+    const customers = await User.find({ role: "customer", isDeleted: { $ne: true } }).select("-password");
     res.json(customers);
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
@@ -72,47 +79,51 @@ router.get("/customers", async (req, res) => {
 
 // forgot password route check the credentials
 router.post("/forgot-password", async (req, res) => {
-  const { email, dob } = req.body;
-  console.log("Forgot password request:", req.body);
+  const { email } = req.body;
+  console.log("Forgot password request (email-only):", { email });
 
   try {
-    // Check if fields are empty
-    if (!email || !dob) {
-      return res.status(400).json({ 
-        message: "Please provide both email and date of birth" 
-      });
+    if (!email) {
+      return res.status(400).json({ message: "Please provide an email address" });
     }
 
-    // Find user by email
     const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(400).json({ 
-        message: "No account found with this email address" 
-      });
+    if (!user || user.isDeleted) {
+      return res.status(400).json({ message: "No account found with this email address" });
     }
 
-    // Check if DOB matches
-    if (user.dob !== dob) {
-      return res.status(400).json({ 
-        message: "Date of birth does not match our records" 
-      });
-    }
-
-    // If credentials are correct, allow password reset
+    // For a secure flow, a token/email should be sent. For now, acknowledge email-only verification.
     res.json({
-      message: "Credentials verified successfully",
+      message: "Email verified. Proceed to reset via secure token (not implemented here).",
       success: true,
-      user: {
-        id: user._id,
-        email: user.email
-      }
+      user: { id: user._id, email: user.email },
     });
-
   } catch (err) {
-    res.status(500).json({ 
-      message: "Server error", 
-      error: err.message 
-    });
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+});
+
+// Delete (soft) account - protected
+router.delete('/delete-account', authMiddleware, async (req, res) => {
+  try {
+    const user = req.user; // from middleware
+
+    // anonymize and soft-delete
+    const originalEmail = user.email;
+    user.isDeleted = true;
+    user.deletedAt = new Date();
+    user.name = 'Deleted User';
+    user.email = `deleted_${Date.now()}_${originalEmail}`;
+    user.role = null;
+
+    // Optionally clear other PII fields here if present
+    await user.save();
+
+    // Return success - frontend should sign out and clear local storage
+    return res.json({ message: 'Account deleted successfully', success: true });
+  } catch (err) {
+    console.error('Delete account error:', err);
+    return res.status(500).json({ message: 'Server error', error: err.message });
   }
 });
 
@@ -141,7 +152,7 @@ router.post("/reset-password", async (req, res) => {
     }
 
     const user = await User.findOne({ email });
-    if (!user) {
+    if (!user || user.isDeleted) {
       return res.status(400).json({ 
         message: "User not found",
         success: false

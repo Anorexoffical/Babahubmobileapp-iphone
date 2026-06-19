@@ -18,7 +18,6 @@ async function createAdmin() {
     const admin = new User({
       name: "Super-Admin",
       email: "admin@babahub.com",
-      dob: "2002/01/02",
       password: "Admin@002",
       role: "admin",
     });
