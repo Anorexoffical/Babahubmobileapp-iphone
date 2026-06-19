@@ -1,23 +1,33 @@
 import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
-  TouchableOpacity, 
-  Dimensions, 
-  StatusBar, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Dimensions,
+  StatusBar,
   Linking,
   Platform,
   Modal,
-  TouchableWithoutFeedback
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 
 const { width, height } = Dimensions.get('window');
 
-// Enhanced Brand Color Palette
+// Responsive sizing — consistent with login/profile/PrivacyPolicy
+const rw = (p) => (width * p) / 100;
+const rh = (p) => (height * p) / 100;
+const rf = (size) => {
+  const scale = Math.min(width, height) / 400;
+  const s = size * scale;
+  return Platform.OS === 'android'
+    ? Math.max(Math.min(s, size * 1.3), size * 0.9)
+    : Math.max(Math.min(s, size * 1.2), size * 0.8);
+};
+
 const COLORS = {
   primary: '#6366F1',
   primaryLight: '#8B5CF6',
@@ -40,33 +50,33 @@ const FAQ_DATA = [
   {
     id: '1',
     question: 'Do you save cart data?',
-    answer: 'No, we do not save your cart data permanently. Your cart items are temporarily stored during your current session but will be cleared when you close the app.'
+    answer: 'No, we do not save your cart data permanently. Your cart items are temporarily stored during your current session but will be cleared when you close the app.',
   },
   {
     id: '2',
     question: 'How many days does it take to receive my order?',
-    answer: 'Most orders are delivered within 3-4 business days. Delivery times may vary depending on your location and product availability.'
+    answer: 'Most orders are delivered within 3-4 business days. Delivery times may vary depending on your location and product availability.',
   },
   {
     id: '3',
     question: 'Where can I check my order status?',
-    answer: 'You can check your order status in the "Profile" section under "My Orders". You will receive real-time updates about your order delivery status.'
+    answer: 'You can check your order status in the "Profile" section under "My Orders". You will receive real-time updates about your order delivery status.',
   },
   {
     id: '4',
     question: 'What payment methods do you accept?',
-    answer: 'We accept various payment methods including credit/debit cards, mobile money, and cash on delivery. All payments are securely processed.'
+    answer: 'We accept various payment methods including credit/debit cards, mobile money, and cash on delivery. All payments are securely processed.',
   },
   {
     id: '5',
     question: 'Can I cancel my order after placing it?',
-    answer: 'Yes, you can cancel your order within 1 hour of placing it. After that, the order enters processing and cannot be cancelled.'
+    answer: 'Yes, you can cancel your order within 1 hour of placing it. After that, the order enters processing and cannot be cancelled.',
   },
   {
     id: '6',
     question: 'Do you offer refunds for returned items?',
-    answer: 'Yes, we offer full refunds for returned items within 7 days of delivery, provided the items are in original condition with tags attached.'
-  }
+    answer: 'Yes, we offer full refunds for returned items within 7 days of delivery, provided the items are in original condition with tags attached.',
+  },
 ];
 
 const CustomerSupportScreen = () => {
@@ -75,106 +85,29 @@ const CustomerSupportScreen = () => {
   const [expandedQuestion, setExpandedQuestion] = useState(null);
 
   const handleBack = () => {
-    if (navigation.canGoBack()) {
-      navigation.goBack();
-    } else {
-      navigation.navigate('ProfileScreen');
-    }
+    if (navigation.canGoBack()) navigation.goBack();
+    else navigation.navigate('ProfileScreen');
   };
 
   const handleEmailPress = () => {
     Linking.openURL('mailto:babahubsa@gmail.com?subject=Customer Support Request&body=Hello BabaHub Team,');
   };
 
-  const handleCallPress = () => {
-    Linking.openURL('tel:0845000000');
-  };
-
   const toggleQuestion = (id) => {
     setExpandedQuestion(expandedQuestion === id ? null : id);
   };
 
-  const renderFAQModal = () => (
-    <Modal
-      animationType="slide"
-      transparent={true}
-      visible={faqModalVisible}
-      onRequestClose={() => setFaqModalVisible(false)}
-    >
-      <TouchableWithoutFeedback onPress={() => setFaqModalVisible(false)}>
-        <View style={styles.modalOverlay}>
-          <TouchableWithoutFeedback>
-            <View style={styles.modalContent}>
-              {/* Modal Header */}
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Frequently Asked Questions</Text>
-                <TouchableOpacity 
-                  style={styles.closeButton}
-                  onPress={() => setFaqModalVisible(false)}
-                >
-                  <Ionicons name="close" size={24} color={COLORS.dark} />
-                </TouchableOpacity>
-              </View>
-
-              {/* FAQ List */}
-              <ScrollView 
-                style={styles.faqList}
-                showsVerticalScrollIndicator={false}
-              >
-                {FAQ_DATA.map((item) => (
-                  <View key={item.id} style={styles.faqItem}>
-                    <TouchableOpacity 
-                      style={styles.faqQuestion}
-                      onPress={() => toggleQuestion(item.id)}
-                    >
-                      <Text style={styles.faqQuestionText}>{item.question}</Text>
-                      <Ionicons 
-                        name={expandedQuestion === item.id ? "chevron-up" : "chevron-down"} 
-                        size={20} 
-                        color={COLORS.primary} 
-                      />
-                    </TouchableOpacity>
-                    
-                    {expandedQuestion === item.id && (
-                      <View style={styles.faqAnswer}>
-                        <Text style={styles.faqAnswerText}>{item.answer}</Text>
-                      </View>
-                    )}
-                  </View>
-                ))}
-              </ScrollView>
-
-              {/* Modal Footer */}
-              <View style={styles.modalFooter}>
-                <TouchableOpacity 
-                  style={styles.cancelButton}
-                  onPress={() => setFaqModalVisible(false)}
-                >
-                  <Text style={styles.cancelButtonText}>Close</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </TouchableWithoutFeedback>
-        </View>
-      </TouchableWithoutFeedback>
-    </Modal>
-  );
-
   return (
     <View style={styles.fullContainer}>
       <StatusBar backgroundColor={COLORS.primary} barStyle="light-content" />
-      
-      {/* Main Content */}
+
       <View style={styles.container}>
-        {/* Premium Header */}
+        {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerBackground}>
             <View style={styles.headerContent}>
-              <TouchableOpacity 
-                style={styles.backButton}
-                onPress={handleBack}
-              >
-                <Ionicons name="arrow-back" size={24} color={COLORS.white} />
+              <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+                <Ionicons name="arrow-back" size={rf(22)} color={COLORS.white} />
               </TouchableOpacity>
               <Text style={styles.headerTitle}>Customer Support</Text>
               <View style={styles.placeholder} />
@@ -182,15 +115,15 @@ const CustomerSupportScreen = () => {
           </View>
         </View>
 
-        <ScrollView 
-          style={styles.scrollView} 
+        <ScrollView
+          style={styles.scrollView}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
-          {/* Hero Section */}
+          {/* Hero */}
           <View style={styles.heroSection}>
-            <View style={styles.iconContainer}>
-              <Ionicons name="headset" size={40} color={COLORS.primary} />
+            <View style={styles.heroIconWrap}>
+              <Ionicons name="headset" size={rf(36)} color={COLORS.primary} />
             </View>
             <Text style={styles.heroTitle}>We're Here to Help! 👋</Text>
             <Text style={styles.heroSubtitle}>
@@ -198,482 +131,536 @@ const CustomerSupportScreen = () => {
             </Text>
           </View>
 
-          {/* Quick Contact Section */}
-          <View style={styles.section}>
+          {/* Quick Contact */}
+          <View style={styles.card}>
             <View style={styles.sectionHeader}>
-              <Ionicons name="flash" size={22} color={COLORS.primary} />
+              <View style={styles.sectionIconWrap}>
+                <Ionicons name="flash" size={rf(20)} color={COLORS.primary} />
+              </View>
               <Text style={styles.sectionTitle}>Quick Contact</Text>
             </View>
-            
-            {/* Email Support */}
-            <TouchableOpacity style={[styles.contactCard, styles.emailCard]} onPress={handleEmailPress}>
-              <View style={[styles.contactIconContainer, styles.emailIcon]}>
-                <Ionicons name="mail" size={24} color={COLORS.white} />
+
+            <TouchableOpacity style={styles.contactCard} onPress={handleEmailPress} activeOpacity={0.85}>
+              <View style={styles.contactIconCircle}>
+                <Ionicons name="mail" size={rf(22)} color={COLORS.white} />
               </View>
               <View style={styles.contactInfo}>
                 <Text style={styles.contactMethod}>Email Support</Text>
                 <Text style={styles.contactDetail}>babahubsa@gmail.com</Text>
                 <Text style={styles.responseTime}>Response time: Within 2 hours</Text>
               </View>
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>Recommended</Text>
+              <View style={styles.recommendedBadge}>
+                <Text style={styles.recommendedText}>Recommended</Text>
               </View>
             </TouchableOpacity>
-
-            {/* Phone Support */}
-           
           </View>
 
-          {/* Support Services */}
-          <View style={styles.section}>
+          {/* Services Grid */}
+          <View style={styles.card}>
             <View style={styles.sectionHeader}>
-              <Ionicons name="build" size={22} color={COLORS.primary} />
+              <View style={styles.sectionIconWrap}>
+                <Ionicons name="build" size={rf(20)} color={COLORS.primary} />
+              </View>
               <Text style={styles.sectionTitle}>How We Can Help You</Text>
             </View>
-            
-            <View style={styles.servicesGrid}>
-              <View style={styles.serviceCard}>
-                <View style={[styles.serviceIcon, { backgroundColor: COLORS.primary + '15' }]}>
-                  <Ionicons name="cart" size={24} color={COLORS.primary} />
-                </View>
-                <Text style={styles.serviceTitle}>Order Issues</Text>
-                <Text style={styles.serviceDesc}>Tracking, returns, refunds</Text>
-              </View>
-              
-              <View style={styles.serviceCard}>
-                <View style={[styles.serviceIcon, { backgroundColor: COLORS.accent + '15' }]}>
-                  <Ionicons name="card" size={24} color={COLORS.accent} />
-                </View>
-                <Text style={styles.serviceTitle}>Payment Help</Text>
-                <Text style={styles.serviceDesc}>Billing & payment issues</Text>
-              </View>
-              
-              <View style={styles.serviceCard}>
-                <View style={[styles.serviceIcon, { backgroundColor: COLORS.secondary + '15' }]}>
-                  <Ionicons name="person" size={24} color={COLORS.secondary} />
-                </View>
-                <Text style={styles.serviceTitle}>Account Help</Text>
-                <Text style={styles.serviceDesc}>Login & profile issues</Text>
-              </View>
-              
-              <View style={styles.serviceCard}>
-                <View style={[styles.serviceIcon, { backgroundColor: COLORS.warning + '15' }]}>
-                  <Ionicons name="cube" size={24} color={COLORS.warning} />
-                </View>
-                <Text style={styles.serviceTitle}>Product Info</Text>
-                <Text style={styles.serviceDesc}>Details & recommendations</Text>
-              </View>
+
+            <View style={styles.gridRow}>
+              <ServiceCard icon="cart" color={COLORS.primary} title="Order Issues" desc="Tracking, returns, refunds" />
+              <ServiceCard icon="card" color={COLORS.accent} title="Payment Help" desc="Billing & payment issues" />
+            </View>
+            <View style={styles.gridRow}>
+              <ServiceCard icon="person" color={COLORS.secondary} title="Account Help" desc="Login & profile issues" />
+              <ServiceCard icon="cube" color={COLORS.warning} title="Product Info" desc="Details & recommendations" />
             </View>
           </View>
 
-          {/* FAQ Section */}
-          <TouchableOpacity style={styles.faqSection} onPress={() => setFaqModalVisible(true)}>
-            <View style={styles.faqContent}>
-              <View style={styles.faqIconContainer}>
-                <Ionicons name="help-circle" size={32} color={COLORS.primary} />
+          {/* FAQ */}
+          <TouchableOpacity style={styles.card} onPress={() => setFaqModalVisible(true)} activeOpacity={0.85}>
+            <View style={styles.faqRow}>
+              <View style={styles.faqIconWrap}>
+                <Ionicons name="help-circle" size={rf(30)} color={COLORS.primary} />
               </View>
-              <View style={styles.faqText}>
-                <Text style={styles.faqTitle}>Frequently Asked Questions</Text>
+              <View style={styles.faqTextWrap}>
+                <Text style={styles.sectionTitle}>Frequently Asked Questions</Text>
                 <Text style={styles.faqSubtitle}>Quick answers to common questions</Text>
               </View>
-              <Ionicons name="chevron-forward" size={24} color={COLORS.primary} />
+              <Ionicons name="chevron-forward" size={rf(22)} color={COLORS.primary} />
             </View>
           </TouchableOpacity>
 
           {/* Support Hours */}
-          <View style={styles.section}>
+          <View style={styles.card}>
             <View style={styles.sectionHeader}>
-              <Ionicons name="time" size={22} color={COLORS.primary} />
+              <View style={styles.sectionIconWrap}>
+                <Ionicons name="time" size={rf(20)} color={COLORS.primary} />
+              </View>
               <Text style={styles.sectionTitle}>Support Hours</Text>
             </View>
-            
+
             <View style={styles.hoursContainer}>
               <View style={styles.hoursRow}>
-                <Text style={styles.hoursDay}>Monday - Saturday</Text>
+                <Text style={styles.hoursDay}>Monday – Saturday</Text>
                 <View style={styles.hoursTimeBadge}>
-                  <Text style={styles.hoursTime}>8:00 AM - 6:00 PM</Text>
+                  <Text style={styles.hoursTime}>8:00 AM – 6:00 PM</Text>
                 </View>
               </View>
-              <View style={styles.hoursRow}>
+              <View style={[styles.hoursRow, { borderBottomWidth: 0 }]}>
                 <Text style={styles.hoursDay}>Sunday & Holidays</Text>
                 <View style={[styles.hoursTimeBadge, styles.emergencyBadge]}>
-                  <Text style={styles.emergencyText}>Email Support Only</Text>
+                  <Text style={styles.emergencyText}>Email Only</Text>
                 </View>
               </View>
             </View>
           </View>
 
-          {/* Final CTA */}
-          <View style={styles.ctaSection}>
+          {/* CTA */}
+          <View style={styles.card}>
             <Text style={styles.ctaTitle}>Need Immediate Help?</Text>
             <Text style={styles.ctaText}>
-              Don't hesitate to reach out. Our team is ready to assist you with any issues or questions during our support hours.
+              Don't hesitate to reach out. Our team is ready to assist you during support hours.
             </Text>
-            <TouchableOpacity style={[styles.ctaButton, styles.emailButton]} onPress={handleEmailPress}>
-              <Ionicons name="mail" size={20} color={COLORS.white} />
-              <Text style={styles.ctaButtonText}>Contact Through Email</Text>
+            <TouchableOpacity style={styles.emailButton} onPress={handleEmailPress} activeOpacity={0.85}>
+              <View style={styles.emailButtonInner}>
+                <View style={styles.emailIconWrap}>
+                  <Ionicons name="mail" size={rf(22)} color={COLORS.white} />
+                </View>
+                <View style={styles.emailButtonText}>
+                  <Text style={styles.emailButtonTitle}>Contact Through Email</Text>
+                  <Text style={styles.emailButtonSubtitle}>babahubsa@gmail.com</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={rf(20)} color={COLORS.white} />
+              </View>
             </TouchableOpacity>
+          </View>
+
+          {/* Footer note */}
+          <View style={styles.updateSection}>
+            <Text style={styles.updateText}>BabaHub – Your trusted shopping companion</Text>
           </View>
         </ScrollView>
       </View>
 
       {/* FAQ Modal */}
-      {renderFAQModal()}
+      <Modal
+        animationType="slide"
+        transparent
+        visible={faqModalVisible}
+        onRequestClose={() => setFaqModalVisible(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setFaqModalVisible(false)}>
+          <View style={styles.modalOverlay}>
+            <TouchableWithoutFeedback>
+              <View style={styles.modalContent}>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>Frequently Asked Questions</Text>
+                  <TouchableOpacity style={styles.closeButton} onPress={() => setFaqModalVisible(false)}>
+                    <Ionicons name="close" size={rf(22)} color={COLORS.dark} />
+                  </TouchableOpacity>
+                </View>
 
-      {/* White Navigation Bar Spacer for iOS */}
+                <ScrollView style={styles.faqList} showsVerticalScrollIndicator={false}>
+                  {FAQ_DATA.map((item) => (
+                    <View key={item.id} style={styles.faqItem}>
+                      <TouchableOpacity style={styles.faqQuestion} onPress={() => toggleQuestion(item.id)}>
+                        <Text style={styles.faqQuestionText}>{item.question}</Text>
+                        <Ionicons
+                          name={expandedQuestion === item.id ? 'chevron-up' : 'chevron-down'}
+                          size={rf(20)}
+                          color={COLORS.primary}
+                        />
+                      </TouchableOpacity>
+                      {expandedQuestion === item.id && (
+                        <View style={styles.faqAnswer}>
+                          <Text style={styles.faqAnswerText}>{item.answer}</Text>
+                        </View>
+                      )}
+                    </View>
+                  ))}
+                </ScrollView>
+
+                <View style={styles.modalFooter}>
+                  <TouchableOpacity style={styles.closeModalButton} onPress={() => setFaqModalVisible(false)}>
+                    <Text style={styles.closeModalButtonText}>Close</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
       {Platform.OS === 'ios' && <View style={styles.navigationBarSpacer} />}
     </View>
   );
 };
 
+/* ── Reusable sub-component ── */
+const ServiceCard = ({ icon, color, title, desc }) => (
+  <View style={styles.serviceCard}>
+    <View style={[styles.serviceIconWrap, { backgroundColor: color + '15' }]}>
+      <Ionicons name={icon} size={rf(24)} color={color} />
+    </View>
+    <Text style={styles.serviceTitle}>{title}</Text>
+    <Text style={styles.serviceDesc}>{desc}</Text>
+  </View>
+);
+
 const styles = StyleSheet.create({
-  fullContainer: {
-    flex: 1,
-    backgroundColor: COLORS.white,
-  },
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
+  fullContainer: { flex: 1, backgroundColor: COLORS.white },
+  container: { flex: 1, backgroundColor: COLORS.background },
+
+  // Header
   header: {
     backgroundColor: COLORS.primary,
-    borderBottomLeftRadius: 25,
-    borderBottomRightRadius: 25,
+    borderBottomLeftRadius: rw(6),
+    borderBottomRightRadius: rw(6),
     shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 10 },
+    shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
-    shadowRadius: 20,
+    shadowRadius: 16,
     elevation: 10,
     overflow: 'hidden',
   },
   headerBackground: {
     backgroundColor: COLORS.primary,
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight + 10 : height * 0.06,
-    paddingBottom: height * 0.03,
+    paddingTop: Platform.OS === 'android'
+      ? (StatusBar.currentHeight || rh(3)) + rh(1.5)
+      : rh(6),
+    paddingBottom: rh(3),
   },
   headerContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: width * 0.05,
+    paddingHorizontal: rw(5),
   },
   backButton: {
-    padding: 8,
-    borderRadius: 12,
+    padding: rw(2),
+    borderRadius: rw(2.5),
     backgroundColor: 'rgba(255,255,255,0.2)',
   },
   headerTitle: {
-    fontSize: width < 400 ? 18 : 20,
+    fontSize: rf(18),
     fontWeight: '800',
     color: COLORS.white,
-    letterSpacing: 0.5,
+    letterSpacing: 0.4,
   },
-  placeholder: {
-    width: 40,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: Platform.OS === 'ios' ? 30 : 20,
-  },
+  placeholder: { width: rw(10) },
+
+  // Scroll
+  scrollView: { flex: 1 },
+  scrollContent: { paddingBottom: rh(4) },
+
+  // Hero
   heroSection: {
     alignItems: 'center',
-    paddingVertical: height * 0.04,
-    paddingHorizontal: width * 0.05,
+    paddingVertical: rh(3.5),
+    paddingHorizontal: rw(5),
     backgroundColor: COLORS.white,
-    marginHorizontal: Math.max(width * 0.03, 10),
-    marginTop: height * 0.03,
-    borderRadius: 20,
+    marginHorizontal: rw(4),
+    marginTop: rh(2.5),
+    borderRadius: rw(5),
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
     shadowRadius: 12,
-    elevation: 6,
+    elevation: 5,
   },
-  iconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+  heroIconWrap: {
+    width: rw(18),
+    height: rw(18),
+    borderRadius: rw(9),
     backgroundColor: COLORS.primary + '15',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 15,
+    marginBottom: rh(1.5),
   },
   heroTitle: {
-    fontSize: width < 400 ? 20 : 24,
+    fontSize: rf(20),
     fontWeight: '800',
     color: COLORS.dark,
-    marginBottom: 8,
+    marginBottom: rh(0.8),
     textAlign: 'center',
   },
   heroSubtitle: {
-    fontSize: width < 400 ? 14 : 16,
+    fontSize: rf(14),
     color: COLORS.gray,
     textAlign: 'center',
-    lineHeight: 22,
-    paddingHorizontal: 10,
+    lineHeight: rf(22),
+    fontWeight: '500',
   },
-  section: {
+
+  // Card
+  card: {
     backgroundColor: COLORS.white,
-    marginHorizontal: Math.max(width * 0.03, 10),
-    marginBottom: width * 0.04,
-    borderRadius: 20,
-    padding: Math.max(width * 0.04, 15),
+    marginHorizontal: rw(4),
+    marginTop: rh(2),
+    borderRadius: rw(4),
+    padding: rw(4),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 6,
-    marginTop: 10,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: COLORS.light,
   },
+
+  // Section header
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
-    gap: 10,
+    marginBottom: rh(1.5),
+    gap: rw(3),
+  },
+  sectionIconWrap: {
+    width: rw(10),
+    height: rw(10),
+    borderRadius: rw(5),
+    backgroundColor: COLORS.primary + '15',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   sectionTitle: {
-    fontSize: width < 400 ? 16 : 18,
+    fontSize: rf(16),
     fontWeight: '700',
     color: COLORS.dark,
+    flex: 1,
+    letterSpacing: 0.2,
   },
+
+  // Contact card
   contactCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.background,
-    padding: 16,
-    borderRadius: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: COLORS.light,
-    minHeight: 80,
-  },
-  emailCard: {
     backgroundColor: COLORS.primary + '08',
+    padding: rw(4),
+    borderRadius: rw(3),
+    borderWidth: 1,
     borderColor: COLORS.primary + '30',
   },
-  contactIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+  contactIconCircle: {
+    width: rw(12),
+    height: rw(12),
+    borderRadius: rw(6),
+    backgroundColor: COLORS.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 15,
+    marginRight: rw(3),
   },
-  emailIcon: {
-    backgroundColor: COLORS.primary,
-  },
-  phoneIcon: {
-    backgroundColor: COLORS.accent + '15',
-  },
-  contactInfo: {
-    flex: 1,
-  },
+  contactInfo: { flex: 1 },
   contactMethod: {
-    fontSize: width < 400 ? 14 : 16,
+    fontSize: rf(15),
     fontWeight: '700',
     color: COLORS.dark,
-    marginBottom: 2,
+    marginBottom: rh(0.3),
   },
   contactDetail: {
-    fontSize: width < 400 ? 13 : 15,
+    fontSize: rf(13),
     color: COLORS.darkLight,
-    marginBottom: 4,
+    marginBottom: rh(0.3),
   },
   responseTime: {
-    fontSize: width < 400 ? 12 : 13,
+    fontSize: rf(12),
     color: COLORS.gray,
     fontWeight: '500',
   },
-  badge: {
+  recommendedBadge: {
     backgroundColor: COLORS.primary + '15',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginLeft: 8,
+    paddingHorizontal: rw(2.5),
+    paddingVertical: rh(0.5),
+    borderRadius: rw(2),
+    marginLeft: rw(2),
   },
-  badgeText: {
-    fontSize: width < 400 ? 10 : 12,
+  recommendedText: {
+    fontSize: rf(11),
     fontWeight: '700',
     color: COLORS.primary,
   },
-  servicesGrid: {
+
+  // Services grid
+  gridRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    gap: rw(3),
+    marginBottom: rw(3),
   },
   serviceCard: {
-    width: width < 400 ? '48%' : '48%',
+    flex: 1,
     backgroundColor: COLORS.background,
-    padding: 16,
-    borderRadius: 16,
-    marginBottom: 12,
+    borderRadius: rw(3),
+    padding: rw(3.5),
     alignItems: 'center',
-    minHeight: 120,
+    borderWidth: 1,
+    borderColor: COLORS.light,
   },
-  serviceIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+  serviceIconWrap: {
+    width: rw(12),
+    height: rw(12),
+    borderRadius: rw(6),
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: rh(0.8),
   },
   serviceTitle: {
-    fontSize: width < 400 ? 13 : 15,
+    fontSize: rf(13),
     fontWeight: '700',
     color: COLORS.dark,
-    marginBottom: 4,
+    marginBottom: rh(0.4),
     textAlign: 'center',
   },
   serviceDesc: {
-    fontSize: width < 400 ? 11 : 13,
+    fontSize: rf(12),
     color: COLORS.gray,
     textAlign: 'center',
-    lineHeight: 16,
+    lineHeight: rf(17),
   },
-  faqSection: {
-    backgroundColor: COLORS.white,
-    marginHorizontal: Math.max(width * 0.03, 10),
-    marginBottom: width * 0.04,
-    borderRadius: 20,
-    padding: Math.max(width * 0.04, 15),
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 6,
-  },
-  faqContent: {
+
+  // FAQ row
+  faqRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: rw(3),
   },
-  faqIconContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+  faqIconWrap: {
+    width: rw(14),
+    height: rw(14),
+    borderRadius: rw(7),
     backgroundColor: COLORS.primary + '15',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 15,
   },
-  faqText: {
-    flex: 1,
-  },
-  faqTitle: {
-    fontSize: width < 400 ? 16 : 18,
-    fontWeight: '700',
-    color: COLORS.dark,
-    marginBottom: 4,
-  },
+  faqTextWrap: { flex: 1 },
   faqSubtitle: {
-    fontSize: width < 400 ? 13 : 15,
+    fontSize: rf(13),
     color: COLORS.gray,
+    marginTop: rh(0.3),
+    fontWeight: '500',
   },
+
+  // Support hours
   hoursContainer: {
     backgroundColor: COLORS.background,
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: rw(3),
+    paddingHorizontal: rw(4),
+    borderWidth: 1,
+    borderColor: COLORS.light,
   },
   hoursRow: {
-    flexDirection: width < 400 ? 'column' : 'row',
+    flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: width < 400 ? 'flex-start' : 'center',
-    paddingVertical: 12,
+    alignItems: 'center',
+    paddingVertical: rh(1.5),
     borderBottomWidth: 1,
     borderBottomColor: COLORS.light,
-    gap: width < 400 ? 8 : 0,
   },
   hoursDay: {
-    fontSize: width < 400 ? 14 : 16,
+    fontSize: rf(14),
     fontWeight: '600',
     color: COLORS.dark,
+    flex: 1,
   },
   hoursTimeBadge: {
     backgroundColor: COLORS.primary + '15',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
+    paddingHorizontal: rw(3),
+    paddingVertical: rh(0.6),
+    borderRadius: rw(2),
   },
   hoursTime: {
-    fontSize: width < 400 ? 13 : 15,
+    fontSize: rf(13),
     fontWeight: '600',
     color: COLORS.primary,
   },
-  emergencyBadge: {
-    backgroundColor: COLORS.warning + '15',
-  },
+  emergencyBadge: { backgroundColor: COLORS.warning + '15' },
   emergencyText: {
-    fontSize: width < 400 ? 13 : 15,
+    fontSize: rf(13),
     fontWeight: '600',
     color: COLORS.warning,
   },
-  ctaSection: {
-    backgroundColor: COLORS.white,
-    marginHorizontal: Math.max(width * 0.03, 10),
-    borderRadius: 20,
-    padding: Math.max(width * 0.04, 15),
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 6,
-    alignItems: 'center',
-    marginBottom: Platform.OS === 'ios' ? 30 : 20,
-  },
+
+  // CTA
   ctaTitle: {
-    fontSize: width < 400 ? 18 : 20,
+    fontSize: rf(18),
     fontWeight: '800',
     color: COLORS.dark,
-    marginBottom: 8,
+    marginBottom: rh(0.8),
     textAlign: 'center',
   },
   ctaText: {
-    fontSize: width < 400 ? 14 : 16,
+    fontSize: rf(14),
     color: COLORS.gray,
     textAlign: 'center',
-    marginBottom: 20,
-    lineHeight: 22,
-    paddingHorizontal: 10,
+    marginBottom: rh(2),
+    lineHeight: rf(22),
   },
-  ctaButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 16,
-    width: '100%',
-    gap: 8,
-    minHeight: 56,
-  },
+
+  // Email button — pill-shaped, matches app standard
   emailButton: {
     backgroundColor: COLORS.primary,
+    borderRadius: rw(35),
+    paddingVertical: rh(1.8),
+    paddingHorizontal: rw(4),
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
-  ctaButtonText: {
-    fontSize: width < 400 ? 16 : 18,
-    fontWeight: '700',
-    color: COLORS.white,
+  emailButtonInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  // Modal Styles
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  emailIconWrap: {
+    width: rw(10),
+    height: rw(10),
+    borderRadius: rw(5),
+    backgroundColor: 'rgba(255,255,255,0.2)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    marginRight: rw(3),
+  },
+  emailButtonText: { flex: 1 },
+  emailButtonTitle: {
+    fontSize: rf(15),
+    fontWeight: '700',
+    color: COLORS.white,
+    marginBottom: rh(0.2),
+  },
+  emailButtonSubtitle: {
+    fontSize: rf(12),
+    color: COLORS.white,
+    opacity: 0.9,
+  },
+
+  // Footer
+  updateSection: {
+    alignItems: 'center',
+    paddingVertical: rh(2),
+    paddingHorizontal: rw(4),
+    marginTop: rh(1),
+  },
+  updateText: {
+    fontSize: rf(12),
+    color: COLORS.grayLight,
+    fontStyle: 'italic',
+  },
+
+  // Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: rw(5),
   },
   modalContent: {
     backgroundColor: COLORS.white,
-    borderRadius: 25,
+    borderRadius: rw(5),
     width: '100%',
-    maxWidth: 500,
     maxHeight: height * 0.8,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
     elevation: 10,
     overflow: 'hidden',
   },
@@ -681,79 +668,83 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
+    padding: rw(4),
     borderBottomWidth: 1,
     borderBottomColor: COLORS.light,
     backgroundColor: COLORS.background,
   },
   modalTitle: {
-    fontSize: width < 400 ? 18 : 20,
+    fontSize: rf(16),
     fontWeight: '800',
     color: COLORS.dark,
     flex: 1,
   },
   closeButton: {
-    padding: 4,
-    borderRadius: 12,
+    padding: rw(1),
+    borderRadius: rw(2),
   },
   faqList: {
     maxHeight: height * 0.5,
-    padding: 16,
+    padding: rw(4),
   },
   faqItem: {
-    marginBottom: 12,
-    borderRadius: 12,
+    marginBottom: rh(1),
+    borderRadius: rw(3),
     backgroundColor: COLORS.background,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: COLORS.light,
   },
   faqQuestion: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
+    padding: rw(4),
   },
   faqQuestionText: {
-    fontSize: width < 400 ? 14 : 16,
+    fontSize: rf(14),
     fontWeight: '600',
     color: COLORS.dark,
     flex: 1,
-    marginRight: 12,
+    marginRight: rw(3),
+    lineHeight: rf(20),
   },
   faqAnswer: {
-    padding: 16,
+    padding: rw(4),
     paddingTop: 0,
     borderTopWidth: 1,
     borderTopColor: COLORS.light,
   },
   faqAnswerText: {
-    fontSize: width < 400 ? 13 : 15,
+    fontSize: rf(13),
     color: COLORS.gray,
-    lineHeight: 20,
+    lineHeight: rf(20),
   },
   modalFooter: {
-    padding: 20,
+    padding: rw(4),
     borderTopWidth: 1,
     borderTopColor: COLORS.light,
     alignItems: 'center',
   },
-  cancelButton: {
+  closeModalButton: {
     backgroundColor: COLORS.primary,
-    paddingVertical: 14,
-    paddingHorizontal: 40,
-    borderRadius: 16,
-    minWidth: 120,
+    borderRadius: rw(35),
+    paddingVertical: rh(1.8),
+    paddingHorizontal: rw(10),
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
-  cancelButtonText: {
-    fontSize: width < 400 ? 14 : 16,
+  closeModalButtonText: {
+    fontSize: rf(15),
     fontWeight: '700',
     color: COLORS.white,
-    textAlign: 'center',
   },
-  // White Navigation Bar Spacer for iOS
-  navigationBarSpacer: {
-    height: Platform.OS === 'ios' ? 34 : 0,
-    backgroundColor: COLORS.white,
-  },
+
+  // iOS spacer
+  navigationBarSpacer: { height: 34, backgroundColor: COLORS.white },
 });
 
 export default CustomerSupportScreen;
