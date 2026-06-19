@@ -843,7 +843,7 @@ const CategoryFilter = ({ categories, selectedCategory, onCategorySelect }) => {
 
 const StoreScreen = () => {
   const { guardAction, authModalProps } = useAuthGuard();
-  const { isLoading: authLoading } = useAuth();
+  const { isLoading: authLoading, isAuthenticated } = useAuth();
   const [searchText, setSearchText] = useState('');
   const [wishlist, setWishlist] = useState([]);
   const [cartItems, setCartItems] = useState([]);
@@ -950,6 +950,11 @@ const StoreScreen = () => {
 
   // Fetch wishlist and cart from AsyncStorage
   const fetchWishlistAndCart = async () => {
+    if (!isAuthenticated()) {
+      setWishlist([]);
+      setCartItems([]);
+      return;
+    }
     try {
       // Fetch wishlist
       const wishlistData = await AsyncStorage.getItem('wishlist');

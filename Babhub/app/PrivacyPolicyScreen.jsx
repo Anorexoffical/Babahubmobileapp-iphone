@@ -12,8 +12,12 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { responsiveFont, responsiveWidth, responsiveHeight } from '../src/utils/responsive';
 
 const { width, height } = Dimensions.get('window');
+const rf = responsiveFont;
+const rw = responsiveWidth;
+const rh = responsiveHeight;
 
 // Enhanced Brand Color Palette
 const COLORS = {
@@ -63,7 +67,7 @@ const PrivacyPolicyScreen = () => {
                 style={styles.backButton}
                 onPress={handleBack}
               >
-                <Ionicons name="arrow-back" size={24} color={COLORS.white} />
+                <Ionicons name="arrow-back" size={rf(18)} color={COLORS.white} />
               </TouchableOpacity>
               <Text style={styles.headerTitle}>Privacy Policy</Text>
               <View style={styles.placeholder} />
@@ -79,7 +83,7 @@ const PrivacyPolicyScreen = () => {
           {/* Hero Section */}
           <View style={styles.heroSection}>
             <View style={styles.iconContainer}>
-              <Ionicons name="shield-checkmark" size={40} color={COLORS.primary} />
+              <Ionicons name="shield-checkmark" size={rf(28)} color={COLORS.primary} />
             </View>
             <Text style={styles.heroTitle}>Privacy Policy</Text>
             <Text style={styles.heroSubtitle}>Your Privacy Matters to Us</Text>
@@ -97,7 +101,7 @@ const PrivacyPolicyScreen = () => {
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
                 <View style={styles.sectionIcon}>
-                  <Ionicons name="person-circle" size={20} color={COLORS.primary} />
+                  <Ionicons name="person-circle" size={rf(16)} color={COLORS.primary} />
                 </View>
                 <Text style={styles.sectionTitle}>1. Information We Collect</Text>
               </View>
@@ -155,7 +159,7 @@ const PrivacyPolicyScreen = () => {
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
                 <View style={styles.sectionIcon}>
-                  <Ionicons name="lock-closed" size={20} color={COLORS.primary} />
+                  <Ionicons name="lock-closed" size={rf(16)} color={COLORS.primary} />
                 </View>
                 <Text style={styles.sectionTitle}>2. Data Security & Encryption</Text>
               </View>
@@ -166,22 +170,22 @@ const PrivacyPolicyScreen = () => {
               
               <View style={styles.securityGrid}>
                 <View style={styles.securityItem}>
-                  <Ionicons name="shield-checkmark" size={24} color={COLORS.success} />
+                  <Ionicons name="shield-checkmark" size={rf(20)} color={COLORS.success} />
                   <Text style={styles.securityTitle}>End-to-End Encryption</Text>
                   <Text style={styles.securityText}>All personal data encrypted using AES-256</Text>
                 </View>
                 <View style={styles.securityItem}>
-                  <Ionicons name="server" size={24} color={COLORS.primary} />
+                  <Ionicons name="server" size={rf(20)} color={COLORS.primary} />
                   <Text style={styles.securityTitle}>Secure Storage</Text>
                   <Text style={styles.securityText}>Data stored in secure, access-controlled databases</Text>
                 </View>
                 <View style={styles.securityItem}>
-                  <Ionicons name="card" size={24} color={COLORS.warning} />
+                  <Ionicons name="card" size={rf(20)} color={COLORS.warning} />
                   <Text style={styles.securityTitle}>Payment Security</Text>
                   <Text style={styles.securityText}>Card details processed externally via PayFast</Text>
                 </View>
                 <View style={styles.securityItem}>
-                  <Ionicons name="eye-off" size={24} color={COLORS.error} />
+                  <Ionicons name="eye-off" size={rf(20)} color={COLORS.error} />
                   <Text style={styles.securityTitle}>No Third-Party Sharing</Text>
                   <Text style={styles.securityText}>We do not sell or share your personal data</Text>
                 </View>
@@ -192,7 +196,7 @@ const PrivacyPolicyScreen = () => {
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
                 <View style={styles.sectionIcon}>
-                  <Ionicons name="business" size={20} color={COLORS.primary} />
+                  <Ionicons name="business" size={rf(16)} color={COLORS.primary} />
                 </View>
                 <Text style={styles.sectionTitle}>3. How We Use Your Information</Text>
               </View>
@@ -261,7 +265,7 @@ const PrivacyPolicyScreen = () => {
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
                 <View style={styles.sectionIcon}>
-                  <Ionicons name="people" size={20} color={COLORS.primary} />
+                  <Ionicons name="people" size={rf(16)} color={COLORS.primary} />
                 </View>
                 <Text style={styles.sectionTitle}>5. Your Rights & Control</Text>
               </View>
@@ -300,12 +304,12 @@ const PrivacyPolicyScreen = () => {
               <View style={styles.contactMethods}>
                 <TouchableOpacity style={styles.emailButton} onPress={handleEmailPress}>
                   <View style={styles.emailButtonContent}>
-                    <Ionicons name="mail" size={24} color={COLORS.white} />
+                    <Ionicons name="mail" size={rf(20)} color={COLORS.white} />
                     <View style={styles.emailButtonText}>
                       <Text style={styles.emailButtonTitle}>Email Support</Text>
                       <Text style={styles.emailButtonSubtitle}>babahubsa@gmail.com</Text>
                     </View>
-                    <Ionicons name="chevron-forward" size={20} color={COLORS.white} />
+                    <Ionicons name="chevron-forward" size={rf(16)} color={COLORS.white} />
                   </View>
                 </TouchableOpacity>
               </View>
@@ -317,7 +321,7 @@ const PrivacyPolicyScreen = () => {
 
             {/* Final Note */}
             <View style={styles.finalNote}>
-              <Ionicons name="information-circle" size={24} color={COLORS.primary} />
+              <Ionicons name="information-circle" size={rf(20)} color={COLORS.primary} />
               <Text style={styles.finalNoteText}>
                 By using BabaHub, you acknowledge that you have read and understood this Privacy Policy. We are committed to continuously improving our privacy practices.
               </Text>
@@ -372,14 +376,14 @@ const styles = StyleSheet.create({
   },
   backButton: {
     padding: 8,
-    borderRadius: 12,
+    borderRadius: 10,
     backgroundColor: 'rgba(255,255,255,0.2)',
   },
   headerTitle: {
-    fontSize: width < 400 ? 18 : 20,
-    fontWeight: '800',
+    fontSize: rf(16),
+    fontWeight: '700',
     color: COLORS.white,
-    letterSpacing: 0.5,
+    letterSpacing: 0.3,
   },
   placeholder: {
     width: 40,
@@ -405,25 +409,25 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   iconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     backgroundColor: COLORS.primary + '15',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 15,
+    marginBottom: 12,
   },
   heroTitle: {
-    fontSize: width < 400 ? 22 : 26,
-    fontWeight: '800',
+    fontSize: rf(18),
+    fontWeight: '700',
     color: COLORS.dark,
-    marginBottom: 5,
+    marginBottom: 4,
     textAlign: 'center',
   },
   heroSubtitle: {
-    fontSize: width < 400 ? 16 : 18,
+    fontSize: rf(13),
     color: COLORS.gray,
-    marginBottom: 8,
+    marginBottom: 6,
     textAlign: 'center',
   },
   content: {
@@ -441,9 +445,9 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   introText: {
-    fontSize: width < 400 ? 14 : 16,
+    fontSize: rf(13),
     color: COLORS.dark,
-    lineHeight: 22,
+    lineHeight: 20,
     textAlign: 'center',
   },
   brandText: {
@@ -476,25 +480,25 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   sectionTitle: {
-    fontSize: width < 400 ? 16 : 18,
+    fontSize: rf(14),
     fontWeight: '700',
     color: COLORS.dark,
     flex: 1,
   },
   sectionText: {
-    fontSize: width < 400 ? 14 : 16,
+    fontSize: rf(13),
     color: COLORS.darkLight,
-    lineHeight: 22,
-    marginBottom: 15,
+    lineHeight: 20,
+    marginBottom: 12,
   },
   subsection: {
-    marginBottom: 15,
+    marginBottom: 12,
   },
   subsectionTitle: {
-    fontSize: width < 400 ? 15 : 17,
+    fontSize: rf(13),
     fontWeight: '600',
     color: COLORS.dark,
-    marginBottom: 10,
+    marginBottom: 8,
   },
   bulletItem: {
     flexDirection: 'row',
@@ -510,10 +514,10 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   bulletText: {
-    fontSize: width < 400 ? 14 : 16,
+    fontSize: rf(13),
     color: COLORS.darkLight,
     flex: 1,
-    lineHeight: 20,
+    lineHeight: 19,
   },
   highlight: {
     fontWeight: '600',
@@ -538,18 +542,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   securityTitle: {
-    fontSize: width < 400 ? 12 : 14,
+    fontSize: rf(12),
     fontWeight: '600',
     color: COLORS.dark,
-    marginTop: 8,
+    marginTop: 6,
     textAlign: 'center',
   },
   securityText: {
-    fontSize: width < 400 ? 11 : 13,
+    fontSize: rf(11),
     color: COLORS.gray,
     textAlign: 'center',
-    marginTop: 4,
-    lineHeight: 16,
+    marginTop: 3,
+    lineHeight: 15,
   },
   usageList: {
     gap: 10,
@@ -560,9 +564,9 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   usageText: {
-    fontSize: width < 400 ? 14 : 16,
+    fontSize: rf(13),
     color: COLORS.darkLight,
-    marginLeft: 12,
+    marginLeft: 10,
     flex: 1,
   },
   thirdPartyCard: {
@@ -581,15 +585,15 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   partnerName: {
-    fontSize: width < 400 ? 14 : 16,
+    fontSize: rf(13),
     fontWeight: '600',
     color: COLORS.dark,
-    marginBottom: 4,
+    marginBottom: 3,
   },
   partnerDesc: {
-    fontSize: width < 400 ? 13 : 15,
+    fontSize: rf(12),
     color: COLORS.gray,
-    lineHeight: 18,
+    lineHeight: 17,
   },
   importantNote: {
     flexDirection: 'row',
@@ -600,10 +604,10 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   noteText: {
-    fontSize: width < 400 ? 14 : 16,
+    fontSize: rf(12),
     color: COLORS.dark,
     fontWeight: '500',
-    marginLeft: 8,
+    marginLeft: 6,
     flex: 1,
   },
   rightsGrid: {
@@ -620,17 +624,17 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   rightTitle: {
-    fontSize: width < 400 ? 12 : 14,
+    fontSize: rf(12),
     fontWeight: '600',
     color: COLORS.dark,
-    marginTop: 8,
+    marginTop: 6,
     textAlign: 'center',
   },
   rightText: {
-    fontSize: width < 400 ? 11 : 13,
+    fontSize: rf(11),
     color: COLORS.gray,
     textAlign: 'center',
-    marginTop: 4,
+    marginTop: 3,
   },
   contactSection: {
     backgroundColor: COLORS.white,
@@ -644,17 +648,17 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   contactTitle: {
-    fontSize: width < 400 ? 18 : 20,
+    fontSize: rf(16),
     fontWeight: '700',
     color: COLORS.dark,
-    marginBottom: 10,
+    marginBottom: 8,
     textAlign: 'center',
   },
   contactText: {
-    fontSize: width < 400 ? 14 : 16,
+    fontSize: rf(13),
     color: COLORS.darkLight,
-    marginBottom: 20,
-    lineHeight: 22,
+    marginBottom: 16,
+    lineHeight: 20,
     textAlign: 'center',
   },
   contactMethods: {
@@ -676,22 +680,22 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   emailButtonTitle: {
-    fontSize: width < 400 ? 16 : 18,
+    fontSize: rf(14),
     fontWeight: '700',
     color: COLORS.white,
-    marginBottom: 4,
+    marginBottom: 2,
   },
   emailButtonSubtitle: {
-    fontSize: width < 400 ? 14 : 16,
+    fontSize: rf(12),
     color: COLORS.white,
     opacity: 0.9,
   },
   responseNote: {
-    fontSize: width < 400 ? 12 : 14,
+    fontSize: rf(11),
     color: COLORS.gray,
     textAlign: 'center',
     fontStyle: 'italic',
-    marginTop: 10,
+    marginTop: 8,
   },
   finalNote: {
     flexDirection: 'row',
@@ -704,11 +708,11 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   finalNoteText: {
-    fontSize: width < 400 ? 14 : 16,
+    fontSize: rf(12),
     color: COLORS.dark,
-    marginLeft: 12,
+    marginLeft: 10,
     flex: 1,
-    lineHeight: 20,
+    lineHeight: 18,
   },
   updateSection: {
     alignItems: 'center',
@@ -717,7 +721,7 @@ const styles = StyleSheet.create({
     borderTopColor: COLORS.light,
   },
   updateText: {
-    fontSize: width < 400 ? 12 : 14,
+    fontSize: rf(11),
     color: COLORS.grayLight,
     fontStyle: 'italic',
   },
