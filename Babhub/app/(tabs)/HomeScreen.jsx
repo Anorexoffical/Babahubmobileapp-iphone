@@ -762,46 +762,57 @@ const HomeScreen = () => {
   const [isOnline, setIsOnline] = useState(true);
   const [connectionChecking, setConnectionChecking] = useState(false);
   const [hasCachedData, setHasCachedData] = useState(false);
+  const [initialized, setInitialized] = useState(false);
+  const [networkInitialized, setNetworkInitialized] = useState(false);
+  const [dataSource, setDataSource] = useState('api');
+
+  // Track previous network status to detect real connectivity changes
+  const previousNetworkStatus = useRef(null);
   
   const router = useRouter();
   const scrollY = useRef(new Animated.Value(0)).current;
   const bannerRef = useRef(null);
   const searchInputRef = useRef(null);
 
-  // IMPROVED Internet connection check using NetInfo
+  // Internet connection check — treats null isInternetReachable as online
   const checkConnection = useCallback(async () => {
     setConnectionChecking(true);
     try {
       const netInfoState = await NetInfo.fetch();
-      const connected = netInfoState.isConnected && netInfoState.isInternetReachable;
+      // isInternetReachable can be null on first call; treat null as online
+      const connected =
+        netInfoState.isConnected === true &&
+        netInfoState.isInternetReachable !== false;
       setIsOnline(connected);
-      
-      if (!connected && products.length > 0) {
-        setHasCachedData(true);
-        Toast.show({
-          type: 'info',
-          text1: 'Offline Mode',
-          text2: 'Showing cached products',
-        });
-      }
-      
+      setNetworkInitialized(true);
+      previousNetworkStatus.current = connected;
       return connected;
     } catch (error) {
       console.error('Error checking connection:', error);
       setIsOnline(false);
+      setNetworkInitialized(true);
       return false;
     } finally {
       setConnectionChecking(false);
     }
-  }, [products.length]);
+  }, []);
 
-  // Set up network listener
+  // Network listener — only shows toast on real connectivity changes after init
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener(state => {
-      const connected = state.isConnected && state.isInternetReachable;
+      const connected =
+        state.isConnected === true &&
+        state.isInternetReachable !== false;
+
       setIsOnline(connected);
-      
-      if (!connected && products.length > 0) {
+
+      // Only show toast if network was previously online and is now offline,
+      // and initialization has already completed (not during startup)
+      if (
+        networkInitialized &&
+        previousNetworkStatus.current === true &&
+        connected === false
+      ) {
         setHasCachedData(true);
         Toast.show({
           type: 'info',
@@ -809,10 +820,12 @@ const HomeScreen = () => {
           text2: 'Showing cached products',
         });
       }
+
+      previousNetworkStatus.current = connected;
     });
 
     return () => unsubscribe();
-  }, [products.length]);
+  }, [networkInitialized]);
 
   // Fetch wishlist and cart from AsyncStorage
   const fetchWishlistAndCart = async () => {
@@ -897,31 +910,44 @@ const HomeScreen = () => {
     }
   };
 
-  // Use focus effect to refresh data when screen comes into focus
+  // Use focus effect to refresh wishlist/cart only (not products — avoids race condition)
   useFocusEffect(
     useCallback(() => {
-      console.log('HomeScreen focused - refreshing wishlist and cart');
-      fetchWishlistAndCart();
-      checkConnection();
-    }, [])
+      if (initialized) {
+        fetchWishlistAndCart();
+      }
+    }, [initialized])
   );
 
-  // Initial data fetch — wait for auth to resolve first
+  // Single controlled initialization — runs exactly once after auth resolves
   useEffect(() => {
-    if (authLoading) return;
-    const initializeData = async () => {
-      const connected = await checkConnection();
-      if (connected) {
+    const initializeApp = async () => {
+      if (initialized) return;
+
+      setLoading(true);
+
+      try {
+        const connected = await checkConnection();
         await fetchWishlistAndCart();
-        await fetchProducts();
-      } else {
-        await loadCachedProducts();
+        if (connected) {
+          await fetchProducts();
+        } else {
+          await loadCachedProducts();
+        }
+      } catch (error) {
+        console.error('HomeScreen initialization error:', error);
+      } finally {
+        setLoading(false);
+        setInitialized(true);
       }
     };
-    initializeData();
+
+    if (!authLoading) {
+      initializeApp();
+    }
   }, [authLoading]);
 
-  // Load cached products from AsyncStorage
+  // Load cached products — no loading state management (owned by initializeApp)
   const loadCachedProducts = async () => {
     try {
       const cachedProducts = await AsyncStorage.getItem('cached_products');
@@ -930,119 +956,30 @@ const HomeScreen = () => {
         setProducts(parsedProducts);
         setFilteredProducts(parsedProducts);
         setHasCachedData(true);
+        setDataSource('cache');
+        console.log('Products Source: cache | Count:', parsedProducts.length);
       }
-      setLoading(false);
     } catch (error) {
       console.error('Error loading cached products:', error);
-      setLoading(false);
     }
   };
 
-  // Fetch products from backend API
+  // Fetch products — no loading state management (owned by initializeApp / onRefresh)
   const fetchProducts = async () => {
     try {
-      setLoading(true);
-      
-      const {data} = await http.get('/products/featured');
-      
-      
+      const { data } = await http.get('/products/featured');
       const productsData = data.products || data;
+      console.log('Featured Products Count:', productsData.length);
+      console.log('Products Source: api');
+      setDataSource('api');
       setProducts(productsData);
       setFilteredProducts(productsData);
-      
-      // Cache products for offline use
       await AsyncStorage.setItem('cached_products', JSON.stringify(productsData));
       setHasCachedData(true);
-      
     } catch (err) {
       console.error('Error fetching products:', err);
-      
-      // Try to load cached products as fallback
+      // Fallback to cache on API failure
       await loadCachedProducts();
-      
-      if (!hasCachedData) {
-        // Fallback to mock data only if no cached data available
-        const mockProducts = [
-          {
-            _id: '1',
-            name: 'Premium Cotton T-Shirt',
-            brand: 'FashionHub',
-            category: 'Clothing',
-            image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&h=500&fit=crop',
-            variants: [{ sizes: [{ price: 29.99 }] }],
-            price: 29.99
-          },
-          {
-            _id: '2',
-            name: 'Wireless Bluetooth Headphones',
-            brand: 'TechGear',
-            category: 'Electronics',
-            image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=500&fit=crop',
-            variants: [{ sizes: [{ price: 149.99 }] }],
-            price: 149.99
-          },
-          {
-            _id: '3',
-            name: 'Smart Watch Pro',
-            brand: 'TechGear',
-            category: 'Electronics',
-            image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=500&fit=crop',
-            variants: [{ sizes: [{ price: 199.99 }] }],
-            price: 199.99
-          },
-          {
-            _id: '4',
-            name: 'Minimalist Sneakers',
-            brand: 'EcoWear',
-            category: 'Shoes',
-            image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&h=500&fit=crop',
-            variants: [{ sizes: [{ price: 79.99 }] }],
-            price: 79.99
-          },
-          {
-            _id: '5',
-            name: 'Designer Handbag',
-            brand: 'LuxuryBrand',
-            category: 'Accessories',
-            image: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=400&h=500&fit=crop',
-            variants: [{ sizes: [{ price: 299.99 }] }],
-            price: 299.99
-          },
-          {
-            _id: '6',
-            name: 'Running Shoes',
-            brand: 'ActiveWear',
-            category: 'Shoes',
-            image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&h=500&fit=crop',
-            variants: [{ sizes: [{ price: 89.99 }] }],
-            price: 89.99
-          },
-          {
-            _id: '7',
-            name: 'Gaming Laptop',
-            brand: 'TechGear',
-            category: 'Electronics',
-            image: 'https://images.unsplash.com/photo-1603302576837-37561b2e2302?w=400&h=500&fit=crop',
-            variants: [{ sizes: [{ price: 1299.99 }] }],
-            price: 1299.99
-          },
-          {
-            _id: '8',
-            name: 'Designer Sunglasses',
-            brand: 'LuxuryBrand',
-            category: 'Accessories',
-            image: 'https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=400&h=500&fit=crop',
-            variants: [{ sizes: [{ price: 199.99 }] }],
-            price: 199.99
-          },
-        ];
-        setProducts(mockProducts);
-        setFilteredProducts(mockProducts);
-        setHasCachedData(true);
-      }
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
     }
   };
 
@@ -1102,15 +1039,19 @@ const HomeScreen = () => {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    const connected = await checkConnection();
-    if (connected) {
-      await fetchProducts();
+    try {
+      const connected = await checkConnection();
       await fetchWishlistAndCart();
-    } else {
-      // Reload cached data when offline
-      await loadCachedProducts();
+      if (connected) {
+        await fetchProducts();
+      } else {
+        await loadCachedProducts();
+      }
+    } catch (error) {
+      console.error('HomeScreen refresh error:', error);
+    } finally {
+      setRefreshing(false);
     }
-    setRefreshing(false);
   };
 
   const toggleWishlistGuarded = (product) => guardAction(() => toggleWishlist(product));
@@ -1270,10 +1211,10 @@ const HomeScreen = () => {
         translucent={false}
       />
       
-      {/* UPDATED: Internet Status Bar without Retry Button */}
-      <InternetStatusBar 
-        isOnline={isOnline} 
-      />
+      {/* Internet Status Bar — only shown after network is initialized */}
+      {networkInitialized && (
+        <InternetStatusBar isOnline={isOnline} />
+      )}
 
       {/* Sticky Header */}
       <StickyHeader 
@@ -1304,8 +1245,8 @@ const HomeScreen = () => {
         contentContainerStyle={!isOnline ? styles.offlineContent : {}}
       >
         <View style={styles.container}>
-          {/* Offline Indicator in Content */}
-          {!isOnline && hasCachedData && (
+          {/* Offline Indicator — only shown after network init confirms offline */}
+          {networkInitialized && !isOnline && hasCachedData && (
             <View style={styles.offlineIndicator}>
               <Ionicons name="cloud-offline-outline" size={16} color={COLORS.warning} />
               <Text style={styles.offlineIndicatorText}>
@@ -1511,7 +1452,7 @@ const HomeScreen = () => {
                     <Text style={styles.seeAll}>{filteredProducts.length} items</Text>
                   </View>
                   
-                  {filteredProducts.length > 0 ? (
+                  {!loading && filteredProducts.length > 0 ? (
                     <>
                       {/* First Half of Products */}
                       <FlatList
@@ -1540,7 +1481,7 @@ const HomeScreen = () => {
                         />
                       )}
                     </>
-                  ) : (
+                  ) : !loading && filteredProducts.length === 0 ? (
                     <View style={styles.emptyState}>
                       <Ionicons name="grid-outline" size={50} color={COLORS.grayLight} />
                       <Text style={styles.emptyStateText}>No products found</Text>
@@ -1548,7 +1489,7 @@ const HomeScreen = () => {
                         Check back soon for new arrivals
                       </Text>
                     </View>
-                  )}
+                  ) : null}
                 </View>
               </View>
             )}
