@@ -262,36 +262,13 @@ const ForgetPassword = () => {
   };
 
   const contactSupport = () => {
-    const whatsappNumber = '+27845000000'; // Your WhatsApp number
-    
-    // Create the message based on whether email is provided or not
-    let message = "Hello BabaHub Support,\n\n";
-    
-    if (email) {
-      message += `I'm having trouble logging in and need help with password recovery.\n\n`;
-      message += `📧 My email: ${email}\n`;
-      message += `🔐 Issue: I forgot my password and can't access my account.\n\n`;
-      message += `Please help me recover my account access.`;
-    } else {
-      message += `I'm having trouble with my BabaHub account.\n\n`;
-      message += `🔐 Issue: I forgot both my email and password, and I can't access my account.\n\n`;
-      message += `I need assistance recovering my account. Could you please help me?`;
-    }
-    
-    message += `\n\nThank you!`;
-    
-    // Encode the message for URL
-    const encodedMessage = encodeURIComponent(message);
-    
-    // Create WhatsApp URL
-    const whatsappUrl = `whatsapp://send?phone=${whatsappNumber}&text=${encodedMessage}`;
-    
-    // Try to open WhatsApp
-    Linking.openURL(whatsappUrl).catch(() => {
-      // If WhatsApp is not installed, open in browser
-      const webUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
-      Linking.openURL(webUrl);
-    });
+    const subject = encodeURIComponent('Account Recovery Support');
+    const body = encodeURIComponent(
+      email
+        ? `Hello BabaHub Support,\n\nI'm having trouble with password recovery.\n\nMy email: ${email}\nIssue: I forgot my password and can't access my account.\n\nPlease help me recover my account access.\n\nThank you!`
+        : `Hello BabaHub Support,\n\nI'm having trouble with my BabaHub account and need help recovering access.\n\nThank you!`
+    );
+    Linking.openURL(`mailto:babahubsa@gmail.com?subject=${subject}&body=${body}`);
   };
 
   return (
@@ -420,7 +397,7 @@ const ForgetPassword = () => {
             <View style={styles.supportSection}>
               <Text style={styles.supportText}>Need help? Contact our support team</Text>
               <TouchableOpacity style={styles.whatsappButton} onPress={contactSupport}>
-                <MaterialIcons name="chat" size={responsiveFont(18)} color={COLORS.white} />
+                <MaterialIcons name="email" size={responsiveFont(18)} color={COLORS.white} />
                 <Text style={styles.whatsappText}>Contact BabaHub Support</Text>
               </TouchableOpacity>
               <Text style={styles.supportNote}>
@@ -713,7 +690,7 @@ const styles = StyleSheet.create({
   whatsappButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#25D366',
+    backgroundColor: COLORS.primary,
     paddingHorizontal: responsiveWidth(5),
     paddingVertical: responsiveHeight(1.2),
     borderRadius: responsiveWidth(6.25),
