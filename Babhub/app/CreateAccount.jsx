@@ -21,7 +21,6 @@ import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 // DateTimePickerModal removed: DOB no longer collected in the app
 import LottieView from "lottie-react-native";
 import http from "../src/api/http";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const { width, height } = Dimensions.get("window");
 
@@ -386,11 +385,12 @@ const CreateAccount = () => {
   }
 };
 
-  const handleSuccessContinue = async () => {
+  const handleSuccessContinue = () => {
     setShowSuccessModal(false);
     clearForm();
-    await AsyncStorage.multiRemove(['wishlist', 'cart', 'cached_products']);
-    router.replace('/(tabs)/HomeScreen');
+    // Registration only creates the account — do NOT sign in or store a token.
+    // Navigate to Login so the user authenticates explicitly.
+    router.replace('/login');
   };
 
   const handleBackToLogin = () => {
@@ -721,6 +721,7 @@ const CreateAccount = () => {
         animationType="fade"
         statusBarTranslucent={true}
         onRequestClose={handleSuccessContinue}
+        // Prevent accidental back-dismiss from auto-logging in
       >
         <View style={styles.modalOverlay}>
           {/* White Status Bar for Modal */}
@@ -760,8 +761,8 @@ const CreateAccount = () => {
               onPress={handleSuccessContinue}
               activeOpacity={0.9}
             >
-              <Text style={styles.successButtonText}>Go to Home</Text>
-              <MaterialIcons name="home" size={responsiveFont(20)} color={COLORS.white} />
+              <Text style={styles.successButtonText}>Go to Login</Text>
+              <MaterialIcons name="login" size={responsiveFont(20)} color={COLORS.white} />
             </TouchableOpacity>
           </View>
 
