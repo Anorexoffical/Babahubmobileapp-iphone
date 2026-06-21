@@ -2,7 +2,25 @@ import { Dimensions, Platform, StatusBar } from 'react-native';
 
 const { width, height } = Dimensions.get('window');
 
-// iPhone screen dimensions reference
+// ─── Tablet detection ─────────────────────────────────────────────────────────
+export const isTablet = width >= 768;
+export const isLargeTablet = width >= 1024; // iPad Pro 12.9
+
+// Number of product-grid columns based on screen width
+export const numColumns = isLargeTablet ? 3 : isTablet ? 3 : 2;
+
+// Card width for product grids (accounts for padding + gap)
+// horizontalPadding: 20px each side = 40px; gap between columns varies
+export const cardWidth = isLargeTablet
+  ? (width - 80) / 3          // 3-col on large tablet
+  : isTablet
+    ? (width - 60) / 3        // 3-col on iPad Air / Android tablet
+    : (width - 56) / 2;       // 2-col on phone
+
+// Responsive image height for product cards — aspect-ratio ~1:1.1
+export const cardImageHeight = cardWidth * 1.1;
+
+// ─── iPhone screen dimensions reference ───────────────────────────────────────
 const IPHONE_SCREENS = {
   // Small screens
   IPHONE_5: { width: 320, height: 568 },
@@ -42,32 +60,28 @@ const BASE_HEIGHT = 667;
 
 // Detect screen size category
 const getScreenCategory = () => {
-  if (width <= 320) return 'small'; // iPhone 5, SE 1st gen
-  if (width <= 375) return 'medium'; // iPhone 6/7/8, X, 11 Pro, 12/13 mini
-  if (width <= 414) return 'large'; // iPhone 6/7/8 Plus, XR, 11, XS Max, 11 Pro Max
-  return 'xlarge'; // iPhone 12/13/14/15/16/17 Pro Max
+  if (width >= 1024) return 'largeTablet'; // iPad Pro 12.9
+  if (width >= 768)  return 'tablet';      // iPad Air / Android tablet
+  if (width <= 320)  return 'small';
+  if (width <= 375)  return 'medium';
+  if (width <= 414)  return 'large';
+  return 'xlarge';
 };
 
 // Enhanced responsive width with better scaling
 export const responsiveWidth = (percentage) => {
   const screenCategory = getScreenCategory();
   let scaleFactor = 1;
-  
+
   switch (screenCategory) {
-    case 'small':
-      scaleFactor = 0.85; // Slightly reduce for small screens
-      break;
-    case 'medium':
-      scaleFactor = 1;
-      break;
-    case 'large':
-      scaleFactor = 1.1;
-      break;
-    case 'xlarge':
-      scaleFactor = 1.15;
-      break;
+    case 'largeTablet': scaleFactor = 1.0; break; // percentages are already of a large canvas
+    case 'tablet':      scaleFactor = 1.0; break;
+    case 'small':       scaleFactor = 0.85; break;
+    case 'medium':      scaleFactor = 1;    break;
+    case 'large':       scaleFactor = 1.1;  break;
+    case 'xlarge':      scaleFactor = 1.15; break;
   }
-  
+
   return (width * percentage) / 100 * scaleFactor;
 };
 
@@ -75,22 +89,16 @@ export const responsiveWidth = (percentage) => {
 export const responsiveHeight = (percentage) => {
   const screenCategory = getScreenCategory();
   let scaleFactor = 1;
-  
+
   switch (screenCategory) {
-    case 'small':
-      scaleFactor = 0.85;
-      break;
-    case 'medium':
-      scaleFactor = 1;
-      break;
-    case 'large':
-      scaleFactor = 1.05;
-      break;
-    case 'xlarge':
-      scaleFactor = 1.1;
-      break;
+    case 'largeTablet': scaleFactor = 1.0;  break;
+    case 'tablet':      scaleFactor = 1.0;  break;
+    case 'small':       scaleFactor = 0.85; break;
+    case 'medium':      scaleFactor = 1;    break;
+    case 'large':       scaleFactor = 1.05; break;
+    case 'xlarge':      scaleFactor = 1.1;  break;
   }
-  
+
   return (height * percentage) / 100 * scaleFactor;
 };
 
@@ -99,22 +107,16 @@ export const responsiveFont = (size) => {
   const screenCategory = getScreenCategory();
   const scale = width / BASE_WIDTH;
 
-  // iPad detection
-  const isIPad = width >= 768;
-
   let minScale, maxScale;
 
-  if (isIPad) {
-    minScale = 1.0;
-    maxScale = 1.3;
-  } else {
-    switch (screenCategory) {
-      case 'small':  minScale = 0.82; maxScale = 0.92; break;
-      case 'medium': minScale = 0.90; maxScale = 1.00; break;
-      case 'large':  minScale = 0.95; maxScale = 1.05; break;
-      case 'xlarge': minScale = 0.98; maxScale = 1.10; break;
-      default:       minScale = 0.88; maxScale = 1.00;
-    }
+  switch (screenCategory) {
+    case 'largeTablet': minScale = 1.1; maxScale = 1.4; break;
+    case 'tablet':      minScale = 1.0; maxScale = 1.3; break;
+    case 'small':       minScale = 0.82; maxScale = 0.92; break;
+    case 'medium':      minScale = 0.90; maxScale = 1.00; break;
+    case 'large':       minScale = 0.95; maxScale = 1.05; break;
+    case 'xlarge':      minScale = 0.98; maxScale = 1.10; break;
+    default:            minScale = 0.88; maxScale = 1.00;
   }
 
   const scaledSize = size * Math.max(Math.min(scale, maxScale), minScale);
@@ -254,10 +256,12 @@ export const SCREEN_INFO = {
   height,
   category: getScreenCategory(),
   hasNotch: hasNotch(),
-  isSmallScreen: width <= 320,
+  isTablet,
+  isLargeTablet,
+  isSmallScreen:  width <= 320,
   isMediumScreen: width > 320 && width <= 375,
-  isLargeScreen: width > 375 && width <= 414,
-  isXLargeScreen: width > 414,
+  isLargeScreen:  width > 375 && width <= 414,
+  isXLargeScreen: width > 414 && width < 768,
 };
 
 export default {
@@ -273,4 +277,9 @@ export default {
   hasNotch,
   getScreenDimensions,
   SCREEN_INFO,
+  isTablet,
+  isLargeTablet,
+  numColumns,
+  cardWidth,
+  cardImageHeight,
 };

@@ -20,6 +20,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import http from '../src/api/http';
 import { getImageUrl } from '../src/utils/image';
+import { isTablet } from '../src/utils/responsive';
 import { useAuthGuard } from './contexts/useAuthGuard';
 import AuthLoginModal from './contexts/AuthLoginModal';
 
@@ -966,17 +967,18 @@ const styles = StyleSheet.create({
   },
   successModalButtons: {
     flexDirection: 'row',
-    gap: responsiveWidth(3),
+    gap: isTablet ? responsiveWidth(4) : responsiveWidth(3),
     width: '100%',
   },
   modalButton: {
     flex: 1,
     backgroundColor: COLORS.primary,
-    paddingVertical: responsiveHeight(1.5),
+    paddingVertical: isTablet ? responsiveHeight(2) : responsiveHeight(1.5),
+    paddingHorizontal: isTablet ? responsiveWidth(4) : 0,
     borderRadius: responsiveWidth(35),
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: responsiveHeight(5.5),
+    minHeight: isTablet ? responsiveHeight(7) : responsiveHeight(5.5),
   },
   modalSecondaryButton: {
     backgroundColor: COLORS.light,
@@ -1024,7 +1026,7 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: responsiveWidth(7.5),
     overflow: 'hidden',
     marginBottom: responsiveHeight(1.25),
-    height: width * 0.85,
+    height: isTablet ? Math.min(width * 0.55, 500) : width * 0.85,
     ...Platform.select({
       ios: {
         shadowColor: COLORS.primary,
@@ -1113,12 +1115,13 @@ const styles = StyleSheet.create({
     marginBottom: responsiveHeight(1),
   },
   productTitle: {
-    fontSize: responsiveFont(26),
+    fontSize: isTablet ? 24 : responsiveFont(26),
     fontWeight: '700',
     color: COLORS.dark,
     flex: 1,
     marginRight: responsiveWidth(3),
-    lineHeight: responsiveHeight(3.5),
+    lineHeight: isTablet ? 32 : responsiveHeight(3.5),
+    flexShrink: 1,
   },
   ratingContainer: {
     flexDirection: 'row',

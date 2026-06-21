@@ -181,6 +181,14 @@ import { getImageUrl, normalizeImageUrl } from '../../src/utils/image';
 import { useAuthGuard } from '../contexts/useAuthGuard';
 import AuthLoginModal from '../contexts/AuthLoginModal';
 import { useAuth } from '../contexts/AuthContext';
+import {
+  isTablet,
+  isLargeTablet,
+  numColumns,
+  cardWidth,
+  cardImageHeight,
+} from '../../src/utils/responsive';
+import ProductItem from '../../components/ProductItem';
 
 // IMPROVED Internet Status Bar Component using NetInfo
 const InternetStatusBar = ({ isOnline, onRetry }) => {
@@ -564,192 +572,7 @@ const TrendingProductCard = ({ item, index, onPress }) => {
   );
 };
 
-// UPDATED Product Item Component - Only show NEW badge if isFeatured is true
-const ProductItem = ({ item, onPress, onWishlistToggle, isInWishlist, index, onAddToCart, cartQuantity }) => {
-  const price = item.variants?.[0]?.sizes?.[0]?.price || item.price || 0;
-  const [imageLoaded, setImageLoaded] = useState(false);
-  const [imageError, setImageError] = useState(false);
-  const [recentlyAdded, setRecentlyAdded] = useState(false);
-  
-  // Animation values
-  const scaleValue = useRef(new Animated.Value(1)).current;
-  const cardOpacity = useRef(new Animated.Value(0)).current;
-  const cardTranslateY = useRef(new Animated.Value(50)).current;
-  
-  useEffect(() => {
-    // Staggered animation for product cards
-    const delay = index * 150;
-    
-    Animated.sequence([
-      Animated.delay(delay),
-      Animated.parallel([
-        Animated.timing(cardOpacity, {
-          toValue: 1,
-          duration: 600,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }),
-        Animated.spring(cardTranslateY, {
-          toValue: 0,
-          tension: 60,
-          friction: 8,
-          useNativeDriver: true,
-        }),
-      ])
-    ]).start();
-  }, []);
 
-  const handlePressIn = () => {
-    Animated.spring(scaleValue, {
-      toValue: 0.95,
-      useNativeDriver: true,
-    }).start();
-  };
-  
-  const handlePressOut = () => {
-    Animated.spring(scaleValue, {
-      toValue: 1,
-      friction: 3,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  const handleWishlistPress = (e) => {
-    e.stopPropagation();
-    onWishlistToggle(item);
-  };
-
-  // CHANGED: Add to cart now navigates to product detail page
-  const handleAddToCartPress = (e) => {
-    e.stopPropagation();
-    // Navigate to product detail page instead of adding to cart
-    onPress(item);
-  };
-
-  const renderCartQuantityBadge = (quantity) => {
-    if (quantity > 0) {
-      return (
-        <View style={styles.quantityBadge}>
-          <Text style={styles.quantityText}>{quantity}</Text>
-        </View>
-      );
-    }
-    return null;
-  };
-  
-  const imageUrl = getImageUrl(item.image);
-
-  return (
-    <Animated.View 
-      style={[
-        styles.cardContainer, 
-        {
-          opacity: cardOpacity,
-          transform: [{ translateY: cardTranslateY }]
-        }
-      ]}
-    >
-      <Animated.View style={{ transform: [{ scale: scaleValue }] }}>
-        <TouchableOpacity
-          style={styles.card}
-          onPress={() => onPress(item)}
-          activeOpacity={0.9}
-          onPressIn={handlePressIn}
-          onPressOut={handlePressOut}
-        >
-          <View style={styles.imageContainer}>
-            {(!imageLoaded || imageError) && (
-              <View style={styles.imagePlaceholder}>
-                <ActivityIndicator size="small" color={COLORS.primary} />
-              </View>
-            )}
-            {!imageError && (
-              <Image
-                source={{ uri: imageUrl }}
-                style={[
-                  styles.image, 
-                  { 
-                    opacity: imageLoaded ? 1 : 0,
-                  }
-                ]}
-                resizeMode="cover"
-                onLoad={() => setImageLoaded(true)}
-                onError={() => {
-                  setImageError(true);
-                  setImageLoaded(true);
-                }}
-              />
-            )}
-            
-            {/* UPDATED: Heart icon moved to top right */}
-            <View style={styles.heartContainer}>
-              <TouchableOpacity
-                style={[styles.heartIcon, isInWishlist && styles.heartIconActive]}
-                onPress={handleWishlistPress}
-              >
-                <Ionicons
-                  name={isInWishlist ? 'heart' : 'heart-outline'}
-                  size={responsiveFont(20)}
-                  color={isInWishlist ? COLORS.error : COLORS.white}
-                />
-              </TouchableOpacity>
-            </View>
-
-            {/* UPDATED: NEW badge only shown if isFeatured is true */}
-            {item.isFeatured === true && (
-              <View style={styles.newBadge}>
-                <Text style={styles.newBadgeText}>NEW</Text>
-              </View>
-            )}
-          </View>
-          
-          <View style={styles.cardContent}>
-            <Text style={styles.title} numberOfLines={2}>{item.name || 'New Product'}</Text>
-            
-            <View style={styles.brandContainer}>
-              <Text style={styles.brandText}>{item.brand || 'Popular Brand'}</Text>
-            </View>
-            
-            <View style={styles.ratingContainer}>
-              <View style={styles.stars}>
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <Ionicons 
-                    key={star} 
-                    name="star" 
-                    size={responsiveFont(12)} 
-                    color={star <= 4 ? COLORS.secondary : COLORS.grayLight} 
-                  />
-                ))}
-              </View>
-              <Text style={styles.ratingText}>4.8 (248)</Text>
-            </View>
-            
-            <View style={styles.priceContainer}>
-              <Text style={styles.price}>R{price.toFixed(2)}</Text>
-              <View style={styles.cartButtonContainer}>
-                <TouchableOpacity
-                  style={[
-                    styles.cartButton,
-                    cartQuantity > 0 && styles.cartButtonActive,
-                    recentlyAdded && styles.cartButtonPulse
-                  ]}
-                  onPress={handleAddToCartPress} // CHANGED: Now navigates to product detail
-                >
-                  <Ionicons 
-                    name="cart" // CHANGED: Always show cart icon, no checkmark
-                    size={responsiveFont(16)} 
-                    color={COLORS.white} 
-                  />
-                </TouchableOpacity>
-                {cartQuantity > 0 && renderCartQuantityBadge(cartQuantity)}
-              </View>
-            </View>
-          </View>
-        </TouchableOpacity>
-      </Animated.View>
-    </Animated.View>
-  );
-};
 
 // UPDATED Sticky Header Component - Bigger Cart Icon with Internet Status
 const StickyHeader = ({ user, cartItems, router, scrollY, isOnline, onCartPress }) => {
@@ -1504,6 +1327,7 @@ const StoreScreen = () => {
         index={index}
         onAddToCart={handleAddToCart}
         cartQuantity={cartQuantity}
+        showNewBadge={false}
       />
     );
   };
@@ -1732,7 +1556,8 @@ const StoreScreen = () => {
                       data={searchResults}
                       renderItem={renderProductItem}
                       keyExtractor={(item) => item._id}
-                      numColumns={2}
+                      numColumns={numColumns}
+                      key={`store-search-${numColumns}`}
                       scrollEnabled={false}
                       columnWrapperStyle={styles.columnWrapper}
                       contentContainerStyle={styles.list}
@@ -1801,11 +1626,12 @@ const StoreScreen = () => {
                       data={filteredProducts.slice(0, 4)}
                       renderItem={renderProductItem}
                       keyExtractor={(item) => item._id}
-                      numColumns={2}
+                      numColumns={numColumns}
+                      key={`store-popular-${numColumns}`}
                       scrollEnabled={false}
                       columnWrapperStyle={styles.columnWrapper}
                       contentContainerStyle={styles.list}
-                      initialNumToRender={4}
+                      initialNumToRender={numColumns}
                       maxToRenderPerBatch={4}
                       windowSize={5}
                     />
@@ -1875,12 +1701,13 @@ const StoreScreen = () => {
                       data={filteredProducts.slice(4, 8)}
                       renderItem={renderProductItem}
                       keyExtractor={(item) => item._id}
-                      numColumns={2}
+                      numColumns={numColumns}
+                      key={`store-latest-${numColumns}`}
                       scrollEnabled={false}
                       columnWrapperStyle={styles.columnWrapper}
                       contentContainerStyle={styles.list}
-                      initialNumToRender={4}
-                      maxToRenderPerBatch={4}
+                      initialNumToRender={numColumns}
+                      maxToRenderPerBatch={numColumns}
                       windowSize={5}
                     />
                   ) : null}
@@ -1917,12 +1744,13 @@ const StoreScreen = () => {
                       data={filteredProducts.slice(8, 12)}
                       renderItem={renderProductItem}
                       keyExtractor={(item) => item._id}
-                      numColumns={2}
+                      numColumns={numColumns}
+                      key={`store-best-${numColumns}`}
                       scrollEnabled={false}
                       columnWrapperStyle={styles.columnWrapper}
                       contentContainerStyle={styles.list}
-                      initialNumToRender={4}
-                      maxToRenderPerBatch={4}
+                      initialNumToRender={numColumns}
+                      maxToRenderPerBatch={numColumns}
                       windowSize={5}
                     />
                   ) : null}
@@ -1958,12 +1786,13 @@ const StoreScreen = () => {
                       data={filteredProducts.slice(12)}
                       renderItem={renderProductItem}
                       keyExtractor={(item) => item._id}
-                      numColumns={2}
+                      numColumns={numColumns}
+                      key={`store-more-${numColumns}`}
                       scrollEnabled={false}
                       columnWrapperStyle={styles.columnWrapper}
                       contentContainerStyle={styles.list}
-                      initialNumToRender={8}
-                      maxToRenderPerBatch={8}
+                      initialNumToRender={numColumns * 2}
+                      maxToRenderPerBatch={numColumns * 2}
                       windowSize={5}
                     />
                   ) : (
@@ -2274,7 +2103,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   searchResultsSection: {
-    paddingHorizontal: responsiveWidth(5),
+    paddingHorizontal: 20,
   },
   loadingState: {
     alignItems: 'center',
@@ -2430,172 +2259,14 @@ const styles = StyleSheet.create({
     color: COLORS.gray,
   },
   list: {
-    paddingHorizontal: responsiveWidth(5),
+    paddingHorizontal: 20,
   },
   columnWrapper: {
     justifyContent: 'space-between',
-    marginBottom: responsiveHeight(2),
+    marginBottom: 16,
+    gap: isTablet ? 12 : 0,
   },
-  // UPDATED Product Card Styles - Heart icon moved to top and NEW badge updated
-  cardContainer: {
-    width: '48%',
-    marginBottom: responsiveHeight(2),
-  },
-  card: {
-    backgroundColor: COLORS.cardBackground,
-    borderRadius: responsiveWidth(5),
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(99, 102, 241, 0.08)',
-    elevation: 6,
-  },
-  imageContainer: {
-    position: 'relative',
-    width: '100%',
-    height: responsiveHeight(20),
-    backgroundColor: COLORS.light,
-  },
-  imagePlaceholder: {
-    width: '100%',
-    height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: COLORS.light,
-  },
-  image: {
-    width: '100%',
-    height: '100%',
-  },
-  // UPDATED: Heart container moved to top right
-  heartContainer: {
-    position: 'absolute',
-    top: responsiveHeight(1.5),
-    right: responsiveWidth(3),
-  },
-  heartIcon: {
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
-    borderRadius: responsiveWidth(5),
-    padding: responsiveWidth(2),
-    elevation: 3,
-  },
-  heartIconActive: {
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-  },
-  // UPDATED: NEW badge with brand-like design - Only shown if isFeatured is true
-  newBadge: {
-    position: 'absolute',
-    top: responsiveHeight(1.5),
-    left: responsiveWidth(3),
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: responsiveWidth(2.5),
-    paddingVertical: responsiveHeight(0.5),
-    borderRadius: responsiveWidth(12.5),
-    alignSelf: 'flex-start',
-  },
-  newBadgeText: {
-    fontSize: responsiveFont(11),
-    fontWeight: '700',
-    color: COLORS.white,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  cardContent: {
-    padding: responsiveWidth(4),
-    backgroundColor: COLORS.cardBackground,
-  },
-  title: {
-    fontSize: responsiveFont(15),
-    fontWeight: '700',
-    color: COLORS.dark,
-    marginBottom: responsiveHeight(0.7),
-    height: responsiveHeight(2.5),
-    lineHeight: responsiveHeight(2.5),
-  },
-  brandContainer: {
-    marginBottom: responsiveHeight(1),
-    backgroundColor: 'rgba(99, 102, 241, 0.08)',
-    alignSelf: 'flex-start',
-    paddingHorizontal: responsiveWidth(2.5),
-    paddingVertical: responsiveHeight(0.5),
-    borderRadius: responsiveWidth(2.5),
-  },
-  brandText: {
-    fontSize: responsiveFont(11),
-    fontWeight: '700',
-    color: COLORS.primary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  ratingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: responsiveHeight(1.5),
-  },
-  stars: {
-    flexDirection: 'row',
-    gap: responsiveWidth(0.5),
-  },
-  ratingText: {
-    fontSize: responsiveFont(11),
-    color: COLORS.gray,
-    fontWeight: '600',
-  },
-  priceContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  price: {
-    fontSize: responsiveFont(17),
-    fontWeight: 'bold',
-    color: COLORS.primary,
-  },
-  cartButtonContainer: {
-    position: 'relative',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cartButton: {
-    backgroundColor: COLORS.primary,
-    width: responsiveWidth(9),
-    height: responsiveWidth(9),
-    borderRadius: responsiveWidth(4.5),
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 4,
-  },
-  cartButtonActive: {
-    backgroundColor: COLORS.success,
-  },
-  cartButtonPulse: {
-    backgroundColor: COLORS.success,
-    transform: [{ scale: 1.1 }],
-  },
-  quantityBadge: {
-    position: 'absolute',
-    top: -responsiveHeight(1),
-    right: -responsiveWidth(2),
-    backgroundColor: COLORS.error,
-    borderRadius: responsiveWidth(2.5),
-    minWidth: responsiveWidth(5),
-    height: responsiveWidth(5),
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: COLORS.white,
-    zIndex: 1,
-    elevation: 4,
-  },
-  quantityText: {
-    color: COLORS.white,
-    fontSize: responsiveFont(10),
-    fontWeight: '800',
-  },
-  cartIconContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+
   bannerContainer: {
     height: responsiveHeight(22),
     marginHorizontal: responsiveWidth(5),
