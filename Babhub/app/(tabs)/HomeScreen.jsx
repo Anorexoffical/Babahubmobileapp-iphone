@@ -771,6 +771,7 @@ const HomeScreen = () => {
   const [connectionChecking, setConnectionChecking] = useState(false);
   const [hasCachedData, setHasCachedData] = useState(false);
   const [initialized, setInitialized] = useState(false);
+  const [fetchError, setFetchError] = useState(null); // null | 'offline' | 'timeout'
   const [networkInitialized, setNetworkInitialized] = useState(false);
   const [dataSource, setDataSource] = useState('api');
 
@@ -952,6 +953,9 @@ const HomeScreen = () => {
           // Return visit with stale cache: fetch in background without
           // blocking the UI — user already sees cached products instantly.
           fetchProducts();
+        } else if (!connected && !hasCachedData) {
+          // First install with no network: nothing to show — surface error.
+          setFetchError('offline');
         }
       } catch (error) {
         console.error('HomeScreen initialization error:', error);
@@ -980,10 +984,12 @@ const HomeScreen = () => {
         setFilteredProducts(parsedProducts);
         setHasCachedData(true);
         setDataSource('cache');
-  
+        return parsedProducts.length > 0;
       }
+      return false;
     } catch (error) {
       console.error('Error loading cached products:', error);
+      return false;
     }
   };
 
@@ -1000,16 +1006,25 @@ const HomeScreen = () => {
       await AsyncStorage.setItem('cached_products', JSON.stringify(productsData));
       await AsyncStorage.setItem('cached_products_timestamp', Date.now().toString());
       setHasCachedData(true);
+      setFetchError(null); // clear any prior error on successful fetch
     } catch (err) {
       console.error('Error fetching products:', err);
       if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+        const hadCache = await loadCachedProducts();
         Toast.show({
-          type: 'error',
-          text1: 'Slow Connection',
-          text2: 'Loading cached products',
+          type: hadCache ? 'info' : 'error',
+          text1: hadCache ? 'Slow Connection' : 'Connection Trouble',
+          text2: hadCache ? 'Showing saved products' : 'Unable to load products right now',
         });
+        if (!hadCache) {
+          setFetchError('timeout');
+        }
+      } else {
+        const hadCache = await loadCachedProducts();
+        if (!hadCache) {
+          setFetchError('timeout');
+        }
       }
-      await loadCachedProducts();
     }
   };
 
@@ -1074,9 +1089,11 @@ const HomeScreen = () => {
       const connected = await checkConnection();
       await fetchWishlistAndCart();
       if (connected) {
-        await fetchProducts();
+        await fetchProducts(); // fetchProducts itself clears fetchError on success
+                               // or sets 'timeout' on failure with no cache
       } else {
-        await loadCachedProducts();
+        const hadCache = await loadCachedProducts();
+        setFetchError(hadCache ? null : 'offline');
       }
     } catch (error) {
       console.error('HomeScreen refresh error:', error);
@@ -1522,11 +1539,45 @@ const HomeScreen = () => {
                     </>
                   ) : !loading && filteredProducts.length === 0 ? (
                     <View style={styles.emptyState}>
-                      <Ionicons name="grid-outline" size={50} color={COLORS.grayLight} />
-                      <Text style={styles.emptyStateText}>No products found</Text>
-                      <Text style={styles.emptyStateSubtext}>
-                        Check back soon for new arrivals
-                      </Text>
+                      <Ionicons
+                        name={fetchError ? 'cloud-offline-outline' : 'grid-outline'}
+                        size={50}
+                        color={COLORS.grayLight}
+                      />
+                      {fetchError === 'offline' ? (
+                        <>
+                          <Text style={styles.emptyStateText}>You're offline</Text>
+                          <Text style={styles.emptyStateSubtext}>
+                            Connect to the internet to load products.
+                          </Text>
+                          <TouchableOpacity
+                            style={styles.tryAgainButton}
+                            onPress={onRefresh}
+                          >
+                            <Text style={styles.tryAgainText}>Retry</Text>
+                          </TouchableOpacity>
+                        </>
+                      ) : fetchError === 'timeout' ? (
+                        <>
+                          <Text style={styles.emptyStateText}>Connection trouble</Text>
+                          <Text style={styles.emptyStateSubtext}>
+                            We couldn't load products. Please check your connection and try again.
+                          </Text>
+                          <TouchableOpacity
+                            style={styles.tryAgainButton}
+                            onPress={onRefresh}
+                          >
+                            <Text style={styles.tryAgainText}>Retry</Text>
+                          </TouchableOpacity>
+                        </>
+                      ) : (
+                        <>
+                          <Text style={styles.emptyStateText}>No products found</Text>
+                          <Text style={styles.emptyStateSubtext}>
+                            Check back soon for new arrivals
+                          </Text>
+                        </>
+                      )}
                     </View>
                   ) : null}
                 </View>
