@@ -936,20 +936,30 @@ const HomeScreen = () => {
       try {
         const cachedTimestamp = await AsyncStorage.getItem('cached_products_timestamp');
         const cacheAge = cachedTimestamp ? Date.now() - parseInt(cachedTimestamp) : Infinity;
-        const isCacheValid = cacheAge < 5 * 60 * 1000;
+        const isCacheValid = cacheAge < 30 * 60 * 1000; // [FIX 2] 30 min TTL
 
         await loadCachedProducts();
-        setLoading(false);
-        setInitialized(true);
 
         const connected = await checkConnection();
         await fetchWishlistAndCart();
-        
-        if (connected && !isCacheValid) {
+
+        if (connected && !hasCachedData) {
+          // [FIX 1] First install: no cache exists — await the API so the
+          // loading spinner stays visible until real products are ready.
+          // This prevents the empty screen that caused App Store rejection.
           await fetchProducts();
+        } else if (connected && !isCacheValid) {
+          // Return visit with stale cache: fetch in background without
+          // blocking the UI — user already sees cached products instantly.
+          fetchProducts();
         }
       } catch (error) {
         console.error('HomeScreen initialization error:', error);
+      } finally {
+        // [FIX 1] setLoading and setInitialized always fire in finally —
+        // guaranteed cleanup whether the API succeeded, failed, or threw.
+        // On first install this fires AFTER fetchProducts resolves,
+        // so products are always populated before the loading screen lifts.
         setLoading(false);
         setInitialized(true);
       }
@@ -970,7 +980,7 @@ const HomeScreen = () => {
         setFilteredProducts(parsedProducts);
         setHasCachedData(true);
         setDataSource('cache');
-        console.log('Products Source: cache | Count:', parsedProducts.length);
+  
       }
     } catch (error) {
       console.error('Error loading cached products:', error);
@@ -984,8 +994,6 @@ const HomeScreen = () => {
         timeout: 10000,
       });
       const productsData = data.products || data;
-      console.log('Featured Products Count:', productsData.length);
-      console.log('Products Source: api');
       setDataSource('api');
       setProducts(productsData);
       setFilteredProducts(productsData);
