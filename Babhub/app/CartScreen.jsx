@@ -20,6 +20,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SplashScreen from 'expo-splash-screen';
 import http from '../src/api/http';
 import { getImageUrl } from '../src/utils/image';
+import { isTablet } from '../src/utils/responsive';
 import { useAuthGuard } from './contexts/useAuthGuard';
 import AuthLoginModal from './contexts/AuthLoginModal';
 
@@ -732,10 +733,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: COLORS.white,
     borderRadius: responsiveWidth(3),
-    padding: responsiveWidth(3),
+    padding: isTablet ? responsiveWidth(4) : responsiveWidth(3),
     marginBottom: responsiveHeight(1),
     borderWidth: 1,
     borderColor: COLORS.light,
+    alignItems: 'flex-start',
     ...Platform.select({
       ios: {
         shadowColor: '#000',
@@ -752,8 +754,8 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   itemImage: {
-    width: responsiveWidth(15),
-    height: responsiveWidth(15),
+    width: isTablet ? responsiveWidth(18) : responsiveWidth(15),
+    height: isTablet ? responsiveWidth(18) : responsiveWidth(15),
     borderRadius: responsiveWidth(2),
   },
   // Improved Quantity Badge - Bigger and more visible
@@ -809,6 +811,7 @@ const styles = StyleSheet.create({
   itemDetails: {
     flex: 1,
     marginLeft: responsiveWidth(3),
+    minWidth: 0,
   },
   itemHeader: {
     flexDirection: 'row',
@@ -817,11 +820,12 @@ const styles = StyleSheet.create({
     marginBottom: responsiveHeight(0.75),
   },
   itemTitle: {
-    fontSize: responsiveFont(14),
+    fontSize: isTablet ? responsiveFont(16) : responsiveFont(14),
     fontWeight: '600',
     color: COLORS.dark,
-    lineHeight: responsiveHeight(2.25),
+    lineHeight: isTablet ? responsiveHeight(2.8) : responsiveHeight(2.25),
     flex: 1,
+    flexShrink: 1,
     marginRight: responsiveWidth(2),
   },
   removeButton: {
@@ -887,11 +891,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    flexWrap: 'nowrap',
+    gap: isTablet ? responsiveWidth(3) : 0,
   },
   itemPrice: {
-    fontSize: responsiveFont(15),
+    fontSize: isTablet ? responsiveFont(17) : responsiveFont(15),
     fontWeight: '700',
     color: COLORS.primary,
+    flexShrink: 1,
+    marginRight: responsiveWidth(2),
   },
   quantityControl: {
     flexDirection: 'row',
