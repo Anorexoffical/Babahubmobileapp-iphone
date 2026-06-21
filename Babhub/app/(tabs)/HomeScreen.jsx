@@ -29,6 +29,17 @@ import AuthLoginModal from '../contexts/AuthLoginModal';
 import Toast from 'react-native-toast-message';
 import NetInfo from '@react-native-community/netinfo';
 import http from '../../src/api/http';
+// FIX 1 applied — imports moved above all module-level constants that depend on them
+import { getImageUrl, normalizeImageUrl } from '../../src/utils/image';
+import {
+  responsiveWidth,
+  responsiveHeight,
+  responsiveFont,
+  getSafeAreaTop,
+  getSafeAreaBottom,
+  getSpacing,
+  SCREEN_INFO
+} from '../../src/utils/responsive';
 
 const { width, height } = Dimensions.get('window');
 
@@ -37,7 +48,7 @@ const banner2 = require('../../assets/images/banner2.jpeg');
 const banner3 = require('../../assets/images/banner3.jpeg');
 
 // Get status bar height for different devices using responsive utility
-const STATUS_BAR_HEIGHT = getSafeAreaTop();
+const STATUS_BAR_HEIGHT = getSafeAreaTop(); // FIX 1 applied — getSafeAreaTop is now imported before use
 
 // Consistent color palette from store page
 const COLORS = {
@@ -157,18 +168,6 @@ const popularSearches = [
   'Fitness Trackers'
 ];
 
-
-// Import image utilities
-import { getImageUrl, normalizeImageUrl } from '../../src/utils/image';
-import { 
-  responsiveWidth, 
-  responsiveHeight, 
-  responsiveFont,
-  getSafeAreaTop,
-  getSafeAreaBottom,
-  getSpacing,
-  SCREEN_INFO
-} from '../../src/utils/responsive';
 
 // UPDATED: Internet Status Bar Component for Android - Removed Retry Button
 const InternetStatusBar = ({ isOnline }) => {
@@ -407,6 +406,14 @@ const BannerItem = ({ item, index, currentIndex }) => {
   );
 };
 
+const MemoizedBannerItem = React.memo(BannerItem, (prev, next) => {
+  const wasActive = prev.index === prev.currentIndex;
+  const isActive  = next.index === next.currentIndex;
+  return wasActive === isActive;
+  // [FIX 7] Only re-render when a banner's active/inactive state changes.
+  // Prevents all 3 banners running animations on every index update.
+});
+
 // Category Card Component
 const CategoryCard = ({ item, onPress }) => {
   return (
@@ -625,8 +632,9 @@ const StickyHeader = ({ user, cartItems, router, scrollY, isOnline, onCartPress 
     extrapolate: 'clamp',
   });
 
+  // FIX 6 applied — opacity now fades IN as scroll reaches headerHeight, not from 0
   const headerOpacity = scrollY.interpolate({
-    inputRange: [0, headerHeight - 20],
+    inputRange: [headerHeight - 20, headerHeight],
     outputRange: [0, 1],
     extrapolate: 'clamp',
   });
@@ -768,7 +776,9 @@ const HomeScreen = () => {
 
   // Track previous network status to detect real connectivity changes
   const previousNetworkStatus = useRef(null);
-  
+  // FIX 2 applied — synchronous ref guard prevents double-initialization in StrictMode
+  const initializingRef = useRef(false);
+
   const router = useRouter();
   const scrollY = useRef(new Animated.Value(0)).current;
   const bannerRef = useRef(null);
@@ -828,32 +838,26 @@ const HomeScreen = () => {
   }, [networkInitialized]);
 
   // Fetch wishlist and cart from AsyncStorage
-  const fetchWishlistAndCart = async () => {
+  // FIX 5 applied — wrapped in useCallback with [isAuthenticated] dependency
+  const fetchWishlistAndCart = useCallback(async () => {
     if (!isAuthenticated()) {
       setWishlist([]);
       setCartItems([]);
       return;
     }
     try {
-      const wishlistData = await AsyncStorage.getItem('wishlist');
-      if (wishlistData) {
-        const parsedWishlist = JSON.parse(wishlistData);
-        setWishlist(parsedWishlist);
-      } else {
-        setWishlist([]);
-      }
-
-      const cartData = await AsyncStorage.getItem('cart');
-      if (cartData) {
-        const cartItems = JSON.parse(cartData);
-        setCartItems(cartItems);
-      } else {
-        setCartItems([]);
-      }
+      // [FIX 8] Promise.all reads both keys in parallel — halves AsyncStorage
+      // round-trip time on every focus event, critical on low-end Android.
+      const [wishlistData, cartData] = await Promise.all([
+        AsyncStorage.getItem('wishlist'),
+        AsyncStorage.getItem('cart'),
+      ]);
+      setWishlist(wishlistData ? JSON.parse(wishlistData) : []);
+      setCartItems(cartData ? JSON.parse(cartData) : []);
     } catch (error) {
       console.error('Error fetching wishlist or cart:', error);
     }
-  };
+  }, [isAuthenticated]);
 
   // Get cart quantity for a specific product
   const getCartQuantity = (productId) => {
@@ -911,32 +915,41 @@ const HomeScreen = () => {
   };
 
   // Use focus effect to refresh wishlist/cart only (not products — avoids race condition)
+  // FIX 5 applied — fetchWishlistAndCart included in dependency array
   useFocusEffect(
     useCallback(() => {
       if (initialized) {
         fetchWishlistAndCart();
       }
-    }, [initialized])
+    }, [initialized, fetchWishlistAndCart])
   );
 
   // Single controlled initialization — runs exactly once after auth resolves
   useEffect(() => {
     const initializeApp = async () => {
-      if (initialized) return;
+      // FIX 2 applied — dual guard: state flag + synchronous ref prevents StrictMode double-run
+      if (initialized || initializingRef.current) return;
+      initializingRef.current = true;
 
       setLoading(true);
 
       try {
+        const cachedTimestamp = await AsyncStorage.getItem('cached_products_timestamp');
+        const cacheAge = cachedTimestamp ? Date.now() - parseInt(cachedTimestamp) : Infinity;
+        const isCacheValid = cacheAge < 5 * 60 * 1000;
+
+        await loadCachedProducts();
+        setLoading(false);
+        setInitialized(true);
+
         const connected = await checkConnection();
         await fetchWishlistAndCart();
-        if (connected) {
+        
+        if (connected && !isCacheValid) {
           await fetchProducts();
-        } else {
-          await loadCachedProducts();
         }
       } catch (error) {
         console.error('HomeScreen initialization error:', error);
-      } finally {
         setLoading(false);
         setInitialized(true);
       }
@@ -967,7 +980,9 @@ const HomeScreen = () => {
   // Fetch products — no loading state management (owned by initializeApp / onRefresh)
   const fetchProducts = async () => {
     try {
-      const { data } = await http.get('/products/featured');
+      const { data } = await http.get('/products/featured', {
+        timeout: 10000,
+      });
       const productsData = data.products || data;
       console.log('Featured Products Count:', productsData.length);
       console.log('Products Source: api');
@@ -975,45 +990,53 @@ const HomeScreen = () => {
       setProducts(productsData);
       setFilteredProducts(productsData);
       await AsyncStorage.setItem('cached_products', JSON.stringify(productsData));
+      await AsyncStorage.setItem('cached_products_timestamp', Date.now().toString());
       setHasCachedData(true);
     } catch (err) {
       console.error('Error fetching products:', err);
-      // Fallback to cache on API failure
+      if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+        Toast.show({
+          type: 'error',
+          text1: 'Slow Connection',
+          text2: 'Loading cached products',
+        });
+      }
       await loadCachedProducts();
     }
   };
 
-  // Search functionality
-  const performSearch = (text) => {
-    if (text.trim() === '') {
-      setFilteredProducts(products);
-      setSearchResults([]);
-      setIsSearchActive(false);
-    } else {
-      const filtered = products.filter(product =>
-        product.name?.toLowerCase().includes(text.toLowerCase()) ||
-        product.brand?.toLowerCase().includes(text.toLowerCase()) ||
-        product.category?.toLowerCase().includes(text.toLowerCase())
-      );
-      
-      setSearchResults(filtered);
-      setIsSearchActive(true);
-      
-      if (filtered.length > 0) {
-        setFilteredProducts(filtered);
+  // FIX 4 applied — stable ref holds latest search logic; avoids stale closure over products
+  const performSearchRef = useRef(null);
+  useEffect(() => {
+    performSearchRef.current = (text) => {
+      if (text.trim() === '') {
+        setFilteredProducts(products);
+        setSearchResults([]);
+        setIsSearchActive(false);
       } else {
-        setFilteredProducts([]);
-      }
-    }
-    setSearchLoading(false);
-  };
+        const filtered = products.filter(product =>
+          product.name?.toLowerCase().includes(text.toLowerCase()) ||
+          product.brand?.toLowerCase().includes(text.toLowerCase()) ||
+          product.category?.toLowerCase().includes(text.toLowerCase())
+        );
 
-  const debouncedSearch = useCallback(
-    debounce((text) => {
-      performSearch(text);
-    }, 300),
-    [products]
-  );
+        setSearchResults(filtered);
+        setIsSearchActive(true);
+
+        if (filtered.length > 0) {
+          setFilteredProducts(filtered);
+        } else {
+          setFilteredProducts([]);
+        }
+      }
+      setSearchLoading(false);
+    };
+  }, [products]);
+
+  // FIX 4 applied — single stable debounce instance created once via ref
+  const debouncedSearch = useRef(
+    debounce((text) => performSearchRef.current?.(text), 300)
+  ).current;
 
   // Handle search text changes
   useEffect(() => {
@@ -1033,7 +1056,7 @@ const HomeScreen = () => {
   // Handle search submission
   const handleSearchSubmit = () => {
     setShowSearchSuggestions(false);
-    performSearch(searchText);
+    performSearchRef.current?.(searchText);
     searchInputRef.current?.blur();
   };
 
@@ -1130,7 +1153,7 @@ const HomeScreen = () => {
     setSearchText(suggestion);
     searchInputRef.current?.focus();
     setShowSearchSuggestions(false);
-    performSearch(suggestion);
+    performSearchRef.current?.(suggestion);
   };
 
   const handleSearchFocus = () => {
@@ -1380,7 +1403,7 @@ const HomeScreen = () => {
                     pagingEnabled
                     showsHorizontalScrollIndicator={false}
                     renderItem={({ item, index }) => (
-                      <BannerItem 
+                      <MemoizedBannerItem 
                         item={item} 
                         index={index}
                         currentIndex={currentBannerIndex}
@@ -1463,6 +1486,10 @@ const HomeScreen = () => {
                         scrollEnabled={false}
                         columnWrapperStyle={styles.columnWrapper}
                         contentContainerStyle={styles.list}
+                        initialNumToRender={4}
+                        maxToRenderPerBatch={4}
+                        windowSize={5}
+                        removeClippedSubviews={true}
                       />
 
                       {/* Special Offer Banner in the Middle */}
@@ -1478,6 +1505,10 @@ const HomeScreen = () => {
                           scrollEnabled={false}
                           columnWrapperStyle={styles.columnWrapper}
                           contentContainerStyle={styles.list}
+                          initialNumToRender={4}
+                          maxToRenderPerBatch={4}
+                          windowSize={5}
+                          removeClippedSubviews={true}
                         />
                       )}
                     </>
